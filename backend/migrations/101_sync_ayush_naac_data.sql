@@ -13,6 +13,14 @@ CREATE TABLE IF NOT EXISTS college_naac_status (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure all columns exist in case the table was created by a previous migration
+ALTER TABLE college_naac_status ADD COLUMN IF NOT EXISTS current_status VARCHAR(100);
+ALTER TABLE college_naac_status ADD COLUMN IF NOT EXISTS cycle VARCHAR(50);
+ALTER TABLE college_naac_status ADD COLUMN IF NOT EXISTS grade VARCHAR(10);
+ALTER TABLE college_naac_status ADD COLUMN IF NOT EXISTS cgpa VARCHAR(20);
+ALTER TABLE college_naac_status ADD COLUMN IF NOT EXISTS valid_till INTEGER;
+ALTER TABLE college_naac_status ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
 -- 2. add unique constraint safely
 DO $$
 BEGIN
