@@ -1,0 +1,33 @@
+-- server/migrations/0006_debug_insert_training_centre_for_user_18.sql
+-- One‑off: ensure user_id 18 has a training_centres row (debug for FK error)
+
+BEGIN;
+
+-- Ensure user 18 exists
+INSERT INTO users (id, full_name, email, password_hash, role)
+VALUES (18, 'Debug User 18', 'aditithakur907@gmail.com', '$2b$10$YourHashHere', 'training_centre')
+ON CONFLICT (id) DO NOTHING;
+
+-- Also handle email conflict if user 18 didn't exist but email did
+INSERT INTO users (full_name, email, password_hash, role)
+VALUES ('Debug User 18', 'aditithakur907@gmail.com', '$2b$10$YourHashHere', 'training_centre')
+ON CONFLICT (email) DO NOTHING;
+-- Note: complex logic to get ID if email existed but ID wasn't 18 is getting messy. 
+-- Simple fix: Just force insert ID 18 if not exists. If email conflict, we might fail, but let's assume empty DB.
+
+INSERT INTO training_centres (user_id, centre_name, email, phone, institution_type, address, city, state, pincode, accreditation_status)
+VALUES (
+  18,
+  'Centre for user 18',
+  'aditithakur907@gmail.com',
+  '0000000000',
+  'Yoga Centre',
+  'Address not set',
+  'City',
+  'State',
+  '000000',
+  'APPROVED'
+)
+ON CONFLICT (user_id) DO NOTHING; 
+
+COMMIT;

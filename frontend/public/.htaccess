@@ -1,0 +1,79 @@
+# ── #1 / #9: Disable directory listing & Apache version disclosure ────────────
+# ServerTokens Prod and ServerSignature Off must be in httpd.conf, not here.
+# Add to /etc/apache2/apache2.conf:
+#   ServerTokens Prod
+#   ServerSignature Off
+Options -Indexes
+
+# ── Block sensitive files ─────────────────────────────────────────────────────
+<FilesMatch "(\.env|\.env\..*|\.htpasswd|composer\.lock|package-lock\.json)$">
+    Require all denied
+</FilesMatch>
+
+# ── #4: Block .git directory including URL-encoded bypass ─────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{THE_REQUEST} (\.git|%2[Ee]git|\.%67it|%2[Ee]%67it) [NC]
+    RewriteRule ^ - [F,L]
+
+    RewriteCond %{REQUEST_URI} (\.git|%2[Ee]git|%2[Ee]%67it|\.%67it) [NC]
+    RewriteRule ^ - [F,L]
+
+    # Block dangerous HTTP methods
+    RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK|CONNECT) [NC]
+    RewriteRule ^ - [F,L]
+
+    # ── #6: HTTPS redirect (uncomment once SSL certificate is provisioned) ────
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # SPA routing
+    RewriteRule ^index\.html$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # ── #9: Suppress Apache/server version info ───────────────────────────────
+    Header always unset X-Powered-By
+    Header always unset X-AspNet-Version
+    Header always unset X-AspNetMvc-Version
+    Header always unset Server
+
+    # ── #7: Content Security Policy + #11: frame-ancestors ───────────────────
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://cdnbbsr.s3waas.gov.in https://images.unsplash.com; connect-src 'self'; font-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; upgrade-insecure-requests;"
+
+    # ── #12: Remove deprecated X-XSS-Protection ──────────────────────────────
+    Header always unset X-XSS-Protection
+
+    # ── #13: Permission-Policy ────────────────────────────────────────────────
+    Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=(), usb=(), fullscreen=(self), accelerometer=(), gyroscope=(), magnetometer=()"
+
+    # Other hardening headers
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+
+    # ── #14: No caching by default ────────────────────────────────────────────
+    Header always set Surrogate-Control "no-store"
+</IfModule>
+
+# ── #14: Cache-Control for HTML responses ─────────────────────────────────────
+<FilesMatch "\.(html|htm)$">
+    <IfModule mod_headers.c>
+        Header always set Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+        Header always set Pragma "no-cache"
+        Header always set Expires "0"
+    </IfModule>
+</FilesMatch>
+
+# Static assets — safe to cache forever (Vite uses content-hashed filenames)
+<FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+    <IfModule mod_headers.c>
+        Header always set Cache-Control "public, max-age=31536000, immutable"
+    </IfModule>
+</FilesMatch>

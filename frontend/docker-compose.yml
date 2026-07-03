@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: ayush_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ayush_user
+      POSTGRES_PASSWORD: ayush_password
+      POSTGRES_DB: ayush_portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

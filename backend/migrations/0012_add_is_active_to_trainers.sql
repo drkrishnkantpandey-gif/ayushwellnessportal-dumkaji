@@ -1,0 +1,2 @@
+
+ALTER TABLE centre_trainers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
