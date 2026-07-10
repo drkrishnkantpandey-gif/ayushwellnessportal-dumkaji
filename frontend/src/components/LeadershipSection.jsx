@@ -2,7 +2,7 @@ import React from "react";
 
 const leaders = [
   {
-    image: "https://cdnbbsr.s3waas.gov.in/s3a77c8fd7f48b9c859bbd5ed81c5f441f/uploads/2025/07/20250714656073820.jpg",
+    image: "/images/leaders/pushkar_dhami.jpg",
     nameEN: "Shri Pushkar Singh Dhami",
     nameHI: "श्री पुष्कर सिंह धामी",
     titleEN: "Hon'ble Chief Minister",
@@ -32,7 +32,7 @@ const leaders = [
     icon: "🌿",
   },
   {
-    image: "https://cdnbbsr.s3waas.gov.in/s3a77c8fd7f48b9c859bbd5ed81c5f441f/uploads/2026/01/20260121116266565.png",
+    image: "/images/leaders/ranjana_rajguru.jpg",
     nameEN: "Smt. Ranjana Rajguru, IAS",
     nameHI: "श्रीमती रंजना राजगुरु, IAS",
     titleEN: "Secretary",
