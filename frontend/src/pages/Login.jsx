@@ -17,7 +17,7 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
 
   const roles = [
     { id: 'yoga_professional', en: 'Yoga Professional', hi: 'योग प्रोफेशनल', icon: User, desc: 'For certified yoga practitioners' },
-    { id: 'yoga_centre', en: 'Yoga Training Centre', hi: 'योग प्रशिक्षण केंद्र', icon: Building, desc: 'For yoga training institutions' },
+    { id: 'yoga_centre', en: 'Yoga Centre', hi: 'योग केंद्र', icon: Building, desc: 'For yoga institutions' },
     { id: 'wellness_centre', en: 'Wellness Centre', hi: 'वेलनेस केंद्र', icon: Heart, desc: 'For wellness therapy centers' },
     { id: 'ayush_hospital', en: 'AYUSH Hospital', hi: 'आयुष अस्पताल', icon: Shield, desc: 'For NABH accredited hospitals' },
     { id: 'ayush_college', en: 'AYUSH College', hi: 'आयुष कॉलेज', icon: GraduationCap, desc: 'For NAAC accredited colleges' },

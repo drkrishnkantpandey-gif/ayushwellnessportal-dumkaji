@@ -142,7 +142,7 @@ export default function IncentiveApplication() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Incentive Applications</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Apply for government subsidy for your Yoga Training Centre
+            Apply for government subsidy for your Yoga Centre
           </p>
         </div>
         <button
@@ -212,7 +212,7 @@ export default function IncentiveApplication() {
                 value={form.centreName}
                 onChange={(e) => setForm((p) => ({ ...p, centreName: e.target.value }))}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="Sunrise Yoga Training Centre"
+                placeholder="Sunrise Yoga Centre"
                 required
               />
             </div>

@@ -21,9 +21,9 @@ const roles = [
   },
   {
     id: "yoga_centre",
-    name: "Yoga Training Centre",
+    name: "Yoga Centre",
     icon: Building,
-    description: "For yoga training institutions",
+    description: "For yoga institutions",
     color: "from-emerald-500 to-emerald-700",
     bg: "bg-emerald-50 hover:border-emerald-400",
   },

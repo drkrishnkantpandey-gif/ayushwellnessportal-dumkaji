@@ -3,7 +3,7 @@ import React from "react";
 
 const DIRECTORATE_MODULES = [
   "Yoga Professionals Registration",
-  "Yoga Training Centres Registration",
+  "Yoga Centres Registration",
   "Wellness Centre Registration",
   "AYUSH Hospital NABH Incentive",
   "AYUSH College NAAC Incentive",

@@ -111,7 +111,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
       case "ayush_college":
         return "AYUSH College";
       case "yoga_centre":
-        return "Yoga Training Centre";
+        return "Yoga Centre";
       case "ayush_hospital":
         return "AYUSH Hospital";
       case "district_officer":
