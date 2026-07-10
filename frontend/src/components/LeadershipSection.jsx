@@ -129,7 +129,7 @@ const LeadershipSection = ({ language = "EN" }) => {
         {/* Divider */}
         <div className="mt-12 flex items-center gap-4">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
-          <span className="text-2xl">🕉</span>
+          <span className="text-2xl">🌿</span>
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
         </div>
       </div>

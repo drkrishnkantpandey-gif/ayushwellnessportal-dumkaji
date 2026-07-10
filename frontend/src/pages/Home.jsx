@@ -188,11 +188,12 @@ const HeroSection = ({ setCurrentPage }) => {
             </div>
           </div>
           <div className="relative">
-            <div className="bg-gradient-to-br from-teal-200 to-green-200 rounded-2xl p-8 shadow-xl">
+            <div className="bg-gradient-to-br from-teal-200 to-green-200 rounded-2xl p-8 shadow-xl flex items-center justify-center bg-white">
               <img 
-                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect fill='%23059669' width='400' height='300' rx='20'/%3E%3Ctext x='200' y='150' font-family='Arial' font-size='24' fill='white' text-anchor='middle'%3EYoga Practice%3C/text%3E%3C/svg%3E"
-                alt="Yoga Practice"
-                className="w-full rounded-lg"
+                src="/images/ayush_setu_logo.png"
+                alt="AYUSH Setu Logo"
+                className="w-full rounded-lg object-contain"
+                style={{ maxHeight: "240px" }}
               />
             </div>
           </div>
@@ -944,10 +945,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   return (
     <div className="bg-gradient-to-b from-teal-700 to-teal-800 h-full p-4">
       <div className="flex items-center space-x-3 mb-8">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-          <span className="text-teal-700 font-bold">🕉</span>
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-teal-100 p-0.5">
+          <img src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
         </div>
-        <span className="text-white font-bold text-lg">AYUSH Portal</span>
+        <span className="text-white font-bold text-lg">AYUSH Setu</span>
       </div>
 
       <nav className="space-y-2">

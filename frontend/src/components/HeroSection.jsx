@@ -22,7 +22,7 @@ const HeroSection = ({ setCurrentPage, language }) => {
                 className="h-16 w-auto bg-white rounded-xl p-1.5 shadow-sm border border-teal-100 self-start"
               />
               <div className="inline-flex items-center px-3 py-1.5 bg-teal-100/80 backdrop-blur-sm text-teal-800 rounded-full text-xs sm:text-sm font-semibold border border-teal-200">
-                🕉 {language === "EN" ? "Department of Ayush and Ayush Education, Uttarakhand Government" : "आयुष एवं आयुष शिक्षा विभाग, उत्तराखण्ड सरकार"}
+                {language === "EN" ? "Department of Ayush and Ayush Education, Uttarakhand Government" : "आयुष एवं आयुष शिक्षा विभाग, उत्तराखण्ड सरकार"}
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6 leading-tight">
@@ -64,15 +64,15 @@ const HeroSection = ({ setCurrentPage, language }) => {
           <div className="relative">
             <div className="bg-gradient-to-br from-teal-600 to-emerald-700 rounded-3xl p-1 shadow-2xl shadow-teal-300/40">
               <div className="bg-gradient-to-br from-teal-200 to-green-200 rounded-3xl p-6">
-                <div className="relative">
+                <div className="relative flex items-center justify-center bg-white rounded-2xl p-6 shadow-lg">
                   <img
-                    src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900&fit=crop&q=80"
-                    alt="Himalayan landscape — Uttarakhand"
-                    className="w-full rounded-2xl shadow-lg object-cover"
-                    style={{ maxHeight: "320px" }}
+                    src="/images/ayush_setu_logo.png"
+                    alt="AYUSH Setu Logo"
+                    className="w-full rounded-xl object-contain"
+                    style={{ maxHeight: "280px" }}
                   />
                   {/* Location badge */}
-                  <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 flex items-center gap-2 shadow">
+                  <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-xl px-3 py-1.5 flex items-center gap-2 shadow border border-teal-50">
                     <span className="text-lg">🏔</span>
                     <div>
                       <p className="text-teal-700 font-bold text-xs leading-tight">Uttarakhand</p>
@@ -81,21 +81,8 @@ const HeroSection = ({ setCurrentPage, language }) => {
                   </div>
                   {/* Ayush badge */}
                   <div className="absolute top-3 right-3 bg-teal-600/90 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow">
-                    <p className="text-white font-bold text-xs">🕉 AYUSH</p>
+                    <p className="text-white font-bold text-xs">AYUSH</p>
                   </div>
-                </div>
-                {/* Stats overlay */}
-                <div className="grid grid-cols-3 gap-3 mt-4">
-                  {[
-                    { num: "10,000+", label: language === "EN" ? "Professionals" : "पेशेवर" },
-                    { num: "500+", label: language === "EN" ? "Centres" : "केंद्र" },
-                    { num: "₹2Cr+", label: language === "EN" ? "Incentives" : "प्रोत्साहन" },
-                  ].map((s, i) => (
-                    <div key={i} className="bg-white/80 backdrop-blur-sm rounded-xl p-3 text-center">
-                      <p className="font-bold text-teal-700 text-sm">{s.num}</p>
-                      <p className="text-gray-600 text-[10px] font-medium">{s.label}</p>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
