@@ -465,7 +465,9 @@ async function registerYogaProfessional(req, res) {
     pincode,
     experienceYears,
     specialization,
-    bio
+    bio,
+    ycbCertificateNumber,
+    otherQualificationName
   } = req.body;
 
   // Basic validation
@@ -541,9 +543,10 @@ async function registerYogaProfessional(req, res) {
     await client.query(
       `INSERT INTO yoga_professional_profile (
         user_id, dob, gender, address, city, state, pincode,
-        experience_years, bio, profile_photo, certificate_paths
+        experience_years, bio, profile_photo, certificate_paths,
+        ycb_certificate_number, other_qualification_name
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
       )`,
       [
         userId,
@@ -556,7 +559,9 @@ async function registerYogaProfessional(req, res) {
         experienceYears && !isNaN(parseInt(experienceYears)) ? parseInt(experienceYears) : 0,
         bio || null,
         profilePhotoPath,
-        certificatePaths
+        certificatePaths,
+        ycbCertificateNumber || null,
+        otherQualificationName || null
       ]
     );
 

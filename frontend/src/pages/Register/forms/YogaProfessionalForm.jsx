@@ -269,19 +269,66 @@ const YogaProfessionalForm = ({ formData, setFormData, step }) => {
             {/* Qualification */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Highest Qualification
+                Qualification <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.qualification || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, qualification: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g., M.Sc. Yoga, 500hr YTT"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 font-medium text-gray-700"
                 required
+              >
+                <option value="">Select Qualification</option>
+                <option value="Yoga Protocol Instructor">Yoga Protocol Instructor</option>
+                <option value="Yoga Wellness Instructor">Yoga Wellness Instructor</option>
+                <option value="Yoga Teacher & Evaluator">Yoga Teacher & Evaluator</option>
+                <option value="Therapeutic Yoga Consultant">Therapeutic Yoga Consultant</option>
+                <option value="Yoga Therapist">Yoga Therapist</option>
+                <option value="Assistant Yoga Therapist">Assistant Yoga Therapist</option>
+                <option value="Yoga Master">Yoga Master</option>
+                <option value="Yoga Volunteer">Yoga Volunteer</option>
+                <option value="Level 1- Yoga Instructor">Level 1- Yoga Instructor</option>
+                <option value="Level 2 Yoga Teacher">Level 2 Yoga Teacher</option>
+                <option value="Skill Certificate">Skill Certificate</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            {/* YCB Certificate Number */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                YCB Certificate Number
+              </label>
+              <input
+                type="text"
+                value={formData.ycbCertificateNumber || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, ycbCertificateNumber: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                placeholder="Enter YCB Certificate Number"
               />
             </div>
+
+            {/* Other Qualification Name (Conditional) */}
+            {formData.qualification === "Other" && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Specify Qualification Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.otherQualificationName || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, otherQualificationName: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter name of other certificate"
+                  required
+                />
+              </div>
+            )}
 
             {/* Experience Years */}
             <div>
@@ -381,7 +428,7 @@ const YogaProfessionalForm = ({ formData, setFormData, step }) => {
             >
               <p className="font-medium">Click to Upload Certificates</p>
               <p className="text-xs text-gray-500 mt-1">
-                Yoga Alliance, QCI, or other certifications
+                Yoga Certification Board, QCI, or other certifications
               </p>
 
               {formData.certificateFiles && formData.certificateFiles.length > 0 && (

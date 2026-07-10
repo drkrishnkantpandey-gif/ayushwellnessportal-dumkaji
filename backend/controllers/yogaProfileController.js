@@ -33,7 +33,9 @@ exports.getProfile = async (req, res) => {
         p.degree_certificate_path as "certificate_file",
         p.govt_id_proof_path as "id_proof_file",
         p.approval_status,
-        p.profile_locked
+        p.profile_locked,
+        p.ycb_certificate_number as "ycbCertificateNumber",
+        p.other_qualification_name as "otherQualificationName"
       FROM users u
       LEFT JOIN yoga_professional_profile p ON u.id = p.user_id
       WHERE u.id = $1
@@ -58,7 +60,8 @@ exports.updateProfile = async (req, res) => {
     const {
         fullName, dob, gender, address, city, state, district, pincode,
         qualification, experience_years, teaching_category, specialization, bio,
-        aadhaar, pan, bank_name, bank_account_no, bank_ifsc
+        aadhaar, pan, bank_name, bank_account_no, bank_ifsc,
+        ycbCertificateNumber, otherQualificationName
     } = req.body;
 
     // Handle multiple file uploads
@@ -84,13 +87,15 @@ exports.updateProfile = async (req, res) => {
         dob = $1, gender = $2, address = $3, city = $4, state = $5, district = $6, 
         pincode = $7, experience_years = $8, 
         teaching_category = $9, specialization = $10, bio = $11,
-        bank_name = $12, bank_account_no = $13, bank_ifsc = $14
+        bank_name = $12, bank_account_no = $13, bank_ifsc = $14,
+        ycb_certificate_number = $15, other_qualification_name = $16
     `;
 
         const params = [
             dob, gender, address, city, state, district, pincode,
             experience_years, teaching_category, specialization, bio,
-            bank_name, bank_account_no, bank_ifsc
+            bank_name, bank_account_no, bank_ifsc,
+            ycbCertificateNumber, otherQualificationName
         ];
 
         let paramCount = params.length;

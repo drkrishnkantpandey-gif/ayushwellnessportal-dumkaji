@@ -290,16 +290,53 @@ const ProfileManagement = () => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Highest Qualification</label>
-                                <input
-                                    type="text"
+                            <div>
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Qualification</label>
+                                <select
                                     value={profile.qualification || ""}
                                     disabled={!isEditing}
                                     onChange={(e) => setProfile({ ...profile, qualification: e.target.value })}
+                                    className="w-full mt-2 p-4 bg-slate-50 border-2 border-transparent focus:border-teal-500 rounded-2xl focus:bg-white outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-70"
+                                >
+                                    <option value="">Select Qualification</option>
+                                    <option value="Yoga Protocol Instructor">Yoga Protocol Instructor</option>
+                                    <option value="Yoga Wellness Instructor">Yoga Wellness Instructor</option>
+                                    <option value="Yoga Teacher & Evaluator">Yoga Teacher & Evaluator</option>
+                                    <option value="Therapeutic Yoga Consultant">Therapeutic Yoga Consultant</option>
+                                    <option value="Yoga Therapist">Yoga Therapist</option>
+                                    <option value="Assistant Yoga Therapist">Assistant Yoga Therapist</option>
+                                    <option value="Yoga Master">Yoga Master</option>
+                                    <option value="Yoga Volunteer">Yoga Volunteer</option>
+                                    <option value="Level 1- Yoga Instructor">Level 1- Yoga Instructor</option>
+                                    <option value="Level 2 Yoga Teacher">Level 2 Yoga Teacher</option>
+                                    <option value="Skill Certificate">Skill Certificate</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">YCB Certificate Number</label>
+                                <input
+                                    type="text"
+                                    value={profile.ycbCertificateNumber || ""}
+                                    disabled={!isEditing}
+                                    onChange={(e) => setProfile({ ...profile, ycbCertificateNumber: e.target.value })}
                                     className="w-full mt-2 p-4 bg-slate-50 border-2 border-transparent focus:border-teal-500 rounded-2xl focus:bg-white outline-none transition-all font-bold text-slate-700 disabled:opacity-70"
+                                    placeholder="Enter YCB Certificate Number"
                                 />
                             </div>
+                            {profile.qualification === "Other" && (
+                                <div className="md:col-span-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Specify Qualification Name</label>
+                                    <input
+                                        type="text"
+                                        value={profile.otherQualificationName || ""}
+                                        disabled={!isEditing}
+                                        onChange={(e) => setProfile({ ...profile, otherQualificationName: e.target.value })}
+                                        className="w-full mt-2 p-4 bg-slate-50 border-2 border-transparent focus:border-teal-500 rounded-2xl focus:bg-white outline-none transition-all font-bold text-slate-700 disabled:opacity-70"
+                                        placeholder="Enter name of other certificate"
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Experience (Years)</label>
                                 <input
