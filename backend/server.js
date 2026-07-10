@@ -187,6 +187,7 @@ app.use('/api/research-grants',   researchGrantRoutes);
 app.use('/api/ayush-college',     ayushCollegeRoutes);
 app.use('/api/institution',       institutionRoutes);
 app.use('/api/dashboard',         require('./routes/dashboardRoutes'));
+app.use('/api/registry',          require('./routes/registryRoutes'));
 
 // ── Global error handler — no stack traces in production ─────────────────────
 app.use((err, req, res, next) => {

@@ -40,6 +40,11 @@ async function registerWellnessCentre(req, res) {
     contactPhone,
     userType,
     password,
+    address,
+    city,
+    state,
+    district,
+    pincode,
   } = req.body;
 
   // services may arrive as JSON string or array
@@ -134,7 +139,12 @@ async function registerWellnessCentre(req, res) {
           registration_number,
           contact_person,
           contact_email,
-          contact_phone
+          contact_phone,
+          address,
+          city,
+          state,
+          district,
+          pincode
         )
         VALUES (
           $1, $2,
@@ -144,7 +154,8 @@ async function registerWellnessCentre(req, res) {
           'NOT_LISTED',
           NULL,
           NULL,
-          $3, $4, $5, $6, $7, $8, $9, $10
+          $3, $4, $5, $6, $7, $8, $9, $10,
+          $11, $12, $13, $14, $15
         )
         RETURNING id`,
       [
@@ -158,6 +169,11 @@ async function registerWellnessCentre(req, res) {
         contactPerson,
         contactEmail,
         contactPhone,
+        address || null,
+        city || null,
+        state || null,
+        district || null,
+        pincode || null,
       ]
     );
 

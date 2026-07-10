@@ -358,15 +358,16 @@ async function getCentreProfile(req, res) {
 async function updateCentreProfile(req, res) {
   try {
     const userId = req.user.userId;
-    const { name, address, contact_person, contact_email, contact_phone, accreditation_level, registration_valid_to } = req.body;
+    const { name, address, city, state, district, pincode, contact_person, contact_email, contact_phone, accreditation_level, registration_valid_to } = req.body;
 
     const result = await db.query(
       `UPDATE wellness_centres 
-       SET name = $1, address = $2, contact_person = $3, contact_email = $4, contact_phone = $5, 
-           accreditation_level = $6, registration_valid_to = $7, updated_at = NOW()
-       WHERE user_id = $8
+       SET name = $1, address = $2, city = $3, state = $4, district = $5, pincode = $6,
+           contact_person = $7, contact_email = $8, contact_phone = $9, 
+           accreditation_level = $10, registration_valid_to = $11, updated_at = NOW()
+       WHERE user_id = $12
        RETURNING *`,
-      [name, address, contact_person, contact_email, contact_phone, accreditation_level, registration_valid_to, userId]
+      [name, address, city, state, district, pincode, contact_person, contact_email, contact_phone, accreditation_level, registration_valid_to, userId]
     );
 
     if (result.rows.length === 0) {

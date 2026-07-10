@@ -10,6 +10,7 @@ import KeyFeatures from "./components/KeyFeatures";
 import Login from "./pages/Login";
 import Register from "./pages/Register/Register";
 import PublicProfile from "./pages/PublicProfile";
+import Registry from "./pages/Registry";
 
 // Yoga Professional Components
 import YogaProfessional from "./pages/Dashboard/YogaProfessional/DashboardHome";
@@ -263,6 +264,17 @@ const App = () => {
           setCurrentPage(isLoggedIn ? "dashboard" : "home");
         }}
       />;
+    }
+
+    if (currentPage === "registry" || currentPage === "verify") {
+      return (
+        <Registry
+          forceVerifyOpen={currentPage === "verify"}
+          onBack={() => {
+            setCurrentPage(isLoggedIn ? "dashboard" : "home");
+          }}
+        />
+      );
     }
 
     if (currentPage === "register") {

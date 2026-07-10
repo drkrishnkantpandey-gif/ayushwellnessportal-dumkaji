@@ -8,6 +8,7 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
   const text = {
     home: { EN: "Home", HI: "होम" },
     verify: { EN: "Verify Certificate", HI: "प्रमाणपत्र सत्यापित करें" },
+    registry: { EN: "Registry", HI: "रजिस्ट्री" },
     trainer: { EN: "Find Trainer", HI: "प्रशिक्षक खोजें" },
     dashboard: { EN: "Dashboard", HI: "डैशबोर्ड" },
     login: { EN: "Login / Register", HI: "लॉगिन / रजिस्टर" },
@@ -54,6 +55,14 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
               aria-label="Verify Certificate"
             >
               {text.verify[language]}
+            </button>
+
+            <button
+              onClick={() => setCurrentPage("registry")}
+              className="text-white hover:text-teal-200 transition"
+              aria-label="Public Registry"
+            >
+              {text.registry[language]}
             </button>
 
             <button
@@ -129,6 +138,17 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
               aria-label="Verify Certificate"
             >
               {text.verify[language]}
+            </button>
+
+            <button
+              onClick={() => {
+                setCurrentPage("registry");
+                setMobileMenuOpen(false);
+              }}
+              className="block w-full text-left text-white py-2"
+              aria-label="Public Registry"
+            >
+              {text.registry[language]}
             </button>
 
             <button
