@@ -138,9 +138,14 @@ const TrainingCentreForm = ({ formData, setFormData, step }) => {
                 required
               >
                 <option value="">Select Category</option>
-                <option value="Basic">Basic</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
+                <option value="Exclusive Yoga Centre (Yet to be Established)">Exclusive Yoga Centre (Yet to be Established)</option>
+                <option value="Exclusive Yoga Centre (Existing)">Exclusive Yoga Centre (Existing)</option>
+                <option value="Homestay">Homestay</option>
+                <option value="School">School</option>
+                <option value="College">College</option>
+                <option value="Hotel">Hotel</option>
+                <option value="Resort">Resort</option>
+                <option value="Other Institution">Other Institution</option>
               </select>
             </div>
 
