@@ -134,10 +134,10 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
   return (
     <div className="bg-gradient-to-b from-teal-700 to-teal-800 h-full p-4">
       <div className="flex items-center space-x-3 mb-8">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-          <span className="text-teal-700 font-bold">🕉</span>
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-teal-100 p-0.5">
+          <img src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
         </div>
-        <span className="text-white font-bold text-lg">AYUSH Portal</span>
+        <span className="text-white font-bold text-lg">AYUSH Setu</span>
       </div>
 
       <nav className="space-y-2">

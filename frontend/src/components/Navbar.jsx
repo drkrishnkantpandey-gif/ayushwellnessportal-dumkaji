@@ -13,7 +13,7 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
     login: { EN: "Login / Register", HI: "लॉगिन / रजिस्टर" },
     logout: { EN: "Logout", HI: "लॉगआउट" },
     ministry: { EN: "Department of Ayush and Ayush Education, Uttarakhand Government", HI: "आयुष एवं आयुष शिक्षा विभाग, उत्तराखण्ड सरकार" },
-    portalName: { EN: "AYUSH Portal", HI: "आयुष पोर्टल" },
+    portalName: { EN: "AYUSH Setu", HI: "आयुष सेतु" },
   };
 
   return (
@@ -27,8 +27,8 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
             onClick={() => setCurrentPage("home")}
             aria-label="Go to Home"
           >
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-              <span className="text-teal-700 font-bold text-xl">🕉</span>
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-teal-100 p-0.5">
+              <img src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <span className="text-white font-bold text-xl">

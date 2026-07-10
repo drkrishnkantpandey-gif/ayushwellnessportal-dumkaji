@@ -71,11 +71,11 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
             className="flex items-center space-x-3 cursor-pointer"
             onClick={() => setCurrentPage('home')}
           >
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-              <span className="text-teal-700 font-bold text-xl">🕉</span>
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-teal-100 p-0.5">
+              <img src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <span className="text-white font-bold text-xl">AYUSH Portal</span>
+              <span className="text-white font-bold text-xl">AYUSH Setu</span>
               <p className="text-teal-100 text-xs">Ministry of AYUSH, Govt. of India</p>
             </div>
           </div>
@@ -166,7 +166,7 @@ const HeroSection = ({ setCurrentPage }) => {
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
               Empowering Wellness:<br />
-              <span className="text-teal-700">The Official AYUSH Portal</span>
+              <span className="text-teal-700">Uttarakhand's Wellness Registry & Incentive Portal</span>
             </h1>
             <p className="text-gray-600 mb-6 text-lg">
               Register, certify, and track yoga activities. Access incentives and manage wellness programs digitally.
@@ -1171,7 +1171,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="border-t border-gray-700 pt-6 text-center text-gray-400 text-sm">
-          <p>© 2024 AYUSH Portal - Ministry of AYUSH, Government of India. All rights reserved.</p>
+          <p>© 2024 AYUSH Setu - Ministry of AYUSH, Government of India. All rights reserved.</p>
         </div>
       </div>
     </footer>

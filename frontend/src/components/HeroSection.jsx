@@ -15,14 +15,21 @@ const HeroSection = ({ setCurrentPage, language }) => {
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center px-4 py-2 bg-teal-100 text-teal-700 rounded-full text-sm font-semibold mb-6">
-              🕉 {language === "EN" ? "Department of Ayush and Ayush Education, Uttarakhand Government" : "आयुष एवं आयुष शिक्षा विभाग, उत्तराखण्ड सरकार"}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+              <img
+                src="/images/ayush_setu_logo.png"
+                alt="AYUSH Setu Logo"
+                className="h-16 w-auto bg-white rounded-xl p-1.5 shadow-sm border border-teal-100 self-start"
+              />
+              <div className="inline-flex items-center px-3 py-1.5 bg-teal-100/80 backdrop-blur-sm text-teal-800 rounded-full text-xs sm:text-sm font-semibold border border-teal-200">
+                🕉 {language === "EN" ? "Department of Ayush and Ayush Education, Uttarakhand Government" : "आयुष एवं आयुष शिक्षा विभाग, उत्तराखण्ड सरकार"}
+              </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6 leading-tight">
               {language === "EN" ? "Empowering Wellness:" : "कल्याण को सशक्त बनाना:"}
               <br />
               <span className="text-teal-700">
-                {language === "EN" ? "The Official AYUSH Portal" : "आधिकारिक आयुष पोर्टल"}
+                {language === "EN" ? "Uttarakhand's Wellness Registry & Incentive Portal" : "उत्तराखण्ड वेलनेस रजिस्ट्री एवं प्रोत्साहन पोर्टल"}
               </span>
             </h1>
 

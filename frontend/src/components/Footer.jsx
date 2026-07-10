@@ -27,7 +27,7 @@ const Footer = () => {
         </div>
         <div className="border-t border-gray-700 pt-6 text-center text-gray-400 text-sm">
           <p>
-            © 2024 AYUSH Portal - Department of Ayush and Ayush Education, Uttarakhand Government. All
+            © 2024 AYUSH Setu - Department of Ayush and Ayush Education, Uttarakhand Government. All
             rights reserved.
           </p>
         </div>
