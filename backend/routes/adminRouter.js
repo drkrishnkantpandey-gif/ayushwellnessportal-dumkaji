@@ -42,6 +42,7 @@ const directorateOnly = requireRole('directorate', 'admin');
 router.get('/getUsersByModule/:module', protect, isAdmin, adminController.getUserByModule);
 router.put('/approveUser/:userId',      protect, isAdmin, adminController.updateUserApproval);
 router.put('/centre/:userId/operational', protect, requireRole('directorate', 'admin', 'district_officer'), adminController.toggleCentreOperational);
+router.get('/dashboard-stats', protect, requireRole('directorate', 'admin', 'district_officer'), adminController.getDashboardStats);
 
 // ── District Officer — Yoga TC Incentive ─────────────────────────────────────
 router.get('/incentives/district',      protect, districtOnly,    getDistrictApplications);

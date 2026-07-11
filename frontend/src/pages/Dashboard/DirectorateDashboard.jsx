@@ -1272,185 +1272,72 @@ function TrainerFeeReview() {
 }
 
 const Directorate = () => {
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const r = await axiosInstance.get(`${API}/api/admin/dashboard-stats`);
+        if (r.data.success) {
+          setStats(r.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const topCards = [
     {
       title: "Total State Entities",
-      value: "2,456",
-      desc: "All registered AYUSH entities in the state",
+      value: stats ? stats.totalEntities : "0",
+      desc: "All approved AYUSH entities in the state",
       icon: Building,
       color: "bg-blue-600"
     },
     {
       title: "Pending Approvals",
-      value: "89",
-      desc: "Applications awaiting directorate approval",
+      value: stats ? stats.pendingVerifications : "0",
+      desc: "Applications awaiting admin approval",
       icon: FileText,
       color: "bg-yellow-500"
     },
     {
-      title: "Total Budget Utilized",
-      value: "₹8.45 Cr",
-      desc: "Of ₹12 Cr allocated budget (70.4%)",
-      icon: DollarSign,
+      title: "Total Registered Users",
+      value: stats ? stats.totalUsers : "0",
+      desc: "All registered users in the platform",
+      icon: Users,
       color: "bg-green-500"
     }
   ];
 
   const actionRequiredItems = [
-    "15 district-level incentive reports pending review",
-    "NAAC accreditation renewal for 3 colleges due next month",
-    "Annual compliance audit scheduled for next week"
+    "Verify pending user registrations in Admin panel",
+    "Review incoming NAAC and NABH incentive requests"
   ];
 
-  const districtStats = [
-    {
-      district: "North District",
-      entities: 456,
-      incentives: "₹45,00,000",
-      pending: 23,
-      officer: "Rajesh Kumar"
-    },
-    {
-      district: "South District",
-      entities: 389,
-      incentives: "₹38,50,000",
-      pending: 18,
-      officer: "Meera Patel"
-    },
-    {
-      district: "East District",
-      entities: 512,
-      incentives: "₹52,00,000",
-      pending: 31,
-      officer: "Anand Sharma"
-    },
-    {
-      district: "West District",
-      entities: 423,
-      incentives: "₹42,30,000",
-      pending: 17,
-      officer: "Lakshmi Raman"
-    },
-    {
-      district: "Central District",
-      entities: 676,
-      incentives: "₹67,60,000",
-      pending: 0,
-      officer: "Abdul Khan"
-    }
-  ];
+  const districtStats = stats ? stats.districtStats : [];
 
-  const incentiveSchemes = [
-    {
-      scheme: "Yoga Professional Registration",
-      totalApplications: 856,
-      approved: 812,
-      amount: "₹4,06,00,000",
-      utilization: "85%"
-    },
-    {
-      scheme: "Centre Infrastructure Development",
-      totalApplications: 234,
-      approved: 198,
-      amount: "₹9,90,00,000",
-      utilization: "82.5%"
-    },
-    {
-      scheme: "NAAC Accreditation Incentive",
-      totalApplications: 45,
-      approved: 42,
-      amount: "₹2,10,00,000",
-      utilization: "93.3%"
-    },
-    {
-      scheme: "Research & Development Grant",
-      totalApplications: 67,
-      approved: 58,
-      amount: "₹2,90,00,000",
-      utilization: "86.6%"
-    }
-  ];
+  const incentiveSchemes = stats ? stats.schemesStats : [];
 
-  const pendingApprovals = [
-    {
-      type: "College Accreditation",
-      name: "Government AYUSH Medical College",
-      district: "North District",
-      submittedDate: "2025-11-10",
-      priority: "High"
-    },
-    {
-      type: "Large Incentive",
-      name: "Sunrise Yoga Centre",
-      district: "South District",
-      submittedDate: "2025-11-12",
-      priority: "Medium"
-    },
-    {
-      type: "Policy Exception",
-      name: "Harmony Wellness Centre",
-      district: "East District",
-      submittedDate: "2025-11-14",
-      priority: "Low"
-    }
-  ];
+  const pendingApprovals = [];
 
-  const complianceReports = [
-    {
-      type: "Annual Compliance",
-      dueDate: "2025-12-31",
-      submitted: 234,
-      pending: 89,
-      status: "On Track"
-    },
-    {
-      type: "Quarterly Audit",
-      dueDate: "2025-11-30",
-      submitted: 456,
-      pending: 23,
-      status: "Critical"
-    },
-    {
-      type: "Financial Audit",
-      dueDate: "2025-12-15",
-      submitted: 123,
-      pending: 45,
-      status: "On Track"
-    }
-  ];
+  const complianceReports = [];
 
-  const budgetBreakdown = [
-    {
-      category: "Professional Incentives",
-      allocated: "₹4.00 Cr",
-      utilized: "₹3.45 Cr",
-      percentage: 86.3
-    },
-    {
-      category: "Centre Infrastructure",
-      allocated: "₹3.50 Cr",
-      utilized: "₹2.80 Cr",
-      percentage: 80.0
-    },
-    {
-      category: "College Accreditation",
-      allocated: "₹2.00 Cr",
-      utilized: "₹1.20 Cr",
-      percentage: 60.0
-    },
-    {
-      category: "Research & Development",
-      allocated: "₹1.50 Cr",
-      utilized: "₹0.80 Cr",
-      percentage: 53.3
-    },
-    {
-      category: "Administrative",
-      allocated: "₹1.00 Cr",
-      utilized: "₹0.20 Cr",
-      percentage: 20.0
-    }
-  ];
+  const budgetBreakdown = (stats ? stats.schemesStats : []).map(s => {
+    const rawVal = parseFloat(s.amount.replace(/[^\d.]/g, '')) || 0;
+    const allocatedVal = 1000000; // 10 Lakhs allocated per scheme for demo
+    return {
+      category: s.scheme,
+      allocated: "₹10,00,000",
+      utilized: s.amount,
+      percentage: Math.min(100, (rawVal / allocatedVal) * 100).toFixed(1)
+    };
+  });
 
   return (
     <div className="p-6 space-y-8">

@@ -208,4 +208,138 @@ const toggleCentreOperational = async (req, res) => {
   }
 };
 
-module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational };
+const getDashboardStats = async (req, res) => {
+  try {
+    // 1. Total users count
+    const usersCountRes = await db.query('SELECT COUNT(*) as count FROM users');
+    const totalUsers = parseInt(usersCountRes.rows[0].count) || 0;
+
+    // 2. Pending verifications count
+    const pendingCountRes = await db.query(
+      "SELECT COUNT(*) as count FROM users WHERE registration_status IN ('pending', 'under_review', 'UNDER_REVIEW', 'PENDING')"
+    );
+    const pendingVerifications = parseInt(pendingCountRes.rows[0].count) || 0;
+
+    // 3. Approved entities count
+    const approvedEntitiesRes = await db.query(
+      "SELECT COUNT(*) as count FROM users WHERE registration_status = 'approved' AND role NOT IN ('admin', 'directorate')"
+    );
+    const totalEntities = parseInt(approvedEntitiesRes.rows[0].count) || 0;
+
+    // 4. District wise stats
+    const districtStatsQuery = `
+      SELECT COALESCE(w.district, t.district, y.district, r.district) as district_name, COUNT(DISTINCT u.id) as count
+      FROM users u
+      LEFT JOIN wellness_centres w ON w.user_id = u.id
+      LEFT JOIN training_centres t ON t.user_id = u.id
+      LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
+      LEFT JOIN research_org_profile r ON r.user_id = u.id
+      WHERE u.registration_status = 'approved' AND u.role NOT IN ('admin', 'directorate')
+      GROUP BY district_name
+      HAVING COALESCE(w.district, t.district, y.district, r.district) IS NOT NULL
+    `;
+    const districtStatsRes = await db.query(districtStatsQuery);
+    const districtStats = districtStatsRes.rows.map(row => ({
+      district: row.district_name,
+      entities: parseInt(row.count) || 0,
+      incentives: "₹0",
+      pending: 0,
+      officer: "Nodal Officer"
+    }));
+
+    // 5. Incentive Schemes Overview stats
+    const schemesStats = [];
+    
+    // Yoga Trainer Fee Reimbursements
+    const trainerFeeRes = await db.query(
+      "SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved, COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN amount END), 0) as amount FROM trainer_fee_reimbursements"
+    );
+    schemesStats.push({
+      scheme: "Yoga Trainer Fee Reimbursement",
+      totalApplications: parseInt(trainerFeeRes.rows[0].total) || 0,
+      approved: parseInt(trainerFeeRes.rows[0].approved) || 0,
+      amount: `₹${parseFloat(trainerFeeRes.rows[0].amount).toLocaleString("en-IN")}`,
+      utilization: "0%"
+    });
+
+    // NAAC Accreditation Reimbursements
+    const naacRes = await db.query(
+      "SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved, COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN claim_amount END), 0) as amount FROM naac_reimbursements"
+    );
+    schemesStats.push({
+      scheme: "NAAC Accreditation Reimbursement",
+      totalApplications: parseInt(naacRes.rows[0].total) || 0,
+      approved: parseInt(naacRes.rows[0].approved) || 0,
+      amount: `₹${parseFloat(naacRes.rows[0].amount).toLocaleString("en-IN")}`,
+      utilization: "0%"
+    });
+
+    // NABH Accreditation Reimbursements
+    const nabhRes = await db.query(
+      "SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved, COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN claim_amount END), 0) as amount FROM nabh_reimbursements"
+    );
+    schemesStats.push({
+      scheme: "NABH Accreditation Reimbursement",
+      totalApplications: parseInt(nabhRes.rows[0].total) || 0,
+      approved: parseInt(nabhRes.rows[0].approved) || 0,
+      amount: `₹${parseFloat(nabhRes.rows[0].amount).toLocaleString("en-IN")}`,
+      utilization: "0%"
+    });
+
+    // Research Grants
+    const researchRes = await db.query(
+      "SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'APPROVED' THEN 1 END) as approved, COALESCE(SUM(CASE WHEN status = 'APPROVED' THEN approved_amount END), 0) as amount FROM research_grants"
+    );
+    schemesStats.push({
+      scheme: "Research & Development Grant",
+      totalApplications: parseInt(researchRes.rows[0].total) || 0,
+      approved: parseInt(researchRes.rows[0].approved) || 0,
+      amount: `₹${parseFloat(researchRes.rows[0].amount).toLocaleString("en-IN")}`,
+      utilization: "0%"
+    });
+
+    // 6. Entity overview by role/type
+    const roleStatsQuery = `
+      SELECT role, COUNT(*) as count, COUNT(CASE WHEN registration_status = 'approved' THEN 1 END) as active, COUNT(CASE WHEN registration_status IN ('pending', 'under_review', 'UNDER_REVIEW') THEN 1 END) as pending
+      FROM users
+      WHERE role NOT IN ('admin', 'directorate')
+      GROUP BY role
+    `;
+    const roleStatsRes = await db.query(roleStatsQuery);
+    const roleMap = {
+      'wellness_centre': 'Wellness Centres',
+      'yoga_centre': 'Yoga Centres',
+      'yoga_professional': 'Yoga Professionals',
+      'research_org': 'Research Institutions',
+      'ayush_college': 'AYUSH Colleges',
+      'ayush_hospital': 'AYUSH Hospitals'
+    };
+    const roleStats = roleStatsRes.rows.map(row => ({
+      type: roleMap[row.role] || row.role,
+      registered: parseInt(row.count) || 0,
+      active: parseInt(row.active) || 0,
+      pending: parseInt(row.pending) || 0
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        pendingVerifications,
+        totalEntities,
+        districtStats,
+        schemesStats,
+        roleStats
+      }
+    });
+
+  } catch (error) {
+    console.error("Error in getDashboardStats:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error fetching stats"
+    });
+  }
+};
+
+module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational, getDashboardStats };

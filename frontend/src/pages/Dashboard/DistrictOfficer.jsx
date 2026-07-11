@@ -245,143 +245,64 @@ function YogaTCIncentiveReview() {
 }
 
 const DistrictOfficer = () => {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const r = await axiosInstance.get(`${API}/api/admin/dashboard-stats`);
+        if (r.data.success) {
+          setStats(r.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const topCards = [
     {
       title: "Total Registered Entities",
-      value: "156",
+      value: stats ? stats.totalEntities : "0",
       desc: "Yoga professionals, centres, and institutions",
       icon: Building,
       color: "bg-blue-600"
     },
     {
       title: "Pending Verifications",
-      value: "23",
-      desc: "Applications awaiting district-level verification",
+      value: stats ? stats.pendingVerifications : "0",
+      desc: "Applications awaiting verification",
       icon: Clock,
       color: "bg-yellow-500"
     },
     {
-      title: "Total Incentives Disbursed",
-      value: "₹12,45,000",
-      desc: "This fiscal year",
-      icon: DollarSign,
+      title: "Total Registered Users",
+      value: stats ? stats.totalUsers : "0",
+      desc: "All registered users in the platform",
+      icon: Users,
       color: "bg-green-500"
     }
   ];
 
   const actionRequiredItems = [
-    "12 professional registrations pending verification",
-    "5 centre accreditation applications due for review",
-    "Monthly incentive report submission pending"
+    "Verify pending user registrations in Admin panel",
+    "Review incoming NAAC and NABH incentive requests"
   ];
 
-  const pendingVerifications = [
-    {
-      type: "Professional Registration",
-      name: "Rajesh Kumar",
-      id: "PROF001",
-      submittedDate: "2025-11-15",
-      priority: "High"
-    },
-    {
-      type: "Centre Registration",
-      name: "Sunrise Yoga Centre",
-      id: "CENTRE001",
-      submittedDate: "2025-11-14",
-      priority: "Medium"
-    },
-    {
-      type: "Wellness Centre",
-      name: "Harmony Wellness",
-      id: "WELL001",
-      submittedDate: "2025-11-13",
-      priority: "Low"
-    }
-  ];
+  const pendingVerifications = [];
 
-  const entities = [
-    {
-      type: "Yoga Professionals",
-      registered: 89,
-      active: 76,
-      pending: 13
-    },
-    {
-      type: "Yoga Centres",
-      registered: 34,
-      active: 31,
-      pending: 3
-    },
-    {
-      type: "Wellness Centres",
-      registered: 18,
-      active: 16,
-      pending: 2
-    },
-    {
-      type: "AYUSH Hospitals",
-      registered: 8,
-      active: 7,
-      pending: 1
-    },
-    {
-      type: "AYUSH Colleges",
-      registered: 4,
-      active: 4,
-      pending: 0
-    },
-    {
-      type: "Others",
-      registered: 3,
-      active: 3,
-      pending: 0
-    }
-  ];
+  const entities = stats ? stats.roleStats : [];
 
-  const incentives = [
-    {
-      scheme: "Yoga Professional Registration",
-      applications: 45,
-      approved: 42,
-      amount: "₹2,10,000",
-      status: "Processing"
-    },
-    {
-      scheme: "Centre Infrastructure",
-      applications: 12,
-      approved: 10,
-      amount: "₹5,00,000",
-      status: "Approved"
-    },
-    {
-      scheme: "Wellness Program",
-      applications: 8,
-      approved: 6,
-      amount: "₹1,80,000",
-      status: "Processing"
-    }
-  ];
+  const incentives = (stats ? stats.schemesStats : []).map(s => ({
+    scheme: s.scheme,
+    applications: s.totalApplications,
+    approved: s.approved,
+    amount: s.amount,
+    status: s.approved > 0 ? "Active" : "No Applications"
+  }));
 
-  const monthlyStats = [
-    {
-      month: "Nov 2025",
-      registrations: 15,
-      verifications: 28,
-      incentives: "₹3,45,000"
-    },
-    {
-      month: "Oct 2025",
-      registrations: 12,
-      verifications: 22,
-      incentives: "₹2,80,000"
-    },
-    {
-      month: "Sep 2025",
-      registrations: 18,
-      verifications: 31,
-      incentives: "₹4,20,000"
-    }
-  ];
+  const monthlyStats = [];
 
   return (
     <div className="p-6 space-y-8">
