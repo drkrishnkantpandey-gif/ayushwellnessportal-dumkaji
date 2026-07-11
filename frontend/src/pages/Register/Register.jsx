@@ -25,6 +25,9 @@ const Register = ({ setCurrentPage }) => {
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [verificationEmail, setVerificationEmail] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const [formData, setFormData] = useState({
     userType: "",
 
@@ -217,10 +220,19 @@ const Register = ({ setCurrentPage }) => {
         otp: otpValue,
       });
 
-      // If AYUSH Hospital, save extra details after verification
       if (formData.userType === "ayush_hospital") {
         // Exclude file fields for now (Issue 2)
-        const { idProofFile, profilePhoto, certificateFiles, centrePhotos, facilityImages, staffCerts, therapyMenu, ownershipProof, ...hospitalData } = formData;
+        const hospitalData = { ...formData };
+        [
+          "idProofFile",
+          "profilePhoto",
+          "certificateFiles",
+          "centrePhotos",
+          "facilityImages",
+          "staffCerts",
+          "therapyMenu",
+          "ownershipProof"
+        ].forEach((k) => delete hospitalData[k]);
         await axios.post(`${API}/api/ayush-hospital/register-after-otp`, hospitalData);
       }
 
@@ -375,7 +387,12 @@ const Register = ({ setCurrentPage }) => {
           "idUpload",
           "authorityOrder"
         ];
-        const missing = requiredFields.filter(f => !formData[f]);
+        const missing = requiredFields.filter(f => {
+          const val = formData[f];
+          if (!val) return true;
+          if (val instanceof FileList && val.length === 0) return true;
+          return false;
+        });
         if (missing.length > 0) {
           alert(`Please fill in all required fields and upload files.`);
           return false;
@@ -396,7 +413,12 @@ const Register = ({ setCurrentPage }) => {
           "idUpload",
           "authorityOrder"
         ];
-        const missing = requiredFields.filter(f => !formData[f]);
+        const missing = requiredFields.filter(f => {
+          const val = formData[f];
+          if (!val) return true;
+          if (val instanceof FileList && val.length === 0) return true;
+          return false;
+        });
         if (missing.length > 0) {
           alert(`Please fill in all required fields and upload files.`);
           return false;
@@ -456,233 +478,140 @@ const Register = ({ setCurrentPage }) => {
     if (step === 3) {
       if (!validateStep(3)) return;
 
-      try {
-        if (isTrainingCentre) {
-          // Handle training centre registration with file uploads
-          const formDataToSend = new FormData();
+      const fileKeys = [
+        "idProofFile",
+        "profilePhoto",
+        "ownershipProof",
+        "therapyMenu",
+        "hospitalCert",
+        "resortLicense",
+        "orgRegDoc",
+        "idUpload",
+        "authorityOrder",
+        "centrePhotos",
+        "certificateFiles",
+        "facilityImages",
+        "staffCerts",
+        "relevantDocs"
+      ];
 
-          Object.keys(formData).forEach((key) => {
-            if (key === "centrePhotos" && formData[key]) {
-              formData.centrePhotos.forEach((file) => {
-                formDataToSend.append("centrePhotos", file);
-              });
-            } else if (
-              key === "facilities" ||
-              key === "coursesOffered" ||
-              key === "amenities"
-            ) {
-              if (Array.isArray(formData[key])) {
-                formDataToSend.append(key, formData[key].join(","));
+      const buildFormData = () => {
+        const formDataToSend = new FormData();
+        Object.keys(formData).forEach((key) => {
+          if (fileKeys.includes(key)) {
+            const value = formData[key];
+            if (!value) return;
+            
+            // Check if multiple-file field
+            const isMultiple = ["centrePhotos", "certificateFiles", "facilityImages", "staffCerts", "relevantDocs"].includes(key);
+            
+            if (value instanceof FileList) {
+              if (value.length > 0) {
+                if (isMultiple) {
+                  Array.from(value).forEach(f => formDataToSend.append(key, f));
+                } else {
+                  formDataToSend.append(key, value[0]);
+                }
               }
-            } else if (
-              formData[key] !== null &&
-              formData[key] !== undefined
-            ) {
+            } else if (Array.isArray(value)) {
+              value.forEach(f => {
+                if (f instanceof File) {
+                  formDataToSend.append(key, f);
+                }
+              });
+            } else if (value instanceof File) {
+              formDataToSend.append(key, value);
+            }
+          } else {
+            // Text or list field
+            if (formData[key] === null || formData[key] === undefined) return;
+            
+            if (["facilities", "coursesOffered", "amenities"].includes(key) && Array.isArray(formData[key])) {
+              formDataToSend.append(key, formData[key].join(","));
+            } else if (typeof formData[key] !== "object") {
               formDataToSend.append(key, formData[key]);
             }
-          });
+          }
+        });
+        return formDataToSend;
+      };
 
-          const res = await axios.post(
-            `${API}/api/register/training-centre`,
-            formDataToSend,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
+      setSubmitting(true);
+      setUploadProgress(0);
+
+      try {
+        const config = {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
             }
-          );
+          }
+        };
 
-          // use training centre email or fallback
-          setVerificationEmail(
-            res.data?.email || formData.email || formData.contactEmail
-          );
+        if (isTrainingCentre) {
+          const formDataToSend = buildFormData();
+          const res = await axios.post(`${API}/api/register/training-centre`, formDataToSend, config);
+          setVerificationEmail(res.data?.email || formData.email || formData.contactEmail);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else if (isYogaProfessional) {
-          // Handle yoga professional registration with file uploads
-          const formDataToSend = new FormData();
-
-          Object.keys(formData).forEach((key) => {
-            if (key === "profilePhoto" && formData[key]) {
-              formDataToSend.append("profilePhoto", formData[key]);
-            } else if (key === "certificateFiles" && formData[key]) {
-              formData.certificateFiles.forEach((file) => {
-                formDataToSend.append("certificateFiles", file);
-              });
-            } else if (
-              formData[key] !== null &&
-              formData[key] !== undefined &&
-              typeof formData[key] !== "object"
-            ) {
-              formDataToSend.append(key, formData[key]);
-            }
-          });
-
-          const res = await axios.post(
-            `${API}/api/register/yoga-professional`,
-            formDataToSend,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
+          const formDataToSend = buildFormData();
+          const res = await axios.post(`${API}/api/register/yoga-professional`, formDataToSend, config);
           setVerificationEmail(res.data?.email || formData.email);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else if (isWellnessCentre) {
-          // Handle wellness centre registration with file uploads
-          const formDataToSend = new FormData();
-
-          Object.keys(formData).forEach((key) => {
-            if (["ownershipProof", "therapyMenu", "staffCerts"].includes(key) && formData[key]) {
-              formDataToSend.append(key, formData[key]);
-            } else if (key === "facilityImages" && formData[key]) {
-              // Assuming facilityImages is a FileList or Array
-              Array.from(formData[key]).forEach((file) => {
-                formDataToSend.append("facilityImages", file);
-              });
-            } else if (
-              formData[key] !== null &&
-              formData[key] !== undefined &&
-              typeof formData[key] !== "object"
-            ) {
-              formDataToSend.append(key, formData[key]);
-            }
-          });
-
-          const res = await axios.post(
-            `${API}/api/register/wellness-centre`,
-            formDataToSend,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
+          const formDataToSend = buildFormData();
+          const res = await axios.post(`${API}/api/register/wellness-centre`, formDataToSend, config);
           setVerificationEmail(res.data?.contactEmail || formData.contactEmail);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else if (formData.userType === "research_org") {
-          const formDataToSend = new FormData();
-
-          Object.keys(formData).forEach((key) => {
-            if (key === "orgRegDoc" && formData[key]) {
-              formDataToSend.append("orgRegDoc", formData[key]);
-            } else if (key === "relevantDocs" && formData[key]) {
-              Array.from(formData[key]).forEach((file) => {
-                formDataToSend.append("relevantDocs", file);
-              });
-            } else if (
-              formData[key] !== null &&
-              formData[key] !== undefined &&
-              typeof formData[key] !== "object"
-            ) {
-              formDataToSend.append(key, formData[key]);
-            }
-          });
-
-          const res = await axios.post(
-            `${API}/api/register/research-org`,
-            formDataToSend,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
+          const formDataToSend = buildFormData();
+          const res = await axios.post(`${API}/api/register/research-org`, formDataToSend, config);
           setVerificationEmail(res.data?.email || formData.email);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else if (formData.userType === "district_officer") {
-          const formDataToSend = new FormData();
-
-          Object.keys(formData).forEach((key) => {
-            if ((key === "idUpload" || key === "authorityOrder") && formData[key]) {
-              formDataToSend.append(key, formData[key]);
-            } else if (
-              formData[key] !== null &&
-              formData[key] !== undefined &&
-              typeof formData[key] !== "object"
-            ) {
-              formDataToSend.append(key, formData[key]);
-            }
-          });
-
-          const res = await axios.post(
-            `${API}/api/register/district-officer`,
-            formDataToSend,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
+          const formDataToSend = buildFormData();
+          const res = await axios.post(`${API}/api/register/district-officer`, formDataToSend, config);
           setVerificationEmail(res.data?.email || formData.email);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else if (formData.userType === "directorate") {
-          const formDataToSend = new FormData();
-
-          Object.keys(formData).forEach((key) => {
-            if ((key === "idUpload" || key === "authorityOrder") && formData[key]) {
-              formDataToSend.append(key, formData[key]);
-            } else if (
-              formData[key] !== null &&
-              formData[key] !== undefined &&
-              typeof formData[key] !== "object"
-            ) {
-              formDataToSend.append(key, formData[key]);
-            }
-          });
-
-          const res = await axios.post(
-            `${API}/api/register/directorate`,
-            formDataToSend,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
+          const formDataToSend = buildFormData();
+          const res = await axios.post(`${API}/api/register/directorate`, formDataToSend, config);
           setVerificationEmail(res.data?.email || formData.email);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else {
-          // Handle other user types
-          const {
-            ownershipProof,
-            therapyMenu,
-            facilityImages,
-            staffCerts,
-            centrePhotos,
-            idProofFile,
-            profilePhoto,
-            certificateFiles,
-            ...payload
-          } = formData;
+          // Handle other user types (no files)
+          const payload = { ...formData };
+          [
+            "ownershipProof",
+            "therapyMenu",
+            "facilityImages",
+            "staffCerts",
+            "centrePhotos",
+            "idProofFile",
+            "profilePhoto",
+            "certificateFiles"
+          ].forEach((k) => delete payload[k]);
 
-          // Map AYUSH Hospital fields to common auth fields
           if (payload.userType === 'ayush_hospital') {
             payload.fullName = payload.hospitalName || payload.fullName;
             payload.email = payload.contactEmail || payload.email;
             payload.phone = payload.contactMobile || payload.phone;
           }
 
-          const res = await axios.post(
-            `${API}/api/auth/register`,
-            payload
-          );
-
-          console.log("Register response:", res.data);
-          setVerificationEmail(
-            res.data?.user?.email || payload.email || formData.email
-          );
+          const res = await axios.post(`${API}/api/auth/register`, payload);
+          setVerificationEmail(res.data?.user?.email || payload.email || formData.email);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         }
@@ -696,6 +625,8 @@ const Register = ({ setCurrentPage }) => {
         setShowOTP(false);
         setVerificationEmail("");
         setOtp(["", "", "", ""]);
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -999,8 +930,9 @@ const Register = ({ setCurrentPage }) => {
               {step > 1 && (
                 <button
                   type="button"
+                  disabled={submitting}
                   onClick={() => setStep((s) => s - 1)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 transition"
                 >
                   Previous
                 </button>
@@ -1008,9 +940,10 @@ const Register = ({ setCurrentPage }) => {
               {step > 1 && (
                 <button
                   type="submit"
-                  className="flex-1 bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition"
+                  disabled={submitting}
+                  className="flex-1 bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 transition"
                 >
-                  {step === 3 ? "Finish" : "Next"}
+                  {submitting ? "Uploading..." : step === 3 ? "Finish" : "Next"}
                 </button>
               )}
             </div>
@@ -1021,8 +954,9 @@ const Register = ({ setCurrentPage }) => {
             <p className="text-gray-600">
               Already have an account?{" "}
               <button
+                disabled={submitting}
                 onClick={() => setCurrentPage("login")}
-                className="text-teal-600 hover:text-teal-700 font-semibold"
+                className="text-teal-600 hover:text-teal-700 font-semibold disabled:opacity-50"
               >
                 Login Here
               </button>
@@ -1030,6 +964,32 @@ const Register = ({ setCurrentPage }) => {
           </div>
         </div>
       </div>
+
+      {/* Progress Bar Modal Overlay */}
+      {submitting && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl border border-gray-100">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-full border-4 border-teal-100 border-t-teal-600 animate-spin" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-gray-800">Uploading Registration Files</h3>
+              <p className="text-gray-500 text-sm">Please do not refresh or close this page...</p>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden relative">
+              <div 
+                className="bg-teal-600 h-full rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+                style={{ width: `${uploadProgress}%` }}
+              >
+                <span className="text-[10px] font-bold text-white leading-none">{uploadProgress}%</span>
+              </div>
+            </div>
+            <div className="text-sm font-semibold text-teal-700">
+              {uploadProgress < 100 ? `Uploading documents... ${uploadProgress}%` : "Finalizing submission..."}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
