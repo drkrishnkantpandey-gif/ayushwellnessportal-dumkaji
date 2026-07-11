@@ -324,6 +324,7 @@ const Register = ({ setCurrentPage }) => {
           alert("Contact phone must be exactly 10 digits.");
           return false;
         }
+      }
       if (formData.userType === "research_org") {
         const requiredFields = [
           "applicantName",
