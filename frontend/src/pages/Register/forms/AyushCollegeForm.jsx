@@ -1,6 +1,22 @@
 // src/pages/Register/forms/AyushCollegeForm.jsx
 import React from "react";
 
+const DISTRICT_OPTIONS = [
+  "Almora",
+  "Bageshwar",
+  "Chamoli",
+  "Champawat",
+  "Dehradun",
+  "Haridwar",
+  "Nainital",
+  "Pauri Garhwal",
+  "Pithoragarh",
+  "Rudraprayag",
+  "Tehri Garhwal",
+  "Udham Singh Nagar",
+  "Uttarkashi"
+];
+
 const AyushCollegeForm = ({ formData, setFormData }) => {
   return (
     <div className="space-y-10">
@@ -180,16 +196,21 @@ const AyushCollegeForm = ({ formData, setFormData }) => {
           <label className="block text-sm font-semibold text-gray-700 mb-2">
             District
           </label>
-          <input
-            type="text"
+          <select
             value={formData.district || ""}
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, district: e.target.value }))
             }
-            placeholder="Enter district"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-          />
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-teal-500"
+          >
+            <option value="">Select District</option>
+            {DISTRICT_OPTIONS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Tehsil/Block */}

@@ -268,7 +268,7 @@ const Register = ({ setCurrentPage }) => {
 
     if (currentStep === 2) {
       if (isTrainingCentre) {
-        const requiredFields = ["centreName", "establishmentYear", "email", "phone", "institutionType", "address", "ownerName", "ownerEmail", "ownerPhone", "idProofType", "idNumber"];
+        const requiredFields = ["centreName", "establishmentYear", "email", "phone", "institutionType", "address", "district", "ownerName", "ownerEmail", "ownerPhone", "idProofType", "idNumber"];
         const missing = requiredFields.filter(f => !formData[f]);
         if (missing.length > 0) {
           alert(`Please fill in all required fields: ${missing.join(", ")}`);

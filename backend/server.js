@@ -8,6 +8,7 @@ const bodyParser   = require('body-parser');
 const { URL }      = require('url');
 const dns          = require('dns').promises;
 const { Pool }     = require('pg');
+const bcrypt       = require('bcrypt');
 require('dotenv').config();
 
 const authRoutes             = require('./routes/authRoutes');
@@ -203,9 +204,45 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port:     process.env.DB_PORT,
 });
+
+async function bootstrapAdmin() {
+  const adminEmail = process.env.INIT_ADMIN_EMAIL;
+  const adminPassword = process.env.INIT_ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    console.log("Bootstrap: INIT_ADMIN_EMAIL or INIT_ADMIN_PASSWORD not defined in environment. Skipping admin seed.");
+    return;
+  }
+
+  try {
+    const res = await pool.query(
+      "SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND role = $2",
+      [adminEmail.trim(), 'admin']
+    );
+
+    if (res.rows.length === 0) {
+      const passwordHash = await bcrypt.hash(adminPassword, 10);
+      await pool.query(
+        `INSERT INTO users (full_name, email, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6)`,
+        ['System Admin', adminEmail.trim(), passwordHash, 'admin', true, 'approved']
+      );
+      console.log(`Bootstrap: Permanent Admin account created successfully for ${adminEmail}`);
+    } else {
+      console.log("Bootstrap: System Admin account already exists. Skipping creation.");
+    }
+  } catch (error) {
+    console.error("Bootstrap: Error during Admin account verification/creation:", error);
+  }
+}
+
 pool.query('SELECT NOW()', (err) => {
-  if (err) console.error('Error connecting to the database:', err);
-  else     console.log('Successfully connected to the database');
+  if (err) {
+    console.error('Error connecting to the database:', err);
+  } else {
+    console.log('Successfully connected to the database');
+    bootstrapAdmin();
+  }
 });
 
 const PORT = process.env.PORT || 4000;
