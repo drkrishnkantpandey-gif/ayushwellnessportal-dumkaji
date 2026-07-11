@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../../../config/axiosInstance";
-import API from "../../../config/api";
+import axiosInstance from "../../config/axiosInstance";
+import API from "../../config/api";
 import { User, Phone, Lock, Save, ShieldCheck, Mail } from "lucide-react";
 import { toast } from "react-toastify";
 
