@@ -155,6 +155,7 @@ const Register = ({ setCurrentPage }) => {
           <DistrictOfficerForm
             formData={formData}
             setFormData={setFormData}
+            handleFileChange={handleFileChange}
           />
         );
       case "directorate":
@@ -162,7 +163,7 @@ const Register = ({ setCurrentPage }) => {
           <DirectorateForm
             formData={formData}
             setFormData={setFormData}
-            step={step}
+            handleFileChange={handleFileChange}
           />
         );
       case "admin":
@@ -361,6 +362,50 @@ const Register = ({ setCurrentPage }) => {
           return false;
         }
       }
+      if (formData.userType === "district_officer") {
+        const requiredFields = [
+          "district",
+          "fullName",
+          "designation",
+          "email",
+          "contactNumber",
+          "employeeId",
+          "idType",
+          "idNumber",
+          "idUpload",
+          "authorityOrder"
+        ];
+        const missing = requiredFields.filter(f => !formData[f]);
+        if (missing.length > 0) {
+          alert(`Please fill in all required fields and upload files.`);
+          return false;
+        }
+        if (formData.contactNumber.length !== 10) {
+          alert("Contact number must be exactly 10 digits.");
+          return false;
+        }
+      }
+      if (formData.userType === "directorate") {
+        const requiredFields = [
+          "fullName",
+          "designation",
+          "email",
+          "contactNumber",
+          "idType",
+          "idNumber",
+          "idUpload",
+          "authorityOrder"
+        ];
+        const missing = requiredFields.filter(f => !formData[f]);
+        if (missing.length > 0) {
+          alert(`Please fill in all required fields and upload files.`);
+          return false;
+        }
+        if (formData.contactNumber.length !== 10) {
+          alert("Contact number must be exactly 10 digits.");
+          return false;
+        }
+      }
       return true;
     }
 
@@ -541,6 +586,62 @@ const Register = ({ setCurrentPage }) => {
 
           const res = await axios.post(
             `${API}/api/register/research-org`,
+            formDataToSend,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          setVerificationEmail(res.data?.email || formData.email);
+          setOtp(["", "", "", ""]);
+          setShowOTP(true);
+        } else if (formData.userType === "district_officer") {
+          const formDataToSend = new FormData();
+
+          Object.keys(formData).forEach((key) => {
+            if ((key === "idUpload" || key === "authorityOrder") && formData[key]) {
+              formDataToSend.append(key, formData[key]);
+            } else if (
+              formData[key] !== null &&
+              formData[key] !== undefined &&
+              typeof formData[key] !== "object"
+            ) {
+              formDataToSend.append(key, formData[key]);
+            }
+          });
+
+          const res = await axios.post(
+            `${API}/api/register/district-officer`,
+            formDataToSend,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          setVerificationEmail(res.data?.email || formData.email);
+          setOtp(["", "", "", ""]);
+          setShowOTP(true);
+        } else if (formData.userType === "directorate") {
+          const formDataToSend = new FormData();
+
+          Object.keys(formData).forEach((key) => {
+            if ((key === "idUpload" || key === "authorityOrder") && formData[key]) {
+              formDataToSend.append(key, formData[key]);
+            } else if (
+              formData[key] !== null &&
+              formData[key] !== undefined &&
+              typeof formData[key] !== "object"
+            ) {
+              formDataToSend.append(key, formData[key]);
+            }
+          });
+
+          const res = await axios.post(
+            `${API}/api/register/directorate`,
             formDataToSend,
             {
               headers: {

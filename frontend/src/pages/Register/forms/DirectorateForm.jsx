@@ -1,469 +1,182 @@
 // src/pages/Register/forms/DirectorateForm.jsx
 import React from "react";
 
-const DISTRICT_OPTIONS = [
-  "Almora",
-  "Bageshwar",
-  "Chamoli",
-  "Champawat",
-  "Dehradun",
-  "Haridwar",
-  "Nainital",
-  "Pauri Garhwal",
-  "Pithoragarh",
-  "Rudraprayag",
-  "Tehri Garhwal",
-  "Udham Singh Nagar",
-  "Uttarkashi"
-];
+const DESIGNATION_OPTIONS = ["Director", "Joint Director", "Nodal Officer", "Assistant Director"];
+const ID_TYPES = ["Aadhaar Card", "PAN Card"];
 
-const DIRECTORATE_MODULES = [
-  "Yoga Professionals Registration",
-  "Yoga Centres Registration",
-  "Wellness Centre Registration",
-  "AYUSH Hospital NABH Incentive",
-  "AYUSH College NAAC Incentive",
-  "Yoga & AYUSH Research Proposals",
-  "Incentive, Subsidy & Reimbursement",
-  "Monitoring & Yoga Session Tracker",
-  "Star Rating & Certification System",
-  "Dashboards, Reports & Analytics",
-];
-
-const DirectorateForm = ({ formData, setFormData, step }) => {
-  const managedModules = formData.managedModules || [];
-
-  const toggleModule = (module) => {
-    const exists = managedModules.includes(module);
-    const updated = exists
-      ? managedModules.filter((m) => m !== module)
-      : [...managedModules, module];
-
-    setFormData({ ...formData, managedModules: updated });
+const DirectorateForm = ({ formData, setFormData, handleFileChange }) => {
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
     <div className="space-y-6">
-      {/* --------------- STEP 2: DIRECTORATE DETAILS --------------- */}
-      {step === 2 && formData.userType === "directorate" && (
-        <>
-          <h3 className="text-xl font-semibold text-gray-800">
-            Directorate Details
-          </h3>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Directorate Name */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Directorate Name
-              </label>
-              <input
-                type="text"
-                value={formData.directorateName || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    directorateName: e.target.value,
-                  })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g. Directorate of Ayurveda & Unani Services"
-                required
-              />
-            </div>
-
-            {/* Department (optional, prefilled / editable) */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Department
-              </label>
-              <input
-                type="text"
-                value={
-                  formData.department ||
-                  "Department of AYUSH, Govt. of Uttarakhand"
-                }
-                onChange={(e) =>
-                  setFormData({ ...formData, department: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                required
-              />
-            </div>
-
-            {/* Nodal Officer Name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Nodal Officer Name
-              </label>
-              <input
-                type="text"
-                value={formData.nodalOfficerName || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    nodalOfficerName: e.target.value,
-                  })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter officer's full name"
-                required
-              />
-            </div>
-
-            {/* Designation */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Designation
-              </label>
-              <input
-                type="text"
-                value={formData.designation || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    designation: e.target.value,
-                  })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g. Director, Joint Director, Nodal Officer"
-                required
-              />
-            </div>
-
-            {/* Official Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Official Email
-              </label>
-              <input
-                type="email"
-                value={formData.email || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter official email"
-                required
-              />
-            </div>
-
-            {/* Official Contact Number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Official Mobile Number
-              </label>
-              <input
-                type="text"
-                value={formData.phone || ""}
-                maxLength={10}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="10-digit mobile number"
-                required
-              />
-              {formData.phone && !/^\d*$/.test(formData.phone) && (
-                <p className="text-xs text-red-500 mt-1">
-                  Phone number must contain digits only.
-                </p>
-              )}
-            </div>
-
-            {/* Landline (optional) */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Office Landline (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.landline || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, landline: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Office landline with STD code"
-              />
-            </div>
-
-            {/* Office Address */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Office Address
-              </label>
-              <textarea
-                value={formData.address || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter complete office address"
-                required
-              />
-            </div>
-
-            {/* District */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                District
-              </label>
-              <select
-                value={formData.district || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, district: e.target.value })
-                }
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">Select District</option>
-                {DISTRICT_OPTIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* PIN Code */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                PIN Code
-              </label>
-              <input
-                type="text"
-                value={formData.pincode || ""}
-                maxLength={6}
-                onChange={(e) =>
-                  setFormData({ ...formData, pincode: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="6-digit PIN code"
-                required
-              />
-              {formData.pincode && !/^\d*$/.test(formData.pincode) && (
-                <p className="text-xs text-red-500 mt-1">
-                  PIN code must contain digits only.
-                </p>
-              )}
-            </div>
-
-            {/* --------------- ID PROOF SECTION --------------- */}
-
-            {/* ID Proof Type */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ID Proof Type
-              </label>
-              <select
-                value={formData.idProofType || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, idProofType: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="">Select ID</option>
-                <option value="aadhar">Aadhaar</option>
-                <option value="pan">PAN</option>
-                <option value="govt_id">Government ID / Service ID</option>
-              </select>
-            </div>
-
-            {/* ID Number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ID Number
-              </label>
-              <input
-                type="text"
-                value={formData.idNumber || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, idNumber: e.target.value })
-                }
-                placeholder="Enter ID number"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                required
-              />
-            </div>
-
-            {/* Upload ID Proof */}
-            <div className="md:col-span-2 mt-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Upload ID Proof / Authorization Letter (PDF or Image)
-              </label>
-
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-                  setFormData({ ...formData, idProofFile: file });
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg cursor-pointer"
-              />
-
-              {formData.idProofFile && (
-                <div className="mt-3">
-                  {formData.idProofFile.type === "application/pdf" ? (
-                    <p className="text-sm text-gray-700">
-                      📄 Uploaded PDF:{" "}
-                      <span className="font-medium">
-                        {formData.idProofFile.name}
-                      </span>
-                    </p>
-                  ) : (
-                    <img
-                      src={URL.createObjectURL(formData.idProofFile)}
-                      alt="ID Preview"
-                      className="w-40 h-40 object-cover border rounded-md shadow-sm"
-                    />
-                  )}
-
-                  <button
-                    onClick={() =>
-                      setFormData({ ...formData, idProofFile: null })
-                    }
-                    className="mt-2 bg-red-500 text-white text-xs px-3 py-1 rounded-md"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* --------------- MODULE ACCESS & NOTIFICATIONS --------------- */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Modules to be Managed by this Directorate User
-        </label>
-        <p className="text-xs text-gray-500 mb-2">
-          Select the modules this account should have access to (registrations,
-          incentives, monitoring, dashboards, etc.).
+      <div className="bg-teal-50 border border-teal-200 rounded-2xl p-6 mb-6">
+        <h4 className="text-teal-800 font-bold text-base mb-1">
+          Directorate Registration
+        </h4>
+        <p className="text-xs text-teal-700">
+          Please enter the details of the designated Nodal Officer. Directorate accounts have state-level access to all portal modules.
         </p>
-
-        {/* 🔹 Name & Email along with Modules */}
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Name (for module communication)
-            </label>
-            <input
-              type="text"
-              value={formData.moduleContactName || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  moduleContactName: e.target.value,
-                })
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              placeholder="Enter contact person name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email (for module communication)
-            </label>
-            <input
-              type="email"
-              value={formData.moduleContactEmail || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  moduleContactEmail: e.target.value,
-                })
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              placeholder="Enter email for module alerts"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-2 text-sm">
-          {DIRECTORATE_MODULES.map((module) => (
-            <label key={module} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={managedModules.includes(module)}
-                onChange={() => toggleModule(module)}
-              />
-              <span>{module}</span>
-            </label>
-          ))}
-        </div>
       </div>
 
-      {/* Notification Preferences */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Notification Preferences
-        </label>
-        <div className="space-y-2 text-sm">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={!!formData.receiveEmailAlerts}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  receiveEmailAlerts: e.target.checked,
-                })
-              }
-            />
-            <span>Receive email alerts for new applications & approvals</span>
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Name of Nodal Officer */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Name of Nodal Officer <span className="text-red-500">*</span>
           </label>
+          <input
+            type="text"
+            value={formData.fullName || ""}
+            onChange={(e) => handleChange("fullName", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            placeholder="Enter officer's full name"
+            required
+          />
+        </div>
 
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={!!formData.receiveSmsAlerts}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  receiveSmsAlerts: e.target.checked,
-                })
-              }
-            />
-            <span>Receive SMS alerts for critical actions</span>
+        {/* Designation */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Designation <span className="text-red-500">*</span>
           </label>
+          <select
+            value={formData.designation || ""}
+            onChange={(e) => handleChange("designation", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-teal-500"
+            required
+          >
+            <option value="">Select Designation</option>
+            {DESIGNATION_OPTIONS.map((designation) => (
+              <option key={designation} value={designation}>
+                {designation}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Email id */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Email ID <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={formData.email || ""}
+            onChange={(e) => handleChange("email", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            placeholder="Enter official email"
+            required
+          />
+        </div>
+
+        {/* Contact Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Contact Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            maxLength={10}
+            value={formData.contactNumber || ""}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              handleChange("contactNumber", val);
+            }}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            placeholder="10-digit mobile number"
+            required
+          />
+        </div>
+
+        {/* ID Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            ID Type <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={formData.idType || ""}
+            onChange={(e) => handleChange("idType", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-teal-500"
+            required
+          >
+            <option value="">Select ID Type</option>
+            {ID_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* ID Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            ID Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={formData.idNumber || ""}
+            onChange={(e) => handleChange("idNumber", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            placeholder="Enter ID card number"
+            required
+          />
+        </div>
+
+        {/* Upload ID (PDF / PNG / JPG) */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Upload ID Document <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,.pdf"
+            onChange={(e) => handleFileChange("idUpload", e.target.files)}
+            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+            required
+          />
+          {formData.idUpload && (
+            <p className="text-xs text-green-600 mt-1">
+              ✓ Attached: {formData.idUpload.name}
+            </p>
+          )}
+        </div>
+
+        {/* Upload Authority Order */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Upload Authority Order <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,.pdf"
+            onChange={(e) => handleFileChange("authorityOrder", e.target.files)}
+            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+            required
+          />
+          {formData.authorityOrder && (
+            <p className="text-xs text-green-600 mt-1">
+              ✓ Attached: {formData.authorityOrder.name}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Additional Notes */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Additional Remarks (Optional)
-        </label>
-        <textarea
-          value={formData.remarks || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, remarks: e.target.value })
-          }
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-          placeholder="Any special instructions or notes for this directorate account..."
-        />
-      </div>
-
-      {/* Declaration */}
-      <div>
+      {/* Verification Declaration */}
+      <div className="pt-4">
         <label className="flex items-start">
           <input
             type="checkbox"
-            className="w-4 h-4 mt-1 text-teal-600 border-gray-300 rounded"
+            className="w-4 h-4 mt-1 text-teal-600 border-gray-300 rounded focus:ring-teal-500 flex-shrink-0"
             required
           />
           <span className="ml-2 text-sm text-gray-700">
-            I certify that the details provided for this Directorate user are
-            true and that this user is authorized to operate on behalf of the
-            Directorate in the AYUSH & Yoga Policy Implementation Portal.
+            I certify that the details provided for this Directorate account are true and that this Nodal Officer is authorized to operate on behalf of the Directorate.
           </span>
         </label>
       </div>

@@ -1108,10 +1108,296 @@ async function registerResearchOrg(req, res) {
   }
 }
 
+async function registerDistrictOfficer(req, res) {
+  const {
+    district,
+    fullName,
+    designation,
+    email,
+    contactNumber,
+    employeeId,
+    idType,
+    idNumber,
+    password
+  } = req.body;
+
+  // Basic validation
+  if (!district || !fullName || !designation || !email || !contactNumber || 
+      !employeeId || !idType || !idNumber || !password) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  // Process files
+  const files = req.files || {};
+  const idUploadFile = files.idUpload && files.idUpload[0];
+  const authorityOrderFile = files.authorityOrder && files.authorityOrder[0];
+
+  if (!idUploadFile || !authorityOrderFile) {
+    return res.status(400).json({ message: "Both ID upload and Authority Order PDF are required" });
+  }
+
+  const idUploadPath = `/uploads/${idUploadFile.filename}`;
+  const authorityOrderPath = `/uploads/${authorityOrderFile.filename}`;
+
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Check for existing user with same email/role (case-insensitive)
+    const existingUser = await client.query(
+      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      [email, 'district_officer']
+    );
+
+    let userId;
+
+    if (existingUser.rows.length > 0) {
+      const userRecord = existingUser.rows[0];
+
+      if (userRecord.is_verified) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Email already registered and verified. Please log in.",
+        });
+      }
+
+      userId = userRecord.id;
+
+      await client.query(
+        `UPDATE users 
+         SET full_name = $1, phone = $2, password_hash = $3 
+         WHERE id = $4`,
+        [fullName, contactNumber, passwordHash, userId]
+      );
+
+      await client.query(`DELETE FROM district_officer_profile WHERE user_id = $1`, [userId]);
+      await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
+    } else {
+      const userResult = await client.query(
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+         RETURNING id`,
+        [fullName, email, contactNumber, passwordHash, 'district_officer', false]
+      );
+      userId = userResult.rows[0].id;
+    }
+
+    // Insert profile details
+    await client.query(
+      `INSERT INTO district_officer_profile (
+         user_id, district, name, designation, email, contact_number,
+         employee_id, id_type, id_number, id_upload_path, authority_order_path
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+       )`,
+      [
+        userId,
+        district,
+        fullName,
+        designation,
+        email,
+        contactNumber,
+        employeeId,
+        idType,
+        idNumber,
+        idUploadPath,
+        authorityOrderPath
+      ]
+    );
+
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await client.query(
+      `INSERT INTO user_otps (user_id, otp_code, expires_at) VALUES ($1, $2, $3)`,
+      [userId, otp, expiresAt]
+    );
+
+    // Send OTP Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify your email for AYUSH Setu Registration",
+      text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email send failed:", error);
+      } else {
+        console.log("Verification email sent:", info.response);
+      }
+    });
+
+    await client.query("COMMIT");
+    client.release();
+
+    return res.status(201).json({
+      success: true,
+      message: "Registration successful. OTP sent to your email.",
+      userId
+    });
+
+  } catch (error) {
+    console.error("Error in registerDistrictOfficer:", error);
+    await client.query("ROLLBACK");
+    client.release();
+    return res.status(500).json({ message: "Server error during registration." });
+  }
+}
+
+async function registerDirectorate(req, res) {
+  const {
+    fullName,
+    designation,
+    email,
+    contactNumber,
+    idType,
+    idNumber,
+    password
+  } = req.body;
+
+  // Basic validation
+  if (!fullName || !designation || !email || !contactNumber || 
+      !idType || !idNumber || !password) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  // Process files
+  const files = req.files || {};
+  const idUploadFile = files.idUpload && files.idUpload[0];
+  const authorityOrderFile = files.authorityOrder && files.authorityOrder[0];
+
+  if (!idUploadFile || !authorityOrderFile) {
+    return res.status(400).json({ message: "Both ID upload and Authority Order PDF are required" });
+  }
+
+  const idUploadPath = `/uploads/${idUploadFile.filename}`;
+  const authorityOrderPath = `/uploads/${authorityOrderFile.filename}`;
+
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Check for existing user with same email/role (case-insensitive)
+    const existingUser = await client.query(
+      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      [email, 'directorate']
+    );
+
+    let userId;
+
+    if (existingUser.rows.length > 0) {
+      const userRecord = existingUser.rows[0];
+
+      if (userRecord.is_verified) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Email already registered and verified. Please log in.",
+        });
+      }
+
+      userId = userRecord.id;
+
+      await client.query(
+        `UPDATE users 
+         SET full_name = $1, phone = $2, password_hash = $3 
+         WHERE id = $4`,
+        [fullName, contactNumber, passwordHash, userId]
+      );
+
+      await client.query(`DELETE FROM directorate_profile WHERE user_id = $1`, [userId]);
+      await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
+    } else {
+      const userResult = await client.query(
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+         RETURNING id`,
+        [fullName, email, contactNumber, passwordHash, 'directorate', false]
+      );
+      userId = userResult.rows[0].id;
+    }
+
+    // Insert profile details
+    await client.query(
+      `INSERT INTO directorate_profile (
+         user_id, nodal_officer_name, designation, email, contact_number,
+         id_type, id_number, id_upload_path, authority_order_path
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9
+       )`,
+      [
+        userId,
+        fullName,
+        designation,
+        email,
+        contactNumber,
+        idType,
+        idNumber,
+        idUploadPath,
+        authorityOrderPath
+      ]
+    );
+
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await client.query(
+      `INSERT INTO user_otps (user_id, otp_code, expires_at) VALUES ($1, $2, $3)`,
+      [userId, otp, expiresAt]
+    );
+
+    // Send OTP Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify your email for AYUSH Setu Registration",
+      text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email send failed:", error);
+      } else {
+        console.log("Verification email sent:", info.response);
+      }
+    });
+
+    await client.query("COMMIT");
+    client.release();
+
+    return res.status(201).json({
+      success: true,
+      message: "Registration successful. OTP sent to your email.",
+      userId
+    });
+
+  } catch (error) {
+    console.error("Error in registerDirectorate:", error);
+    await client.query("ROLLBACK");
+    client.release();
+    return res.status(500).json({ message: "Server error during registration." });
+  }
+}
+
 module.exports = {
   registerWellnessCentre,
   registerTrainingCentre,
   registerYogaProfessional,
   registerAyushCollege,
-  registerResearchOrg
+  registerResearchOrg,
+  registerDistrictOfficer,
+  registerDirectorate
 };

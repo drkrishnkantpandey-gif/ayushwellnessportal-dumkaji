@@ -72,7 +72,7 @@ router.post(
 );
 
 // Research Institution Registration
-const { registerResearchOrg } = require("../controllers/registerController");
+const { registerResearchOrg, registerDistrictOfficer, registerDirectorate } = require("../controllers/registerController");
 router.post(
   "/research-org",
   upload.fields([
@@ -80,6 +80,26 @@ router.post(
     { name: "relevantDocs", maxCount: 5 }
   ]),
   registerResearchOrg
+);
+
+// District Officer Registration
+router.post(
+  "/district-officer",
+  upload.fields([
+    { name: "idUpload", maxCount: 1 },
+    { name: "authorityOrder", maxCount: 1 }
+  ]),
+  registerDistrictOfficer
+);
+
+// Directorate Registration
+router.post(
+  "/directorate",
+  upload.fields([
+    { name: "idUpload", maxCount: 1 },
+    { name: "authorityOrder", maxCount: 1 }
+  ]),
+  registerDirectorate
 );
 
 module.exports = router;
