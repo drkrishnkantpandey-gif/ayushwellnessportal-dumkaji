@@ -1071,7 +1071,7 @@ async function registerResearchOrg(req, res) {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await client.query(
-      `INSERT INTO user_otps (user_id, otp_code, expires_at) VALUES ($1, $2, $3)`,
+      `INSERT INTO user_otps (user_id, otp, expires_at) VALUES ($1, $2, $3)`,
       [userId, otp, expiresAt]
     );
 
@@ -1215,7 +1215,7 @@ async function registerDistrictOfficer(req, res) {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await client.query(
-      `INSERT INTO user_otps (user_id, otp_code, expires_at) VALUES ($1, $2, $3)`,
+      `INSERT INTO user_otps (user_id, otp, expires_at) VALUES ($1, $2, $3)`,
       [userId, otp, expiresAt]
     );
 
@@ -1355,7 +1355,7 @@ async function registerDirectorate(req, res) {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await client.query(
-      `INSERT INTO user_otps (user_id, otp_code, expires_at) VALUES ($1, $2, $3)`,
+      `INSERT INTO user_otps (user_id, otp, expires_at) VALUES ($1, $2, $3)`,
       [userId, otp, expiresAt]
     );
 
