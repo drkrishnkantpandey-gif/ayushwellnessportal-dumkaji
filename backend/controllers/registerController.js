@@ -18,6 +18,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Verify SMTP connection on startup so misconfiguration appears in logs immediately
+transporter.verify((error) => {
+  if (error) {
+    console.error('[Email] SMTP transporter verification FAILED:', error.message);
+  } else {
+    console.log('[Email] SMTP transporter ready — emails will be sent via', process.env.EMAIL_USER);
+  }
+});
+
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 /**
@@ -1077,19 +1086,19 @@ async function registerResearchOrg(req, res) {
 
     // Send OTP Email
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
       subject: "Verify your email for AYUSH Setu Registration",
       text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Email send failed:", error);
-      } else {
-        console.log("Verification email sent:", info.response);
-      }
-    });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('[Email] OTP sent to', email, ':', info.response);
+    } catch (mailErr) {
+      console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
+      // Do not block registration — OTP is already stored in DB
+    }
 
     await client.query("COMMIT");
     client.release();
@@ -1221,19 +1230,19 @@ async function registerDistrictOfficer(req, res) {
 
     // Send OTP Email
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
       subject: "Verify your email for AYUSH Setu Registration",
       text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Email send failed:", error);
-      } else {
-        console.log("Verification email sent:", info.response);
-      }
-    });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('[Email] OTP sent to', email, ':', info.response);
+    } catch (mailErr) {
+      console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
+      // Do not block registration — OTP is already stored in DB
+    }
 
     await client.query("COMMIT");
     client.release();
@@ -1367,13 +1376,13 @@ async function registerDirectorate(req, res) {
       text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Email send failed:", error);
-      } else {
-        console.log("Verification email sent:", info.response);
-      }
-    });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('[Email] OTP sent to', email, ':', info.response);
+    } catch (mailErr) {
+      console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
+      // Do not block registration — OTP is already stored in DB
+    }
 
     await client.query("COMMIT");
     client.release();
