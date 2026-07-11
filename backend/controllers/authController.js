@@ -616,10 +616,114 @@ const logoutUser = (req, res) => {
   res.status(200).json({ success: true, message: 'Logout successful' });
 };
 
+const getUserProfile = async (req, res) => {
+  const userId = req.user.id || req.user.userId;
+  const client = await pool.connect();
+  try {
+    const userRes = await client.query(
+      'SELECT id, email, full_name, phone, role FROM users WHERE id = $1',
+      [userId]
+    );
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    return res.status(200).json({ success: true, data: userRes.rows[0] });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return res.status(500).json({ success: false, message: 'Server error fetching profile' });
+  } finally {
+    client.release();
+  }
+};
+
+const updateUserProfile = async (req, res) => {
+  const userId = req.user.id || req.user.userId;
+  const { fullName, phone, password } = req.body;
+
+  if (!fullName || !phone) {
+    return res.status(400).json({ success: false, message: 'Name and Phone are required' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Fetch the user's role to sync with profile table
+    const userRes = await client.query('SELECT role FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const role = userRes.rows[0].role;
+
+    // Build update query for users table
+    let updateQuery;
+    let params;
+    if (password && password.trim() !== '') {
+      // Validate password strength
+      if (password.length < 8) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ success: false, message: "Password must be at least 8 characters long." });
+      }
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          success: false,
+          message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(password.trim(), 10);
+      updateQuery = 'UPDATE users SET full_name = $1, phone = $2, password_hash = $3 WHERE id = $4';
+      params = [fullName.trim(), phone.trim(), passwordHash, userId];
+    } else {
+      updateQuery = 'UPDATE users SET full_name = $1, phone = $2 WHERE id = $3';
+      params = [fullName.trim(), phone.trim(), userId];
+    }
+
+    await client.query(updateQuery, params);
+
+    // Sync with corresponding profile table based on role
+    if (role === 'wellness_centre') {
+      await client.query('UPDATE wellness_centres SET name = $1, contact_phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'yoga_centre') {
+      await client.query('UPDATE training_centres SET name = $1, phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'yoga_professional') {
+      await client.query('UPDATE yoga_professional_profile SET name = $1, phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'research_org') {
+      await client.query('UPDATE research_org_profile SET name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'ayush_college') {
+      await client.query('UPDATE ayush_colleges SET college_name = $1, phone = $2 WHERE id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'ayush_hospital') {
+      await client.query('UPDATE ayush_hospitals SET hospital_name = $1, contact_mobile = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'district_officer') {
+      await client.query('UPDATE district_officer_profile SET name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    } else if (role === 'directorate') {
+      await client.query('UPDATE directorate_profile SET name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+    }
+
+    await client.query("COMMIT");
+    return res.status(200).json({ success: true, message: 'Profile updated successfully' });
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error('Error updating profile:', error);
+    return res.status(500).json({ success: false, message: 'Server error updating profile' });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   registerUser,
   verifyOTP,
   resendOTP,
   loginUser,
   logoutUser,
+  getUserProfile,
+  updateUserProfile,
 };

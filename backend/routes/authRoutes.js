@@ -35,10 +35,15 @@ const registerRules = validate([
   body('fullName').notEmpty().trim().escape().withMessage('Full name is required.'),
 ]);
 
+const { protect } = require('../middleware/authMiddleware');
+
 router.post('/register', upload.none(), registerRules, authController.registerUser);
 router.post('/verify-otp', upload.none(), authController.verifyOTP);
 router.post('/resend-otp', upload.none(), authController.resendOTP);
 router.post('/login', upload.none(), loginRules, authController.loginUser);
 router.post('/logout', authController.logoutUser);
+
+router.get('/profile', protect, authController.getUserProfile);
+router.post('/update-profile', protect, upload.none(), authController.updateUserProfile);
 
 module.exports = router;

@@ -342,4 +342,175 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational, getDashboardStats };
+const getPendingRegistrations = async (req, res) => {
+  const requesterId = req.user.id || req.user.userId;
+  const requesterRole = req.user.role;
+
+  try {
+    if (requesterRole === 'admin') {
+      // Admin sees pending Directorate users
+      const query = `
+        SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
+               dp.designation, dp.id_type, dp.id_number, dp.id_upload_path, dp.authority_order_path
+        FROM users u
+        LEFT JOIN directorate_profile dp ON dp.user_id = u.id
+        WHERE u.role = 'directorate' AND u.registration_status IN ('pending', 'under_review', 'UNDER_REVIEW')
+        ORDER BY u.created_at DESC
+      `;
+      const { rows } = await db.query(query);
+      return res.status(200).json({ success: true, data: rows });
+
+    } else if (requesterRole === 'directorate') {
+      // Directorate sees pending District Officers, Colleges, Research Orgs, plus other entities
+      const query = `
+        SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
+               COALESCE(w.district, t.district, y.district, r.district, c.district, h.district, dop.district) as district,
+               dop.employee_id, dop.designation, dop.id_type, dop.id_number, dop.id_upload_path, dop.authority_order_path
+        FROM users u
+        LEFT JOIN wellness_centres w ON w.user_id = u.id
+        LEFT JOIN training_centres t ON t.user_id = u.id
+        LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
+        LEFT JOIN research_org_profile r ON r.user_id = u.id
+        LEFT JOIN ayush_colleges c ON c.id = u.id
+        LEFT JOIN ayush_hospitals h ON h.user_id = u.id
+        LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
+        WHERE u.role NOT IN ('admin', 'directorate') AND u.registration_status IN ('pending', 'under_review', 'UNDER_REVIEW')
+        ORDER BY u.created_at DESC
+      `;
+      const { rows } = await db.query(query);
+      return res.status(200).json({ success: true, data: rows });
+
+    } else if (requesterRole === 'district_officer') {
+      // Find officer's district
+      const officerCheck = await db.query('SELECT district FROM district_officer_profile WHERE user_id = $1', [requesterId]);
+      if (officerCheck.rows.length === 0) {
+        return res.status(400).json({ success: false, message: 'District Officer profile not found' });
+      }
+      const officerDistrict = officerCheck.rows[0].district;
+
+      // District Officer sees pending wellness_centre, yoga_centre, yoga_professional, ayush_hospital in their district
+      const query = `
+        SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
+               COALESCE(w.district, t.district, y.district, h.district) as district
+        FROM users u
+        LEFT JOIN wellness_centres w ON w.user_id = u.id
+        LEFT JOIN training_centres t ON t.user_id = u.id
+        LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
+        LEFT JOIN ayush_hospitals h ON h.user_id = u.id
+        WHERE u.role IN ('wellness_centre', 'yoga_centre', 'yoga_professional', 'ayush_hospital')
+          AND COALESCE(w.district, t.district, y.district, h.district) = $1
+          AND u.registration_status IN ('pending', 'under_review', 'UNDER_REVIEW')
+        ORDER BY u.created_at DESC
+      `;
+      const { rows } = await db.query(query, [officerDistrict]);
+      return res.status(200).json({ success: true, data: rows });
+
+    } else {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+  } catch (error) {
+    console.error('Error fetching pending registrations:', error);
+    return res.status(500).json({ success: false, message: 'Server error fetching registrations' });
+  }
+};
+
+const approveUserRegistration = async (req, res) => {
+  const requesterId = req.user.id || req.user.userId;
+  const requesterRole = req.user.role;
+  const { targetUserId } = req.params;
+  const { decision } = req.body; // 'approved' or 'rejected'
+
+  if (!decision || !['approved', 'rejected'].includes(decision)) {
+    return res.status(400).json({ success: false, message: 'Decision must be approved or rejected' });
+  }
+
+  try {
+    // 1. Fetch target user
+    const targetUserCheck = await db.query('SELECT id, role, full_name, email FROM users WHERE id = $1', [targetUserId]);
+    if (targetUserCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Target user not found' });
+    }
+    const targetUser = targetUserCheck.rows[0];
+
+    // 2. Authorisation checks based on rules
+    if (targetUser.role === 'directorate') {
+      if (requesterRole !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Only System Admin can approve Directorate users' });
+      }
+    } else if (targetUser.role === 'district_officer') {
+      if (requesterRole !== 'directorate') {
+        return res.status(403).json({ success: false, message: 'Only Directorate Nodal Officers can approve District users' });
+      }
+    } else if (['ayush_college', 'research_org'].includes(targetUser.role)) {
+      if (requesterRole !== 'directorate') {
+        return res.status(403).json({ success: false, message: 'Only Directorate Nodal Officers can approve AYUSH Colleges or Research Institutions' });
+      }
+    } else if (['wellness_centre', 'yoga_centre', 'yoga_professional', 'ayush_hospital'].includes(targetUser.role)) {
+      if (requesterRole === 'district_officer') {
+        // District Officer: verify target district matches officer's district
+        const officerCheck = await db.query('SELECT district FROM district_officer_profile WHERE user_id = $1', [requesterId]);
+        if (officerCheck.rows.length === 0) {
+          return res.status(400).json({ success: false, message: 'District Officer profile not found' });
+        }
+        const officerDistrict = officerCheck.rows[0].district;
+
+        // Fetch target district
+        const targetDistrictCheck = await db.query(`
+          SELECT COALESCE(w.district, t.district, y.district, h.district) as district
+          FROM users u
+          LEFT JOIN wellness_centres w ON w.user_id = u.id
+          LEFT JOIN training_centres t ON t.user_id = u.id
+          LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
+          LEFT JOIN ayush_hospitals h ON h.user_id = u.id
+          WHERE u.id = $1
+        `, [targetUserId]);
+
+        if (targetDistrictCheck.rows.length === 0 || targetDistrictCheck.rows[0].district !== officerDistrict) {
+          return res.status(403).json({ success: false, message: 'You can only approve entities registered in your assigned district' });
+        }
+      } else if (requesterRole !== 'directorate') {
+        return res.status(403).json({ success: false, message: 'Only District Officers or Directorate can approve this entity' });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid target user role for approval' });
+    }
+
+    // 3. Perform approval update
+    await db.query('BEGIN');
+    
+    // Update users table status
+    await db.query(
+      "UPDATE users SET registration_status = $1, is_verified = true WHERE id = $2",
+      [decision, targetUserId]
+    );
+
+    // Sync status with profile tables
+    const targetRole = targetUser.role;
+    if (targetRole === 'wellness_centre') {
+      await db.query("UPDATE wellness_centres SET registration_status = $1 WHERE user_id = $2", [decision === 'approved' ? 'approved' : 'rejected', targetUserId]);
+    } else if (targetRole === 'yoga_centre') {
+      await db.query("UPDATE training_centres SET is_operational = $1 WHERE user_id = $2", [decision === 'approved', targetUserId]);
+    } else if (targetRole === 'yoga_professional') {
+      await db.query("UPDATE yoga_professional_profile SET approval_status = $1 WHERE user_id = $2", [decision === 'approved' ? 'APPROVED' : 'REJECTED', targetUserId]);
+    } else if (targetRole === 'research_org') {
+      await db.query("UPDATE research_org_profile SET registration_status = $1 WHERE user_id = $2", [decision === 'approved' ? 'approved' : 'rejected', targetUserId]);
+    } else if (targetRole === 'ayush_college') {
+      await db.query("UPDATE ayush_colleges SET naac_status = $1 WHERE id = $2", [decision === 'approved' ? 'Accredited' : 'Not Accredited', targetUserId]);
+    }
+
+    await db.query('COMMIT');
+
+    return res.status(200).json({
+      success: true,
+      message: `User registration has been successfully ${decision}`
+    });
+
+  } catch (error) {
+    await db.query('ROLLBACK');
+    console.error('Error in approveUserRegistration:', error);
+    return res.status(500).json({ success: false, message: 'Server error processing approval' });
+  }
+};
+
+module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational, getDashboardStats, getPendingRegistrations, approveUserRegistration };

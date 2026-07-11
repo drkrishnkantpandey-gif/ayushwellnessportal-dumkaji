@@ -2,6 +2,7 @@ import API from '../../config/api';
 import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
 import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip } from "lucide-react";
+import { toast } from "react-toastify";
 
 
 
@@ -244,8 +245,46 @@ function YogaTCIncentiveReview() {
   );
 }
 
-const DistrictOfficer = () => {
+const DistrictOfficer = ({ activeTab }) => {
   const [stats, setStats] = useState(null);
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchPendingUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await axiosInstance.get(`${API}/api/admin/pending-registrations`);
+      if (res.data.success) {
+        setPendingUsers(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching pending users:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "entity_approvals") {
+      fetchPendingUsers();
+    }
+  }, [activeTab]);
+
+  const handleAction = async (targetUserId, decision) => {
+    if (!window.confirm(`Are you sure you want to ${decision} this registration?`)) return;
+    try {
+      const res = await axiosInstance.put(`${API}/api/admin/approve-user-registration/${targetUserId}`, {
+        decision
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || `Registration request ${decision} successfully!`);
+        fetchPendingUsers();
+      }
+    } catch (err) {
+      console.error("Error during approval decision:", err);
+      toast.error(err.response?.data?.message || "Action failed.");
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -303,6 +342,87 @@ const DistrictOfficer = () => {
   }));
 
   const monthlyStats = [];
+
+  if (activeTab === "entity_approvals") {
+    const roleLabels = {
+      wellness_centre: "Wellness Centre",
+      yoga_centre: "Yoga Centre",
+      yoga_professional: "Yoga Professional",
+      ayush_hospital: "AYUSH Hospital"
+    };
+
+    return (
+      <div className="p-6 space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <CheckCircle className="text-teal-600" size={32} />
+            District Entity Approvals
+          </h1>
+          <p className="text-gray-500 mt-1">Review and approve registrations for wellness centres, professionals, training centres, and hospitals in your district</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+          {loadingUsers ? (
+            <div className="p-8 text-center text-teal-600 font-medium">Loading pending applications...</div>
+          ) : pendingUsers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400 font-medium bg-gray-50 rounded-xl">
+              No pending registrations found for your district.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Entity Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Entity Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">District</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Submitted On</th>
+                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {pendingUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-gray-800">{u.full_name}</div>
+                        <div className="text-sm text-gray-500">{u.email}</div>
+                        <div className="text-sm text-gray-500">{u.phone}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 text-xs font-bold rounded-full bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
+                          {roleLabels[u.role] || u.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-700">
+                        {u.district || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button
+                          onClick={() => handleAction(u.id, "approved")}
+                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleAction(u.id, "rejected")}
+                          className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-8">

@@ -291,6 +291,21 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                       language === "EN" ? "Sign In" : "साइन इन"
                     )}
                   </button>
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                    <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
+                    <div className="text-xs text-amber-800 leading-relaxed font-medium">
+                      {language === "EN" ? (
+                        <strong>Note:</strong>
+                      ) : (
+                        <strong>नोट:</strong>
+                      )}
+                      {" "}
+                      {language === "EN" 
+                        ? "Registrations require administrative approval before you can log in. Wellness Centres, Yoga Professionals, Yoga Centres, and AYUSH Hospitals should contact their District Office or Directorate. AYUSH Colleges and Research Institutions should contact the Directorate."
+                        : "लॉगिन करने से पहले पंजीकरणों के लिए प्रशासनिक स्वीकृति आवश्यक है। वैलनेस सेंटर्स, योग प्रोफेशनल्स, योग सेंटर्स, और आयुष अस्पतालों को अपने जिला कार्यालय या निदेशालय से संपर्क करना चाहिए। आयुष कॉलेजों और शोध संस्थानों को निदेशालय से संपर्क करना चाहिए।"
+                      }
+                    </div>
+                  </div>
                 </form>
 
                 <div className="mt-6 text-center">

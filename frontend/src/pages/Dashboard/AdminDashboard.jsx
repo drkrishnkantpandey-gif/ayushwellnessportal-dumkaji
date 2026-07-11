@@ -2,9 +2,48 @@ import React, { useState, useEffect } from "react";
 import API from "../../config/api";
 import axiosInstance from "../../config/axiosInstance";
 import { Users, Building, DollarSign, AlertCircle, FileText, TrendingUp, CheckCircle, Award, BarChart3, Settings, Shield, Database } from "lucide-react";
+import { toast } from "react-toastify";
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ activeTab }) => {
   const [stats, setStats] = useState(null);
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const fetchPendingUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await axiosInstance.get(`${API}/api/admin/pending-registrations`);
+      if (res.data.success) {
+        setPendingUsers(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching pending users:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "approvals") {
+      fetchPendingUsers();
+    }
+  }, [activeTab]);
+
+  const handleAction = async (targetUserId, decision) => {
+    if (!window.confirm(`Are you sure you want to ${decision} this registration?`)) return;
+    try {
+      const res = await axiosInstance.put(`${API}/api/admin/approve-user-registration/${targetUserId}`, {
+        decision
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || `User registration ${decision} successfully!`);
+        fetchPendingUsers();
+      }
+    } catch (err) {
+      console.error("Error during approval decision:", err);
+      toast.error(err.response?.data?.message || "Action failed.");
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -140,6 +179,105 @@ const AdminDashboard = () => {
       issues: 0
     }
   ];
+
+  if (activeTab === "approvals") {
+    return (
+      <div className="p-6 space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <CheckCircle className="text-teal-600" size={32} />
+            Directorate Nodal Officer Approvals
+          </h1>
+          <p className="text-gray-500 mt-1">Review and approve incoming registration requests from Directorate officers</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+          {loadingUsers ? (
+            <div className="p-8 text-center text-teal-600 font-medium">Loading pending applications...</div>
+          ) : pendingUsers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400 font-medium bg-gray-50 rounded-xl">
+              No pending Directorate registrations found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Officer Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Documents</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Submitted On</th>
+                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {pendingUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-gray-800">{u.full_name}</div>
+                        <div className="text-sm text-gray-500">{u.email}</div>
+                        <div className="text-sm text-gray-500">{u.phone}</div>
+                        <div className="text-xs mt-1 text-teal-600 font-bold bg-teal-50 px-2 py-0.5 rounded-full inline-block">
+                          Designation: {u.designation || "N/A"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                        <div>Type: {u.id_type || "N/A"}</div>
+                        <div className="font-mono mt-0.5">No: {u.id_number || "N/A"}</div>
+                      </td>
+                      <td className="px-6 py-4 space-y-1 text-sm">
+                        {u.id_upload_path ? (
+                          <a
+                            href={`${API}${u.id_upload_path}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline block font-semibold"
+                          >
+                            📄 View ID Upload
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">No ID File</span>
+                        )}
+                        {u.authority_order_path ? (
+                          <a
+                            href={`${API}${u.authority_order_path}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-600 hover:underline block font-semibold"
+                          >
+                            📄 View Authority Order
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">No Authority File</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                        <button
+                          onClick={() => handleAction(u.id, "approved")}
+                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleAction(u.id, "rejected")}
+                          className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-8">

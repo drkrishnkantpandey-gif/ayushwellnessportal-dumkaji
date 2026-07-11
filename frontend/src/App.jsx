@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register/Register";
 import PublicProfile from "./pages/PublicProfile";
 import Registry from "./pages/Registry";
+import UserProfileManagement from "./pages/Dashboard/UserProfileManagement";
 
 // Yoga Professional Components
 import YogaProfessional from "./pages/Dashboard/YogaProfessional/DashboardHome";
@@ -219,17 +220,16 @@ const App = () => {
     }
   };
 
-  // Other Dashboards fallback
   const renderOtherDashboards = () => {
     switch (userRole) {
       case "yoga_centre":
         return <YogaTrainingCentreHome />;
       case "district_officer":
-        return <DistrictOfficer />;
+        return <DistrictOfficer activeTab={activeTab} />;
       case "directorate":
-        return <DirectorateDashboard />;
+        return <DirectorateDashboard activeTab={activeTab} />;
       case "admin":
-        return <AdminDashboard />;
+        return <AdminDashboard activeTab={activeTab} />;
       default:
         return <YogaProfessional setActiveTab={setActiveTab} />;
     }
@@ -312,8 +312,9 @@ const App = () => {
             {userRole === "ayush_hospital" && renderAyushHospitalContent()}
             {userRole === "research_org" && <ResearchGrant />}
             {userRole === "institution" && <TrainerFeeReimbursement />}
+            {activeTab === "profile" && !["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital"].includes(userRole) && <UserProfileManagement />}
             {!["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital", "research_org", "institution"].includes(userRole) &&
-              activeTab === "home" && renderOtherDashboards()
+              activeTab !== "profile" && renderOtherDashboards()
             }
           </div>
         </div>

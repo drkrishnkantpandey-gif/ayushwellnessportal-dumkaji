@@ -81,9 +81,37 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "trainer-fee", icon: DollarSign, label: "Trainer Fee Reimbursement" },
   ];
 
+  // Admin menu items
+  const adminMenu = [
+    { id: "home", icon: Home, label: "Dashboard Home" },
+    { id: "profile", icon: Users, label: "Profile Management" },
+    { id: "approvals", icon: UserCheck, label: "Directorate Approvals" },
+  ];
+
+  // Directorate menu items
+  const directorateMenu = [
+    { id: "home", icon: Home, label: "Dashboard Home" },
+    { id: "profile", icon: Users, label: "Profile Management" },
+    { id: "approvals", icon: UserCheck, label: "District Officer Approvals" },
+    { id: "entity_approvals", icon: Award, label: "Entity Approvals" },
+  ];
+
+  // District Officer menu items
+  const districtOfficerMenu = [
+    { id: "home", icon: Home, label: "Dashboard Home" },
+    { id: "profile", icon: Users, label: "Profile Management" },
+    { id: "entity_approvals", icon: Award, label: "Entity Approvals" },
+  ];
+
   // Select menu items based on user role
   const getMenuItems = () => {
     switch (userRole) {
+      case "admin":
+        return adminMenu;
+      case "directorate":
+        return directorateMenu;
+      case "district_officer":
+        return districtOfficerMenu;
       case "wellness_centre":
         return wellnessCentreMenu;
       case "ayush_college":
