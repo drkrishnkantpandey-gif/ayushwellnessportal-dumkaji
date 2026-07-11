@@ -1,39 +1,10 @@
 const db = require("../db");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-require("dotenv").config();
-
-// ── Email / SMTP Configuration ────────────────────────────────────────────────
-// All SMTP settings come from environment variables.
-// For Gmail (testing):  EMAIL_HOST=smtp.gmail.com  EMAIL_PORT=587  EMAIL_SECURE=false
-// For NIC Cloud (prod): EMAIL_HOST=<nic-smtp-server>  EMAIL_PORT=<port>  EMAIL_SECURE=true/false
-// No code change needed when switching — just update the env variables.
-const transporter = nodemailer.createTransport({
-  host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port:   parseInt(process.env.EMAIL_PORT || '587', 10),
-  secure: process.env.EMAIL_SECURE === 'true',   // true = port 465, false = STARTTLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  tls: {
-    rejectUnauthorized: false   // keeps working even with self-signed certs on NIC
-  }
-});
-
-// Verify SMTP connection on startup — result appears immediately in server logs
-transporter.verify((error) => {
-  if (error) {
-    console.error('[Email] SMTP verification FAILED:', error.message,
-      '| host:', process.env.EMAIL_HOST, 'port:', process.env.EMAIL_PORT);
-  } else {
-    console.log('[Email] SMTP ready — sending via', process.env.EMAIL_USER,
-      'on', process.env.EMAIL_HOST || 'smtp.gmail.com');
-  }
-});
+const { sendMail } = require('../utils/mailer');
 
 const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
+
 
 /**
  * POST /api/register/wellness-centre
@@ -266,7 +237,7 @@ async function registerWellnessCentre(req, res) {
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await sendMail(mailOptions);
     } catch (mailErr) {
       console.error("Failed to send registration email:", mailErr);
     }
@@ -442,7 +413,7 @@ async function registerTrainingCentre(req, res) {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
 
     res.status(201).json({
       success: true,
@@ -632,7 +603,7 @@ async function registerYogaProfessional(req, res) {
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await sendMail(mailOptions);
       console.log(`OTP Email sent successfully to ${email}`);
     } catch (emailError) {
       console.error(`Failed to send OTP email to ${email}:`, emailError);
@@ -934,7 +905,7 @@ async function registerAyushCollege(req, res) {
     };
 
     try {
-      await transporter.sendMail(mailOptions);
+      await sendMail(mailOptions);
       console.log('OTP sent to college:', collegeEmail);
     } catch (emailErr) {
       console.error("Failed to send College OTP email:", emailErr);
@@ -1099,7 +1070,7 @@ async function registerResearchOrg(req, res) {
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
+      const info = await sendMail(mailOptions);
       console.log('[Email] OTP sent to', email, ':', info.response);
     } catch (mailErr) {
       console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
@@ -1243,7 +1214,7 @@ async function registerDistrictOfficer(req, res) {
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
+      const info = await sendMail(mailOptions);
       console.log('[Email] OTP sent to', email, ':', info.response);
     } catch (mailErr) {
       console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
@@ -1383,7 +1354,7 @@ async function registerDirectorate(req, res) {
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
+      const info = await sendMail(mailOptions);
       console.log('[Email] OTP sent to', email, ':', info.response);
     } catch (mailErr) {
       console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);

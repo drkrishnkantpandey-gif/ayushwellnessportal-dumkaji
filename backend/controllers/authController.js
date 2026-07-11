@@ -1,8 +1,8 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
+const { sendMail } = require('../utils/mailer');
 require('dotenv').config();
 
 // Database connection
@@ -12,22 +12,6 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
-});
-
-// ── Email / SMTP Configuration ────────────────────────────────────────────────
-// All values come from environment variables — no code change needed when
-// switching from Gmail (testing) to NIC Cloud SMTP (production).
-const transporter = nodemailer.createTransport({
-  host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port:   parseInt(process.env.EMAIL_PORT || '587', 10),
-  secure: process.env.EMAIL_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
 });
 
 // Generate random 4-digit OTP
@@ -184,7 +168,7 @@ const registerUser = async (req, res) => {
       };
 
       try {
-        await transporter.sendMail(mailOptions);
+        await sendMail(mailOptions);
         console.log('Verification email sent to:', normalizedEmail);
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
@@ -391,7 +375,7 @@ const resendOTP = async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMail(mailOptions);
     console.log('New OTP sent to:', email);
 
     res.status(200).json({
