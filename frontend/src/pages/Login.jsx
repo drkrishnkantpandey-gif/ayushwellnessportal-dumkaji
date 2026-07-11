@@ -172,7 +172,7 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                   </button>
 
                   <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
-                    {selectedRoleObj && <selectedRoleObj.icon size={32} />}
+                    {selectedRoleObj && (() => { const RoleIcon = selectedRoleObj.icon; return <RoleIcon size={32} />; })()}
                   </div>
 
                   <h2 className="text-2xl font-bold mb-2">
