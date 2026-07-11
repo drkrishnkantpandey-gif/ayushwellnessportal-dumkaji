@@ -143,6 +143,15 @@ const updateUserApproval = async (req, res) => {
       data: rows[0]
     });
 
+  } catch (error) {
+    console.error("Error in updateUserApproval:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
 const toggleCentreOperational = async (req, res) => {
   try {
     const { userId } = req.params;
