@@ -4,26 +4,32 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
+// ── Email / SMTP Configuration ────────────────────────────────────────────────
+// All SMTP settings come from environment variables.
+// For Gmail (testing):  EMAIL_HOST=smtp.gmail.com  EMAIL_PORT=587  EMAIL_SECURE=false
+// For NIC Cloud (prod): EMAIL_HOST=<nic-smtp-server>  EMAIL_PORT=<port>  EMAIL_SECURE=true/false
+// No code change needed when switching — just update the env variables.
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port:   parseInt(process.env.EMAIL_PORT || '587', 10),
+  secure: process.env.EMAIL_SECURE === 'true',   // true = port 465, false = STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false   // keeps working even with self-signed certs on NIC
   }
 });
 
-// Verify SMTP connection on startup so misconfiguration appears in logs immediately
+// Verify SMTP connection on startup — result appears immediately in server logs
 transporter.verify((error) => {
   if (error) {
-    console.error('[Email] SMTP transporter verification FAILED:', error.message);
+    console.error('[Email] SMTP verification FAILED:', error.message,
+      '| host:', process.env.EMAIL_HOST, 'port:', process.env.EMAIL_PORT);
   } else {
-    console.log('[Email] SMTP transporter ready — emails will be sent via', process.env.EMAIL_USER);
+    console.log('[Email] SMTP ready — sending via', process.env.EMAIL_USER,
+      'on', process.env.EMAIL_HOST || 'smtp.gmail.com');
   }
 });
 

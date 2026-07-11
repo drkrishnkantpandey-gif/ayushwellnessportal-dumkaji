@@ -14,12 +14,13 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Email transporter
+// ── Email / SMTP Configuration ────────────────────────────────────────────────
+// All values come from environment variables — no code change needed when
+// switching from Gmail (testing) to NIC Cloud SMTP (production).
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port:   parseInt(process.env.EMAIL_PORT || '587', 10),
+  secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
