@@ -58,6 +58,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "analytics", icon: Calendar, label: "Analytics" },
     { id: "affiliation", icon: Award, label: "Affiliation" },
     { id: "incentives", icon: DollarSign, label: "Incentive Applications" },
+    { id: "trainer-fee", icon: DollarSign, label: "Trainer Fee Reimbursement" },
   ];
 
   // AYUSH Hospital menu items

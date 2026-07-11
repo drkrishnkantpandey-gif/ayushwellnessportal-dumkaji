@@ -15,6 +15,7 @@ import AyushCollegeForm from "./forms/AyushCollegeForm";
 import DistrictOfficerForm from "./forms/DistrictOfficerForm";
 import DirectorateForm from "./forms/DirectorateForm";
 import AdminForm from "./forms/AdminForm";
+import ResearchInstitutionForm from "./forms/ResearchInstitutionForm";
 
 const Register = ({ setCurrentPage }) => {
   const [step, setStep] = useState(1);
@@ -166,6 +167,8 @@ const Register = ({ setCurrentPage }) => {
         );
       case "admin":
         return <AdminForm formData={formData} setFormData={setFormData} />;
+      case "research_org":
+        return <ResearchInstitutionForm formData={formData} setFormData={setFormData} />;
       default:
         return (
           <p className="text-sm text-gray-600">
@@ -319,6 +322,41 @@ const Register = ({ setCurrentPage }) => {
         }
         if (formData.contactPhone.length !== 10) {
           alert("Contact phone must be exactly 10 digits.");
+          return false;
+        }
+      if (formData.userType === "research_org") {
+        const requiredFields = [
+          "applicantName",
+          "designation",
+          "organizationType",
+          "organizationName",
+          "district",
+          "workExperienceYears",
+          "email",
+          "contactNumber",
+          "registrationDocId",
+          "physicalAddress",
+          "latitude",
+          "longitude",
+          "projectsCompleted",
+          "fundingReceived",
+          "associationWithYoga",
+          "affiliations",
+          "orgRegDoc",
+          "relevantDocs",
+          "isDeclarationTrue"
+        ];
+        const missing = requiredFields.filter(f => !formData[f]);
+        if (missing.length > 0) {
+          alert("Please fill in all required fields and upload files.");
+          return false;
+        }
+        if (formData.contactNumber.length !== 10) {
+          alert("Contact number must be exactly 10 digits.");
+          return false;
+        }
+        if (!formData.isDeclarationTrue) {
+          alert("Please check the declaration box to proceed.");
           return false;
         }
       }
@@ -479,6 +517,38 @@ const Register = ({ setCurrentPage }) => {
           );
 
           setVerificationEmail(res.data?.contactEmail || formData.contactEmail);
+          setOtp(["", "", "", ""]);
+          setShowOTP(true);
+        } else if (formData.userType === "research_org") {
+          const formDataToSend = new FormData();
+
+          Object.keys(formData).forEach((key) => {
+            if (key === "orgRegDoc" && formData[key]) {
+              formDataToSend.append("orgRegDoc", formData[key]);
+            } else if (key === "relevantDocs" && formData[key]) {
+              Array.from(formData[key]).forEach((file) => {
+                formDataToSend.append("relevantDocs", file);
+              });
+            } else if (
+              formData[key] !== null &&
+              formData[key] !== undefined &&
+              typeof formData[key] !== "object"
+            ) {
+              formDataToSend.append(key, formData[key]);
+            }
+          });
+
+          const res = await axios.post(
+            `${API}/api/register/research-org`,
+            formDataToSend,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          setVerificationEmail(res.data?.email || formData.email);
           setOtp(["", "", "", ""]);
           setShowOTP(true);
         } else {

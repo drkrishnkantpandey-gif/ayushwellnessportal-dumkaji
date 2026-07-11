@@ -1,4 +1,5 @@
 import API from '../../../config/api';
+import axiosInstance from '../../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -55,6 +56,9 @@ export default function TrainerFeeReimbursement() {
   const [showForm, setShowForm]         = useState(false);
   const [submitting, setSubmitting]     = useState(false);
   const [expandedId, setExpandedId]     = useState(null);
+  const [isOperational, setIsOperational] = useState(true);
+  const [checkingOperational, setCheckingOperational] = useState(false);
+  const userRole = localStorage.getItem("userRole") || "";
 
   const [form, setForm] = useState({
     institute_type: "",
@@ -94,7 +98,24 @@ export default function TrainerFeeReimbursement() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchApplications(); }, []);
+  useEffect(() => {
+    fetchApplications();
+    if (userRole === "yoga_centre") {
+      setCheckingOperational(true);
+      axiosInstance.get(`${API}/api/training-centre/profile`)
+        .then((res) => {
+          if (res.data && res.data.success) {
+            setIsOperational(!!res.data.data.is_operational);
+          }
+        })
+        .catch((err) => {
+          console.error("Error checking operational status:", err);
+        })
+        .finally(() => {
+          setCheckingOperational(false);
+        });
+    }
+  }, [userRole]);
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
 
@@ -162,10 +183,31 @@ export default function TrainerFeeReimbursement() {
     );
   }
 
-  if (loading) {
+  if (loading || checkingOperational) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600" />
+      </div>
+    );
+  }
+
+  if (userRole === "yoga_centre" && !isOperational) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-slate-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-100 shadow-xl text-center space-y-6">
+          <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mx-auto animate-pulse">
+            <AlertCircle size={32} />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-slate-800">Trainer Fee Reimbursement</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              This module is currently <strong className="text-amber-600">inactive</strong> because your Yoga Centre is not marked as <strong className="text-slate-700">operational</strong>.
+            </p>
+          </div>
+          <div className="bg-slate-50 p-4 rounded-2xl text-xs font-semibold text-slate-600 border border-slate-100">
+            Please contact the Directorate / District Officer to verify and mark your centre as operational.
+          </div>
+        </div>
       </div>
     );
   }

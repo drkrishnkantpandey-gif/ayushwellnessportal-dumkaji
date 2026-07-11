@@ -290,6 +290,7 @@ async function registerTrainingCentre(req, res) {
     address,
     city,
     state,
+    district,
     pincode,
     registrationNumber,
     registrationAuthority,
@@ -369,11 +370,11 @@ async function registerTrainingCentre(req, res) {
     await client.query(
       `INSERT INTO training_centres (
         user_id, centre_name, establishment_year, email, phone, 
-        institution_type, address, city, state, pincode, 
+        institution_type, address, city, state, district, pincode, 
         registration_number, registration_authority, description, 
         facilities, courses_offered, centre_photos
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
       )`,
       [
         userId,
@@ -385,6 +386,7 @@ async function registerTrainingCentre(req, res) {
         address || null,
         city || null,
         state || null,
+        district || null,
         pincode || null,
         registrationNumber || null,
         registrationAuthority || null,
@@ -941,9 +943,175 @@ async function registerAyushCollege(req, res) {
   }
 }
 
+async function registerResearchOrg(req, res) {
+  const {
+    applicantName,
+    designation,
+    organizationType,
+    organizationName,
+    district,
+    workExperienceYears,
+    email,
+    contactNumber,
+    registrationDocId,
+    website,
+    physicalAddress,
+    latitude,
+    longitude,
+    projectsCompleted,
+    fundingReceived,
+    associationWithYoga,
+    affiliations,
+    password
+  } = req.body;
+
+  // Basic validation
+  if (!applicantName || !designation || !organizationType || !organizationName || 
+      !district || !workExperienceYears || !email || !contactNumber || 
+      !registrationDocId || !physicalAddress || !latitude || !longitude || 
+      !projectsCompleted || !fundingReceived || !associationWithYoga || !affiliations || !password) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  // Process files
+  const files = req.files || {};
+  const regDocFile = files.orgRegDoc && files.orgRegDoc[0];
+  if (!regDocFile) {
+    return res.status(400).json({ message: "Organization registration document is required" });
+  }
+  const regDocPath = `/uploads/${regDocFile.filename}`;
+
+  const relevantDocsPaths = (files.relevantDocs || []).map(f => `/uploads/${f.filename}`);
+
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Check for existing user with same email/role (case-insensitive)
+    const existingUser = await client.query(
+      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      [email, 'research_org']
+    );
+
+    let userId;
+
+    if (existingUser.rows.length > 0) {
+      const userRecord = existingUser.rows[0];
+
+      if (userRecord.is_verified) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Email already registered and verified. Please log in.",
+        });
+      }
+
+      userId = userRecord.id;
+
+      await client.query(
+        `UPDATE users 
+         SET full_name = $1, phone = $2, password_hash = $3 
+         WHERE id = $4`,
+        [applicantName, contactNumber, passwordHash, userId]
+      );
+
+      await client.query(`DELETE FROM research_org_profile WHERE user_id = $1`, [userId]);
+      await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
+    } else {
+      const userResult = await client.query(
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+         RETURNING id`,
+        [applicantName, email, contactNumber, passwordHash, 'research_org', false]
+      );
+      userId = userResult.rows[0].id;
+    }
+
+    // Insert profile details
+    await client.query(
+      `INSERT INTO research_org_profile (
+         user_id, applicant_name, designation, organization_type, organization_name,
+         district, work_experience_years, email, contact_number,
+         registration_doc_path, registration_doc_id, website, physical_address,
+         latitude, longitude, projects_completed, funding_received,
+         association_with_yoga, affiliations, relevant_docs_paths
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+       )`,
+      [
+        userId,
+        applicantName,
+        designation,
+        organizationType,
+        organizationName,
+        district,
+        parseInt(workExperienceYears) || 0,
+        email,
+        contactNumber,
+        regDocPath,
+        registrationDocId,
+        website || null,
+        physicalAddress,
+        parseFloat(latitude) || 0,
+        parseFloat(longitude) || 0,
+        projectsCompleted,
+        parseFloat(fundingReceived) || 0,
+        associationWithYoga,
+        affiliations,
+        relevantDocsPaths
+      ]
+    );
+
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await client.query(
+      `INSERT INTO user_otps (user_id, otp_code, expires_at) VALUES ($1, $2, $3)`,
+      [userId, otp, expiresAt]
+    );
+
+    // Send OTP Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify your email for AYUSH Setu Registration",
+      text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email send failed:", error);
+      } else {
+        console.log("Verification email sent:", info.response);
+      }
+    });
+
+    await client.query("COMMIT");
+    client.release();
+
+    return res.status(201).json({
+      success: true,
+      message: "Registration successful. OTP sent to your email.",
+      userId
+    });
+
+  } catch (error) {
+    console.error("Error in registerResearchOrg:", error);
+    await client.query("ROLLBACK");
+    client.release();
+    return res.status(500).json({ message: "Server error during registration." });
+  }
+}
+
 module.exports = {
   registerWellnessCentre,
   registerTrainingCentre,
   registerYogaProfessional,
-  registerAyushCollege
+  registerAyushCollege,
+  registerResearchOrg
 };

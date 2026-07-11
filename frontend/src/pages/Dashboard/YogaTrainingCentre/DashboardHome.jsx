@@ -38,6 +38,7 @@ const YogaTrainingCentre = () => {
     ownerEmail: "",
     avatarUrl: "",
     coverUrl: "",
+    is_operational: false,
   });
 
   const avatarRef = useRef(null);
@@ -106,6 +107,7 @@ const YogaTrainingCentre = () => {
             : profile.accreditation_status === "PENDING"
               ? false
               : prev.verified,
+        is_operational: !!profile.is_operational,
         trainers: typeof stats.trainers === "number" ? stats.trainers : prev.trainers,
         courses: typeof stats.courses === "number" ? stats.courses : prev.courses,
         students: typeof stats.students === "number" ? stats.students : prev.students,
@@ -316,9 +318,12 @@ const YogaTrainingCentre = () => {
                   <span className="text-sm bg-white/20 px-2 py-1 rounded-md">
                     {centre.category}
                   </span>
-                  <span className="flex items-center gap-1 text-sm">
-                    <CheckCircle className="text-green-200" />
+                  <span className="flex items-center gap-1 text-sm bg-white/20 px-2 py-1 rounded-md">
+                    <CheckCircle className="text-green-200" size={14} />
                     {centre.verified ? "Verified" : "Unverified"}
+                  </span>
+                  <span className={`flex items-center gap-1 text-sm px-2.5 py-1 rounded-md font-semibold ${centre.is_operational ? "bg-emerald-500/30 text-emerald-100" : "bg-amber-500/30 text-amber-100"}`}>
+                    ⚡ {centre.is_operational ? "Operational" : "Not Operational"}
                   </span>
                 </div>
 

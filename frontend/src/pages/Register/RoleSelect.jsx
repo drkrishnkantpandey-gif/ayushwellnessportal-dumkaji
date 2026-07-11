@@ -43,7 +43,7 @@ const categories = [
         id: "yoga_centre",
         name: "Yoga Centre",
         icon: Building,
-        description: "For yoga institutions",
+        description: "For One Time Capital Subsidy / Trainer Fee Reimbursement",
         color: "from-emerald-500 to-emerald-700",
         bg: "bg-emerald-50 hover:border-emerald-400",
       },
@@ -62,6 +62,14 @@ const categories = [
         description: "For NAAC accredited colleges",
         color: "from-purple-500 to-purple-700",
         bg: "bg-purple-50 hover:border-purple-400",
+      },
+      {
+        id: "research_org",
+        name: "Research Institution",
+        icon: GraduationCap,
+        description: "NGO, Research Institute, Medical Org, University or College",
+        color: "from-sky-500 to-sky-700",
+        bg: "bg-sky-50 hover:border-sky-400",
       }
     ]
   },

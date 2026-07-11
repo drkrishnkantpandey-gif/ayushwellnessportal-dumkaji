@@ -4,7 +4,7 @@ const db = require('../db');
  * GET /api/registry/list
  * Query parameters:
  *  - district (optional)
- *  - type (optional: 'wellness_centre' | 'yoga_professional')
+ *  - type (optional: 'wellness_centre' | 'yoga_professional' | 'research_org')
  */
 exports.getRegistryList = async (req, res) => {
     try {
@@ -41,9 +41,26 @@ exports.getRegistryList = async (req, res) => {
             JOIN yoga_professional_profile p ON u.id = p.user_id
             WHERE u.role = 'yoga_professional' AND u.registration_status = 'approved'
         `;
+        let researchQuery = `
+            SELECT 
+                u.id, 
+                p.organization_name as "name", 
+                p.registration_number as "registrationNumber", 
+                p.organization_type as "entityType", 
+                p.email as "contactEmail", 
+                p.contact_number as "contactPhone", 
+                p.district, 
+                p.physical_address as "address",
+                u.registration_status as "status",
+                'research_org' as "type"
+            FROM users u
+            JOIN research_org_profile p ON u.id = p.user_id
+            WHERE u.role = 'research_org' AND u.registration_status = 'approved'
+        `;
 
         const wellnessParams = [];
         const yogaParams = [];
+        const researchParams = [];
 
         if (district) {
             wellnessParams.push(district);
@@ -51,6 +68,9 @@ exports.getRegistryList = async (req, res) => {
 
             yogaParams.push(district);
             yogaQuery += ` AND p.district = $${yogaParams.length}`;
+
+            researchParams.push(district);
+            researchQuery += ` AND p.district = $${researchParams.length}`;
         }
 
         const results = [];
@@ -63,6 +83,11 @@ exports.getRegistryList = async (req, res) => {
         if (!type || type === 'yoga_professional') {
             const yogaRes = await db.query(yogaQuery, yogaParams);
             results.push(...yogaRes.rows);
+        }
+
+        if (!type || type === 'research_org') {
+            const researchRes = await db.query(researchQuery, researchParams);
+            results.push(...researchRes.rows);
         }
 
         res.json({
@@ -123,6 +148,25 @@ exports.verifyRegistration = async (req, res) => {
                 valid: record.status === 'approved',
                 name: record.name,
                 type: 'yoga_professional',
+                registrationNumber: record.registrationNumber
+            });
+        }
+
+        // 3. Check Research Institutions
+        const researchRes = await db.query(`
+            SELECT u.id, p.organization_name as "name", p.registration_number as "registrationNumber", u.registration_status as "status", 'research_org' as "type"
+            FROM users u
+            JOIN research_org_profile p ON u.id = p.user_id
+            WHERE u.role = 'research_org' AND UPPER(TRIM(p.registration_number)) = $1
+        `, [cleanRegNum]);
+
+        if (researchRes.rows.length > 0) {
+            const record = researchRes.rows[0];
+            return res.json({
+                success: true,
+                valid: record.status === 'approved',
+                name: record.name,
+                type: 'research_org',
                 registrationNumber: record.registrationNumber
             });
         }

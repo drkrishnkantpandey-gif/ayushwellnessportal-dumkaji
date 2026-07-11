@@ -45,6 +45,7 @@ const updateTrainingCentre = asyncHandler(async (req, res) => {
     address,
     city,
     state,
+    district,
     pincode,
     description,
     facilities,
@@ -73,6 +74,7 @@ const updateTrainingCentre = asyncHandler(async (req, res) => {
   if (address !== undefined) { fields.push(`address = $${paramIndex++}`); values.push(address); }
   if (city !== undefined) { fields.push(`city = $${paramIndex++}`); values.push(city); }
   if (state !== undefined) { fields.push(`state = $${paramIndex++}`); values.push(state); }
+  if (district !== undefined) { fields.push(`district = $${paramIndex++}`); values.push(district); }
   if (pincode !== undefined) { fields.push(`pincode = $${paramIndex++}`); values.push(pincode); }
   if (description !== undefined) { fields.push(`description = $${paramIndex++}`); values.push(description); }
   if (facilities !== undefined) { fields.push(`facilities = $${paramIndex++}`); values.push(facilities); }

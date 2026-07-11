@@ -112,6 +112,19 @@ const updateUserApproval = async (req, res) => {
             await db.query("UPDATE wellness_centres SET registration_status = 'approved' WHERE user_id = $2", [userId]);
           }
         }
+      } else if (user.role === 'research_org') {
+        const profileCheck = await db.query('SELECT registration_number FROM research_org_profile WHERE user_id = $1', [userId]);
+        if (profileCheck.rows.length > 0) {
+          let regNum = profileCheck.rows[0].registration_number;
+          if (!regNum) {
+            const seqRes = await db.query("SELECT nextval('seq_research_org_reg_serial') as seq");
+            const serial = seqRes.rows[0].seq;
+            regNum = `UK-RI-${String(serial).padStart(4, '0')}`;
+            await db.query("UPDATE research_org_profile SET registration_number = $1, registration_status = 'approved' WHERE user_id = $2", [regNum, userId]);
+          } else {
+            await db.query("UPDATE research_org_profile SET registration_status = 'approved' WHERE user_id = $2", [userId]);
+          }
+        }
       }
     }
 
@@ -130,6 +143,53 @@ const updateUserApproval = async (req, res) => {
       data: rows[0]
     });
 
+const toggleCentreOperational = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { is_operational, district } = req.body;
+
+    // Fetch the centre's district first to enforce district officers' boundaries
+    const centreCheck = await db.query('SELECT district FROM training_centres WHERE user_id = $1', [userId]);
+    if (centreCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Yoga Centre not found"
+      });
+    }
+
+    const centreDistrict = centreCheck.rows[0].district;
+    
+    // Check if the user is a district officer and enforce match
+    if (req.user.role === 'district_officer') {
+      const officerDistrict = district || req.query.district;
+      if (!officerDistrict) {
+        return res.status(400).json({
+          success: false,
+          message: "Officer district parameter is required to verify ownership."
+        });
+      }
+      if (centreDistrict !== officerDistrict) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only mark centres in your own district as operational"
+        });
+      }
+    }
+
+    const result = await db.query(
+      `UPDATE training_centres 
+       SET is_operational = $1, updated_at = NOW()
+       WHERE user_id = $2
+       RETURNING *`,
+      [!!is_operational, userId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Operational status updated to ${is_operational} successfully`,
+      data: result.rows[0]
+    });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -139,4 +199,4 @@ const updateUserApproval = async (req, res) => {
   }
 };
 
-module.exports = { getUserByModule, updateUserApproval };
+module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational };

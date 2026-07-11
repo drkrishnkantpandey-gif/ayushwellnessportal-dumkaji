@@ -71,4 +71,15 @@ router.post(
   registerAyushCollege
 );
 
+// Research Institution Registration
+const { registerResearchOrg } = require("../controllers/registerController");
+router.post(
+  "/research-org",
+  upload.fields([
+    { name: "orgRegDoc", maxCount: 1 },
+    { name: "relevantDocs", maxCount: 5 }
+  ]),
+  registerResearchOrg
+);
+
 module.exports = router;

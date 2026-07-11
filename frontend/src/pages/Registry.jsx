@@ -4,7 +4,7 @@ import API from "../config/api";
 import { Search, MapPin, CheckCircle, XCircle, ShieldAlert, Award, FileText, ArrowLeft } from "lucide-react";
 
 const Registry = ({ onBack, forceVerifyOpen = false }) => {
-  const [activeTab, setActiveTab] = useState("wellness"); // wellness | yoga
+  const [activeTab, setActiveTab] = useState("wellness"); // wellness | yoga | research
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,7 +42,7 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
   const fetchRegistryData = async () => {
     setLoading(true);
     try {
-      const type = activeTab === "wellness" ? "wellness_centre" : "yoga_professional";
+      const type = activeTab === "wellness" ? "wellness_centre" : activeTab === "yoga" ? "yoga_professional" : "research_org";
       let url = `${API}/api/registry/list?type=${type}`;
       
       if (selectedDistrict !== "All") {
@@ -197,6 +197,12 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
             >
               Yoga Professionals
             </button>
+            <button
+              onClick={() => setActiveTab("research")}
+              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "research" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+            >
+              Research Institutions
+            </button>
           </div>
 
           {/* Filters */}
@@ -253,7 +259,11 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md">
-                      {item.type === "wellness_centre" ? (item.entityType || "Wellness Centre").replace(/_/g, ' ') : "Yoga Professional"}
+                      {item.type === "wellness_centre" 
+                        ? (item.entityType || "Wellness Centre").replace(/_/g, ' ') 
+                        : item.type === "yoga_professional" 
+                          ? "Yoga Professional" 
+                          : `Research Institution (${item.entityType || 'RI'})`}
                     </span>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                       <CheckCircle size={10} /> Valid Registry

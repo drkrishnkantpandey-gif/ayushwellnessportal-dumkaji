@@ -192,6 +192,8 @@ const App = () => {
         return <CenterAffiliation />;
       case "incentives":
         return <YogaTCIncentive />;
+      case "trainer-fee":
+        return <TrainerFeeReimbursement />;
       default:
         return <YogaTrainingCentreHome />;
     }
