@@ -190,12 +190,19 @@ const DistrictOfficerForm = ({ formData, setFormData, handleFileChange }) => {
             accept="image/*,.pdf"
             onChange={(e) => handleFileChange("idUpload", e.target.files)}
             className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-            required
+            required={!formData.idUpload?.filename}
           />
           {formData.idUpload && (
-            <p className="text-xs text-green-600 mt-1">
-              ✓ Attached: {formData.idUpload.name}
-            </p>
+            formData.idUpload.uploading ? (
+              <div className="flex items-center gap-2 mt-1 text-xs text-teal-600">
+                <div className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                <span>Uploading ID: {formData.idUpload.progress}%</span>
+              </div>
+            ) : (
+              <p className="text-xs text-green-600 mt-1 font-semibold">
+                ✓ Attached: {formData.idUpload.name}
+              </p>
+            )
           )}
         </div>
 
@@ -209,12 +216,19 @@ const DistrictOfficerForm = ({ formData, setFormData, handleFileChange }) => {
             accept=".pdf"
             onChange={(e) => handleFileChange("authorityOrder", e.target.files)}
             className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-            required
+            required={!formData.authorityOrder?.filename}
           />
           {formData.authorityOrder && (
-            <p className="text-xs text-green-600 mt-1">
-              ✓ Attached: {formData.authorityOrder.name}
-            </p>
+            formData.authorityOrder.uploading ? (
+              <div className="flex items-center gap-2 mt-1 text-xs text-teal-600">
+                <div className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                <span>Uploading Order: {formData.authorityOrder.progress}%</span>
+              </div>
+            ) : (
+              <p className="text-xs text-green-600 mt-1 font-semibold">
+                ✓ Attached: {formData.authorityOrder.name}
+              </p>
+            )
           )}
         </div>
       </div>

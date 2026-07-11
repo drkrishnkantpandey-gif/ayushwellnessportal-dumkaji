@@ -24,6 +24,60 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+const populatePreUploadedFiles = (req, res, next) => {
+  if (!req.files) req.files = {};
+  
+  const fileFields = [
+    "idUpload", "authorityOrder", "orgRegDoc", "relevantDocs",
+    "profilePhoto", "certificateFiles", "centrePhotos", "idProofFile",
+    "ownershipProof", "therapyMenu", "facilityImages", "staffCerts",
+    "naacCertificate", "auditReport", "extraNaac", "affiliationLetter",
+    "trustCertificate", "digitalSign", "idProof"
+  ];
+
+  fileFields.forEach(field => {
+    if (req.body[field] && (!req.files[field] || req.files[field].length === 0)) {
+      let value = req.body[field];
+      if (typeof value === "string" && value.startsWith("[") && value.endsWith("]")) {
+        try {
+          value = JSON.parse(value);
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (Array.isArray(value)) {
+        req.files[field] = value.map(filename => ({
+          fieldname: field,
+          filename,
+          originalname: filename,
+          path: path.join(__dirname, "..", "uploads", filename)
+        }));
+      } else if (typeof value === "string" && value.trim() !== "") {
+        req.files[field] = [{
+          fieldname: field,
+          filename: value,
+          originalname: value,
+          path: path.join(__dirname, "..", "uploads", value)
+        }];
+      }
+    }
+  });
+  next();
+};
+
+// Temp file upload for progress tracking and registration
+router.post("/upload-temp-file", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "No file uploaded" });
+  }
+  return res.json({
+    success: true,
+    filename: req.file.filename,
+    originalName: req.file.originalname,
+    path: `/uploads/${req.file.filename}`
+  });
+});
+
 // expects multipart/form-data
 router.post(
   "/wellness-centre",
@@ -33,6 +87,7 @@ router.post(
     { name: "facilityImages", maxCount: 10 },
     { name: "staffCerts", maxCount: 1 },
   ]),
+  populatePreUploadedFiles,
   registerWellnessCentre
 );
 
@@ -43,6 +98,7 @@ router.post(
     { name: "centrePhotos", maxCount: 10 },
     { name: "idProofFile", maxCount: 1 },
   ]),
+  populatePreUploadedFiles,
   registerTrainingCentre
 );
 
@@ -53,6 +109,7 @@ router.post(
     { name: "profilePhoto", maxCount: 1 },
     { name: "certificateFiles", maxCount: 5 },
   ]),
+  populatePreUploadedFiles,
   registerYogaProfessional
 );
 
@@ -68,6 +125,7 @@ router.post(
     { name: "digitalSign", maxCount: 1 },
     { name: "idProof", maxCount: 1 }
   ]),
+  populatePreUploadedFiles,
   registerAyushCollege
 );
 
@@ -79,6 +137,7 @@ router.post(
     { name: "orgRegDoc", maxCount: 1 },
     { name: "relevantDocs", maxCount: 5 }
   ]),
+  populatePreUploadedFiles,
   registerResearchOrg
 );
 
@@ -89,6 +148,7 @@ router.post(
     { name: "idUpload", maxCount: 1 },
     { name: "authorityOrder", maxCount: 1 }
   ]),
+  populatePreUploadedFiles,
   registerDistrictOfficer
 );
 
@@ -99,6 +159,7 @@ router.post(
     { name: "idUpload", maxCount: 1 },
     { name: "authorityOrder", maxCount: 1 }
   ]),
+  populatePreUploadedFiles,
   registerDirectorate
 );
 
