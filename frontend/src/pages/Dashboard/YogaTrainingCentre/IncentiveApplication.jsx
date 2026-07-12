@@ -57,19 +57,20 @@ const SERVICES = [
 ];
 
 const DOCS = [
-  { field: "doc_fire_safety",                 label: "Fire & Safety Audit Certificate",                    required: true  },
+  { field: "doc_fire_safety",                 label: "Fire & Safety NOC",                                  required: true  },
   { field: "doc_udyog_reg",                   label: "Udyog / MSME Registration",                          required: true  },
-  { field: "doc_gst_reg",                     label: "GST Registration Certificate",                        required: true  },
-  { field: "doc_pollution_cert",              label: "Pollution Clearance Certificate",                     required: true  },
+  { field: "doc_gst_reg",                     label: "GST Registration Certificate",                        required: false },
+  { field: "doc_pollution_cert",              label: "Pollution Control Board NOC",                        required: false },
   { field: "doc_dpr",                         label: "DPR — Certified by Planner / Architect",             required: true  },
   { field: "doc_ca_project_cost",             label: "CA Certified Project Cost Statement",                 required: true  },
-  { field: "doc_ca_eca",                      label: "CA Certified Eligible Capital Assets (ECA)",          required: true  },
+  { field: "doc_ca_eca",                      label: "CA Certified Eligible Capital Assets (ECA)",          required: false },
   { field: "doc_land_document",               label: "Copy of Land Document",                              required: true  },
   { field: "doc_constitution",                label: "Constitution of Firm / Society Deed/ MOA etc",       required: true  },
   { field: "doc_entity_registration",         label: "Registration certificate of Entity",                 required: true  },
   { field: "doc_map_approval",                label: "MAP Approved by Development Authority",              required: true  },
   { field: "doc_non_agri_land",               label: "Non-Agriculture Land Certificate",                   required: true  },
   { field: "doc_land_possession",             label: "Document of Land Possession / Lease of atleast 5 Years", required: true },
+  { field: "doc_affidavit",                   label: "Affidavit (No construction started & no other state subsidy claimed)", required: true },
   { field: "doc_others",                      label: "Any Other Supporting Document",                       required: false },
 ];
 
@@ -124,6 +125,8 @@ export default function IncentiveApplication() {
     clinicalServicesProvided: false,
     certifiedAyushDoctors: "",
     proposedSitePhoto: "",
+    declarationNoConstruction: false,
+    declarationNoSubsidy: false,
   });
 
   // Track status of uploads: { fieldName: { name, progress, uploading, path } }
@@ -275,6 +278,10 @@ export default function IncentiveApplication() {
       return alert("Please upload a photograph of the proposed site.");
     }
 
+    if (!form.declarationNoConstruction || !form.declarationNoSubsidy) {
+      return alert("Please check and confirm all declaration statements to submit the application.");
+    }
+
     setSubmitting(true);
     setErrorMsg("");
     setSuccessMsg("");
@@ -335,6 +342,8 @@ export default function IncentiveApplication() {
         ycbCertifiedInstructors: "",
         clinicalServicesProvided: false,
         certifiedAyushDoctors: "",
+        declarationNoConstruction: false,
+        declarationNoSubsidy: false,
       }));
       setUploadStatus({});
       fetchProfileAndApplications();
@@ -863,6 +872,36 @@ export default function IncentiveApplication() {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+
+          {/* Declaration Statements Checkboxes */}
+          <div className="border-t pt-5 space-y-3">
+            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+              ✍️ Applicant Declarations
+            </h3>
+            <div className="space-y-3 bg-slate-50 p-4 rounded-xl border">
+              <label className="flex items-start gap-2.5 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.declarationNoConstruction}
+                  onChange={(e) => setForm(p => ({ ...p, declarationNoConstruction: e.target.checked }))}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 w-4 h-4 mt-0.5"
+                  required
+                />
+                <span>I hereby declare that I have not started any construction work yet for the proposed Yoga & Meditation Centre. <span className="text-red-500">*</span></span>
+              </label>
+
+              <label className="flex items-start gap-2.5 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.declarationNoSubsidy}
+                  onChange={(e) => setForm(p => ({ ...p, declarationNoSubsidy: e.target.checked }))}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 w-4 h-4 mt-0.5"
+                  required
+                />
+                <span>I hereby declare that I have not claimed any subsidy for this project in any other scheme of the state government. <span className="text-red-500">*</span></span>
+              </label>
             </div>
           </div>
 

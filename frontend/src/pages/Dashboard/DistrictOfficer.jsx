@@ -186,10 +186,10 @@ function YogaTCIncentiveReview() {
 
                     {/* Documents submitted by applicant */}
                     <DocList docs={[
-                      { label: "Fire Safety Certificate",   path: app.doc_fire_safety },
+                      { label: "Fire & Safety NOC",         path: app.doc_fire_safety },
                       { label: "Udyog Registration",        path: app.doc_udyog_reg },
-                      { label: "GST Registration",          path: app.doc_gst_reg },
-                      { label: "Pollution Certificate",     path: app.doc_pollution_cert },
+                      { label: "GST Registration Certificate", path: app.doc_gst_reg },
+                      { label: "Pollution Control Board NOC", path: app.doc_pollution_cert },
                       { label: "Detailed Project Report",   path: app.doc_dpr },
                       { label: "CA Project Cost Cert.",     path: app.doc_ca_project_cost },
                       { label: "CA Certified ECA",          path: app.doc_ca_eca },
@@ -199,6 +199,7 @@ function YogaTCIncentiveReview() {
                       { label: "MAP Approved by Dev Authority", path: app.doc_map_approval },
                       { label: "Non-Agriculture Land Cert", path: app.doc_non_agri_land },
                       { label: "Land Possession / Lease Proof", path: app.doc_land_possession },
+                      { label: "Affidavit (No construction started & no other state subsidy claimed)", path: app.doc_affidavit },
                       { label: "Others",                    path: app.doc_others },
                     ]} />
 

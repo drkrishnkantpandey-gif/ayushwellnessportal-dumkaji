@@ -78,6 +78,8 @@ router.post('/incentives', upload.fields([
   { name: 'doc_map_approval',                maxCount: 1 },
   { name: 'doc_non_agri_land',               maxCount: 1 },
   { name: 'doc_land_possession',             maxCount: 1 },
+  { name: 'doc_affidavit',                   maxCount: 1 },
+  { name: 'proposed_site_photo',             maxCount: 1 },
   { name: 'doc_others',                      maxCount: 5 },
 ]), submitApplication);
 
