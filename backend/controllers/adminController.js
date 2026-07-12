@@ -347,11 +347,11 @@ const getPendingRegistrations = async (req, res) => {
   const requesterRole = req.user.role;
   const filterStatus = req.query.status || 'pending';
 
-  let statuses = "('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')";
+  let statuses = "(u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW') OR u.registration_status IS NULL)";
   if (filterStatus === 'approved') {
-    statuses = "('approved', 'APPROVED')";
+    statuses = "u.registration_status IN ('approved', 'APPROVED')";
   } else if (filterStatus === 'rejected') {
-    statuses = "('rejected', 'REJECTED')";
+    statuses = "u.registration_status IN ('rejected', 'REJECTED')";
   }
 
   try {
@@ -362,7 +362,7 @@ const getPendingRegistrations = async (req, res) => {
                dp.designation, dp.id_type, dp.id_number, dp.id_upload_path, dp.authority_order_path
         FROM users u
         LEFT JOIN directorate_profile dp ON dp.user_id = u.id
-        WHERE u.role = 'directorate' AND u.registration_status IN ${statuses}
+        WHERE u.role = 'directorate' AND ${statuses}
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query);
@@ -382,7 +382,7 @@ const getPendingRegistrations = async (req, res) => {
         LEFT JOIN ayush_colleges c ON c.id = u.id
         LEFT JOIN ayush_hospitals h ON h.user_id = u.id
         LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
-        WHERE u.role NOT IN ('admin', 'directorate') AND u.registration_status IN ${statuses}
+        WHERE u.role NOT IN ('admin', 'directorate') AND ${statuses}
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query);
@@ -407,7 +407,7 @@ const getPendingRegistrations = async (req, res) => {
         LEFT JOIN ayush_hospitals h ON h.user_id = u.id
         WHERE u.role IN ('wellness_centre', 'yoga_centre', 'yoga_professional', 'ayush_hospital')
           AND COALESCE(w.district, t.district, y.district, h.district) = $1
-          AND u.registration_status IN ${statuses}
+          AND ${statuses}
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query, [officerDistrict]);
