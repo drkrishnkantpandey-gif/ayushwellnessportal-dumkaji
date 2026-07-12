@@ -1665,7 +1665,7 @@ const Directorate = ({ activeTab }) => {
                         <span className="text-gray-600">{selectedEntity.tc_entity_type || "N/A"}</span>
                       </div>
                       <div>
-                        <span className="font-semibold text-gray-800 block">Already Operating</span> 
+                        <span className="font-semibold text-gray-800 block">Existing Operational Business</span> 
                         <span className="text-gray-600">{selectedEntity.tc_already_operating || "N/A"}</span>
                       </div>
                       {selectedEntity.tc_already_operating === "Other" && (

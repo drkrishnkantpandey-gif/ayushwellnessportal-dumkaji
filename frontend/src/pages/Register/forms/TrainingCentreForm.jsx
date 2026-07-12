@@ -29,7 +29,7 @@ const ENTITY_TYPES = [
 
 const OPERATING_TYPES = [
   "None",
-  "Yoga Centre",
+  "Existing Operational Yoga Centre",
   "Wellness Centre",
   "Homestay",
   "School",
@@ -44,7 +44,7 @@ const ID_PROOFS = [
   "Other Document"
 ];
 
-const TrainingCentreForm = ({ formData, setFormData }) => {
+const TrainingCentreForm = ({ formData, setFormData, handleFileChange }) => {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -54,50 +54,9 @@ const TrainingCentreForm = ({ formData, setFormData }) => {
   };
 
   const handleFileInput = (field, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Simulate temp file upload structure expected by Register.jsx
-    setFormData(prev => ({
-      ...prev,
-      [field]: {
-        name: file.name,
-        uploading: true,
-        progress: 0
-      }
-    }));
-
-    // Perform background upload using API just like handleFileChange in Register.jsx
-    const uploadForm = new FormData();
-    uploadForm.append("file", file);
-
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-    fetch(`${API_URL}/api/register/upload-temp-file`, {
-      method: "POST",
-      body: uploadForm
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setFormData(prev => ({
-            ...prev,
-            [field]: {
-              name: file.name,
-              filename: data.filename,
-              uploading: false,
-              progress: 100
-            }
-          }));
-        } else {
-          alert("Failed to upload certificate");
-          setFormData(prev => ({ ...prev, [field]: null }));
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Upload error. Please try again.");
-        setFormData(prev => ({ ...prev, [field]: null }));
-      });
+    if (handleFileChange) {
+      handleFileChange(field, e.target.files);
+    }
   };
 
   const removeFile = (field) => {
@@ -113,28 +72,64 @@ const TrainingCentreForm = ({ formData, setFormData }) => {
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">{label} <span className="text-red-500">*</span></label>
         {!fileVal ? (
-          <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-teal-500 transition-colors group cursor-pointer relative bg-gray-50/50">
+          <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-teal-500 transition-colors group cursor-pointer relative bg-gray-50/50">
             <div className="space-y-1 text-center">
               <Upload className="mx-auto h-10 w-10 text-gray-400 group-hover:text-teal-500 transition-colors" />
-              <div className="flex text-sm text-gray-600">
-                <label className="relative cursor-pointer rounded-md font-semibold text-teal-600 hover:text-teal-700 focus-within:outline-none">
-                  <span>Upload a file</span>
-                  <input
-                    type="file"
-                    className="sr-only"
-                    accept={accept}
-                    onChange={(e) => handleFileInput(field, e)}
-                  />
-                </label>
+              <div className="flex text-sm text-gray-600 justify-center">
+                <span className="font-semibold text-teal-600 hover:text-teal-700">Upload a file</span>
                 <p className="pl-1">or drag and drop</p>
               </div>
               <p className="text-xs text-gray-400">PDF, PNG, JPG up to 10MB</p>
+              <input
+                type="file"
+                className="sr-only"
+                accept={accept}
+                onChange={(e) => handleFileInput(field, e)}
+              />
             </div>
-          </div>
+          </label>
         ) : (
           <div className="flex items-center justify-between p-4 bg-teal-50/60 border border-teal-100 rounded-xl">
             <div className="flex items-center space-x-3 min-w-0">
-              <FileText className="h-6 w-6 text-teal-600 shrink-0" />
+              {fileVal.uploading ? (
+                <div className="relative flex items-center justify-center h-10 w-10 shrink-0">
+                  {(() => {
+                    const radius = 14;
+                    const circumference = 2 * Math.PI * radius;
+                    const strokeDashoffset = circumference - ((fileVal.progress || 0) / 100) * circumference;
+                    return (
+                      <>
+                        <svg className="w-10 h-10 transform -rotate-90">
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={radius}
+                            className="text-gray-200"
+                            strokeWidth="3"
+                            stroke="currentColor"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={radius}
+                            className="text-teal-600 transition-all duration-300"
+                            strokeWidth="3"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            fill="transparent"
+                          />
+                        </svg>
+                        <span className="absolute text-[10px] font-bold text-teal-700">{fileVal.progress || 0}%</span>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <FileText className="h-6 w-6 text-teal-600 shrink-0" />
+              )}
               <div className="truncate">
                 <p className="text-sm font-semibold text-gray-800 truncate">{fileVal.name}</p>
                 {fileVal.uploading ? (
@@ -230,9 +225,9 @@ const TrainingCentreForm = ({ formData, setFormData }) => {
           />
         </div>
 
-        {/* 6. Already Operating */}
+        {/* 6. Existing Operational Business */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Already Operating <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Existing Operational Business <span className="text-red-500">*</span></label>
           <select
             value={formData.alreadyOperating || ""}
             onChange={(e) => handleInputChange("alreadyOperating", e.target.value)}
