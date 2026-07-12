@@ -1,6 +1,7 @@
 import API from '../../../config/api';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import axiosInstance from '../../../config/axiosInstance';
 import {
   PlusCircle, FileText, CheckCircle, Clock,
   XCircle, ChevronDown, ChevronUp, Upload, IndianRupee, Mountain, Leaf,
