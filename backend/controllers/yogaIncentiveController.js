@@ -134,7 +134,7 @@ async function submitApplication(req, res) {
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('submitApplication error:', err);
-    res.status(500).json({ message: `Server error during submission: ${err.message}` });
+    res.status(500).json({ message: `Server error during submission: ${err.message} (Host: ${process.env.DB_HOST}, DB: ${process.env.DB_NAME})` });
   }
 }
 
