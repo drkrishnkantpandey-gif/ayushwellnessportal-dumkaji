@@ -1098,10 +1098,54 @@ export default function IncentiveApplication() {
                         </div>
                       </div>
 
+                      {/* Proposed Site details */}
+                      <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-3 rounded-lg border">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Site Total Area</span>
+                          <span className="font-bold text-gray-700">{app.site_total_area ? `${app.site_total_area} sq ft` : "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Constructed Area</span>
+                          <span className="font-bold text-gray-700">{app.proposed_constructed_area ? `${app.proposed_constructed_area} sq ft` : "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Tentative Employees</span>
+                          <span className="font-bold text-gray-700">{app.tentative_employees || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">YCB Certified Instructors</span>
+                          <span className="font-bold text-gray-700">{app.ycb_certified_instructors || "—"}</span>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-3 bg-white p-3 rounded-lg border grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Services Offered</span>
+                          <span className="font-semibold text-gray-700">{Array.isArray(app.services_offered) ? app.services_offered.join(", ") : "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Clinical Services Provided?</span>
+                          <span className="font-semibold text-gray-700">
+                            {app.clinical_services_provided ? `Yes (${app.certified_ayush_doctors || 0} AYUSH Doctors)` : "No"}
+                          </span>
+                        </div>
+                      </div>
+
                       {/* Documents List */}
                       <div className="md:col-span-3 space-y-2 border-t pt-3">
                         <span className="text-[10px] font-bold text-gray-400 uppercase block tracking-wider">Submitted Scheme Documents</span>
                         <div className="grid md:grid-cols-2 gap-2 text-[11px]">
+                          {app.proposed_site_photo && (
+                            <a
+                              href={`${API}${app.proposed_site_photo}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 transition truncate text-slate-600 font-bold"
+                            >
+                              <FileText size={13} className="text-emerald-500 shrink-0" />
+                              <span className="truncate">📷 Proposed Site Photograph</span>
+                            </a>
+                          )}
                           {DOCS.map(doc => {
                             const val = app[doc.field];
                             if (!val) return null;
