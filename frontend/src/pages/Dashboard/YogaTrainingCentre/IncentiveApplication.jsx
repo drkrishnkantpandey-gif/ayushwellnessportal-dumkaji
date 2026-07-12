@@ -81,7 +81,7 @@ export default function IncentiveApplication() {
 
   const fetchApplications = async () => {
     try {
-      const r = await axiosInstance.get(`${API}/api/training-centre/incentives`, { headers });
+      const r = await axiosInstance.get(`${API}/api/training-centre/incentives`);
       setApplications(r.data.data || []);
     } catch (e) {
       console.error(e);
@@ -121,7 +121,7 @@ export default function IncentiveApplication() {
       Object.entries(files).forEach(([k, v]) => { if (v) fd.append(k, v); });
 
       await axiosInstance.post(`${API}/api/training-centre/incentives`, fd, {
-        headers: { ...headers, "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       setSuccessMsg("Application submitted successfully! It will be reviewed by the District Officer.");
