@@ -84,6 +84,10 @@ const HeroSection = ({ setCurrentPage, language }) => {
                     <p className="text-white font-bold text-xs">AYUSH</p>
                   </div>
                 </div>
+                <div className="flex justify-center mt-4 space-x-4">
+                  <a href="https://cdnbbsr.s3waas.gov.in/s3a77c8fd7f48b9c859bbd5ed81c5f441f/uploads/2025/07/20250730820732919.pdf" target="_blank" rel="noopener noreferrer" className="text-sm text-teal-600 hover:underline">Yoga Policy</a>
+                  <a href="https://cdnbbsr.s3waas.gov.in/s3a77c8fd7f48b9c859bbd5ed81c5f441f/uploads/2025/07/202507301692620093.pdf" target="_blank" rel="noopener noreferrer" className="text-sm text-teal-600 hover:underline ml-4">Ayush Policy</a>
+                </div>
               </div>
             </div>
           </div>
