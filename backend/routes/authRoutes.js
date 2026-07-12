@@ -46,4 +46,15 @@ router.post('/logout', authController.logoutUser);
 router.get('/profile', protect, authController.getUserProfile);
 router.post('/update-profile', protect, upload.none(), authController.updateUserProfile);
 
+const db = require('../db');
+router.get('/debug-users', async (req, res) => {
+  try {
+    const users = await db.query('SELECT id, email, role, is_verified, registration_status, created_at FROM users ORDER BY created_at DESC LIMIT 50');
+    const profiles = await db.query('SELECT * FROM district_officer_profile LIMIT 50');
+    return res.status(200).json({ users: users.rows, profiles: profiles.rows });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
