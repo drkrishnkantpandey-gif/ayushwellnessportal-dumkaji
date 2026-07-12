@@ -78,20 +78,25 @@ async function registerWellnessCentre(req, res) {
 
     // 1) create or update user row
     const existingUser = await client.query(
-      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND LOWER(role) = LOWER($2)`,
+      `SELECT id, is_verified, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND LOWER(role) = LOWER($2)`,
       [contactEmail, 'wellness_centre']
     );
 
     let userId;
     if (existingUser.rows.length > 0) {
-      if (existingUser.rows[0].is_verified) {
+      const userRecord = existingUser.rows[0];
+      if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
-        return res.status(400).json({ message: "Email already registered and verified." });
+        return res.status(400).json({ message: "This email is already registered and approved. Please log in." });
       }
-      userId = existingUser.rows[0].id;
+      if (userRecord.registration_status === 'pending' || userRecord.registration_status === null) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ message: "Your registration is already under review. Please wait for approval." });
+      }
+      userId = userRecord.id;
       const passwordHash = await bcrypt.hash(password, 10);
       await client.query(
-        `UPDATE users SET full_name = $1, password_hash = $2, registration_status = 'pending' WHERE id = $3`,
+        `UPDATE users SET full_name = $1, password_hash = $2, registration_status = 'pending', is_verified = true WHERE id = $3`,
         [contactPerson, passwordHash, userId]
       );
       // Clean up previous registration attempts
@@ -312,8 +317,9 @@ async function registerTrainingCentre(req, res) {
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Check for existing user with same email/role (case-insensitive)
+    // Check for existing user with same email/role (case-insensitive)
     const existingUser = await client.query(
-      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      `SELECT id, is_verified, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
       [email, 'yoga_centre']
     );
 
@@ -322,12 +328,20 @@ async function registerTrainingCentre(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      if (userRecord.is_verified) {
+      if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
-          message: "Email already registered and verified. Please log in.",
+          message: "This email is already registered and approved. Please log in.",
+        });
+      }
+      if (userRecord.registration_status === 'pending' || userRecord.registration_status === null) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Your registration is already under review. Please wait for approval.",
         });
       }
 
@@ -335,19 +349,18 @@ async function registerTrainingCentre(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending', is_verified = true
          WHERE id = $4`,
         [centreName, phone, passwordHash, userId]
       );
 
       await client.query(`DELETE FROM training_centres WHERE user_id = $1`, [userId]);
-      await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
+         VALUES ($1, LOWER($2), $3, $4, $5, true, 'pending')
          RETURNING id`,
-        [centreName, email, phone, passwordHash, 'yoga_centre', true]
+        [centreName, email, phone, passwordHash, 'yoga_centre']
       );
       userId = userResult.rows[0].id;
     }
@@ -413,11 +426,15 @@ async function registerTrainingCentre(req, res) {
       `,
     };
 
-    await sendMail(mailOptions);
+    try {
+      await sendMail(mailOptions);
+    } catch (mailErr) {
+      console.error("Failed to send verification email for training centre:", mailErr);
+    }
 
     res.status(201).json({
       success: true,
-      message: "Training centre registered successfully. Please check your email to verify your account.",
+      message: "Training centre registered successfully. Please wait for District/Directorate approval.",
       email
     });
 
@@ -501,7 +518,7 @@ async function registerYogaProfessional(req, res) {
 
     // Check for existing user with same email/role (case-insensitive)
     const existingUser = await client.query(
-      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      `SELECT id, is_verified, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
       [email, 'yoga_professional']
     );
 
@@ -510,12 +527,20 @@ async function registerYogaProfessional(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      if (userRecord.is_verified) {
+      if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
-          message: "Email already registered and verified. Please log in.",
+          message: "This email is already registered and approved. Please log in.",
+        });
+      }
+      if (userRecord.registration_status === 'pending' || userRecord.registration_status === null) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Your registration is already under review. Please wait for approval.",
         });
       }
 
@@ -523,7 +548,7 @@ async function registerYogaProfessional(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3, aadhaar_number = $4, pan_number = $5, qualification = $6, registration_status = 'pending'
+         SET full_name = $1, phone = $2, password_hash = $3, aadhaar_number = $4, pan_number = $5, qualification = $6, registration_status = 'pending', is_verified = true
          WHERE id = $7`,
         [fullName, phone, passwordHash, aadhaar || null, pan || null, qualification || null, userId]
       );
@@ -977,7 +1002,7 @@ async function registerResearchOrg(req, res) {
 
     // Check for existing user with same email/role (case-insensitive)
     const existingUser = await client.query(
-      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      `SELECT id, is_verified, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
       [email, 'research_org']
     );
 
@@ -986,12 +1011,20 @@ async function registerResearchOrg(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      if (userRecord.is_verified) {
+      if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
-          message: "Email already registered and verified. Please log in.",
+          message: "This email is already registered and approved. Please log in.",
+        });
+      }
+      if (userRecord.registration_status === 'pending' || userRecord.registration_status === null) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Your registration is already under review. Please wait for approval.",
         });
       }
 
@@ -999,7 +1032,7 @@ async function registerResearchOrg(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending', is_verified = true
          WHERE id = $4`,
         [applicantName, contactNumber, passwordHash, userId]
       );
