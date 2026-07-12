@@ -54,8 +54,11 @@ const updateTrainingCentre = asyncHandler(async (req, res) => {
     owner_email,
     owner_phone,
     latitude,
-    longitude
+    longitude,
+    is_operational
   } = req.body;
+
+  if (is_operational !== undefined) { fields.push(`is_operational = $${paramIndex++}`); values.push(is_operational === 'true' || is_operational === true); }
 
   const avatarFile = req.files?.avatar?.[0];
   const coverFile = req.files?.cover?.[0];

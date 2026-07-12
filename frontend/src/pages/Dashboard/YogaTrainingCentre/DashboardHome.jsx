@@ -374,77 +374,91 @@ const YogaTrainingCentre = () => {
         <div className="space-y-6 col-span-1">
           {/* PROFILE CARD */}
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between border-b pb-4 mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">Centre Profile</h2>
-                <p className="text-sm text-gray-500">Homepage of your centre</p>
+                <h2 className="text-xl font-bold text-gray-800">Centre Profile Details</h2>
+                <p className="text-sm text-gray-500">Declared details for Incentive & Grants verification</p>
               </div>
 
               <button
                 onClick={openEdit}
-                className="bg-emerald-600 text-white px-3 py-2 rounded-md text-sm flex items-center"
+                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center hover:bg-emerald-700 transition"
               >
                 <Edit3 size={14} className="mr-2" /> Edit Details
               </button>
             </div>
 
-            {/* OWNER DETAILS */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-              {[
-                { icon: User, label: "Owner Name", value: centre.ownerName },
-                { icon: Phone, label: "Owner Phone", value: centre.ownerPhone },
-                { icon: Mail, label: "Owner Email", value: centre.ownerEmail },
-              ].map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <div key={i} className="bg-gray-50 rounded-xl p-4 flex items-center gap-4">
-                    <div className="p-3 bg-emerald-200 rounded-full text-emerald-700">
-                      <Icon size={22} />
-                    </div>
+            {/* KEY DATA POINTS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Entity Name</span>
+                  <span className="text-base font-bold text-gray-800">{centre.name || "N/A"}</span>
+                </div>
+
+                <div>
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Entity Type</span>
+                  <span className="text-base font-semibold text-gray-700">{centre.type || "N/A"}</span>
+                </div>
+
+                <div>
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">District</span>
+                  <span className="text-base font-semibold text-gray-700">{centre.district || "N/A"}</span>
+                </div>
+
+                <div>
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Business Address</span>
+                  <span className="text-base font-medium text-gray-600 block leading-relaxed">{centre.address || "N/A"}</span>
+                </div>
+              </div>
+
+              <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <div>
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Existing Operational Business Category</span>
+                  <span className="text-base font-bold text-teal-800 block mt-1">
+                    {centre.alreadyOperating || "None"}
+                  </span>
+                </div>
+
+                {/* OPERATIONAL STATUS TOGGLE */}
+                <div className="border-t border-slate-200/60 pt-4">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Yoga Centre Operational Status</span>
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">{item.label}</p>
-                      <p className="font-semibold text-gray-800">{item.value}</p>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${centre.is_operational ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                        <span className={`w-2 h-2 rounded-full ${centre.is_operational ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`}></span>
+                        {centre.is_operational ? "Currently Operational as Yoga Centre" : "Not Operational (Greenfield/Expansion)"}
+                      </span>
                     </div>
+
+                    <button
+                      onClick={toggleOperationalStatus}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${centre.is_operational ? "bg-emerald-600" : "bg-gray-300"}`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${centre.is_operational ? "translate-x-6" : "translate-x-1"}`}
+                      />
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              </div>
             </div>
 
-            {/* STATS */}
-            <div className="mt-6 flex flex-col md:flex-row md:gap-16 gap-6 items-center">
-
-              <div>
-                <div className="text-xs text-gray-500">Trainers</div>
-                <div className="text-4xl font-extrabold text-gray-800 flex items-center gap-2">
-                  <Users className="text-emerald-600" size={52} /> {centre.trainers}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-gray-500">Courses</div>
-                <div className="text-4xl font-extrabold text-gray-800 flex items-center gap-2">
-                  <BookOpen className="text-teal-600" size={52} /> {centre.courses}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-gray-500">Profile completeness</div>
-                <div className="w-48 mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="h-3 bg-gradient-to-r from-green-500 to-emerald-600"
-                      style={{ width: `${completenessScore}%` }}
-                    />
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {completenessScore}% complete
-                  </div>
-                </div>
-              </div>
+            {/* INCENTIVES & GRANTS SUMMARY INFO */}
+            <div className="mt-6 p-4 bg-teal-50 border border-teal-100 rounded-xl">
+              <h4 className="text-sm font-bold text-teal-900 mb-1">Applicable Incentive Schemes</h4>
+              <ul className="text-xs text-teal-800 space-y-1.5 list-disc pl-4 mt-2">
+                <li>
+                  <strong>Trainer Fee Reimbursement:</strong> Only eligible and accessible if status is set to <strong>"Currently Operational as Yoga Centre"</strong>.
+                </li>
+                <li>
+                  <strong>New Yoga Centre Incentive:</strong> Tailored for <strong>Greenfield</strong> or <strong>Expansion</strong> projects (status set to "Not Operational").
+                </li>
+              </ul>
             </div>
 
             {/* ABOUT */}
-            <div className="mt-6">
+            <div className="mt-6 border-t pt-4">
               <div className="flex justify-between">
                 <h3 className="text-sm font-semibold text-gray-800">About Centre</h3>
 
