@@ -16,6 +16,14 @@ const {
   directorateMarkSlrcApproved,
   directorateGrantInPrinciple,
   getAllApplications,
+  rejectApplicationByDirectorate,
+  markSLRCApproval,
+  getDisbursalClaims,
+  forwardClaimToCommittee,
+  verifyClaimByCommittee,
+  revertClaimToApplicant,
+  recommendClaimBySLRC,
+  releaseClaimSubsidy,
 } = require('../controllers/yogaIncentiveController');
 
 const {
@@ -59,9 +67,19 @@ router.put('/incentives/district/:id/verify',   protect, districtOnly, districtS
 router.get('/incentives/directorate',                       protect, directorateOnly, getDirectorateApplications);
 router.put('/incentives/directorate/:id/forward-district',   protect, directorateOnly, directorateForwardToDistrict);
 router.put('/incentives/directorate/:id/revert',             protect, directorateOnly, directorateRevertToApplicant);
+router.put('/incentives/directorate/:id/reject',             protect, directorateOnly, rejectApplicationByDirectorate);
 router.put('/incentives/directorate/:id/forward-slrc',       protect, directorateOnly, directorateForwardToSlrc);
 router.put('/incentives/directorate/:id/slrc-approved',      protect, directorateOnly, directorateMarkSlrcApproved);
+router.put('/incentives/directorate/:id/slrc-approval',      protect, directorateOnly, markSLRCApproval);
 router.put('/incentives/directorate/:id/grant-approval',     protect, directorateOnly, directorateGrantInPrinciple);
+
+// ── Directorate — Disbursal Claims management ────────────────────────────────
+router.get('/incentives/directorate/:applicationId/disbursal-claims', protect, directorateOnly, getDisbursalClaims);
+router.put('/incentives/directorate/claims/:claimId/forward-committee', protect, directorateOnly, forwardClaimToCommittee);
+router.put('/incentives/directorate/claims/:claimId/verify-committee', protect, directorateOnly, verifyClaimByCommittee);
+router.put('/incentives/directorate/claims/:claimId/revert-claim', protect, directorateOnly, revertClaimToApplicant);
+router.put('/incentives/directorate/claims/:claimId/slrc-recommend', protect, directorateOnly, recommendClaimBySLRC);
+router.put('/incentives/directorate/claims/:claimId/release-subsidy', protect, directorateOnly, releaseClaimSubsidy);
 
 // ── Admin — all incentive applications ───────────────────────────────────────
 router.get('/incentives/all', protect, isAdmin, getAllApplications);

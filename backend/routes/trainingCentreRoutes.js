@@ -25,6 +25,8 @@ const {
   submitApplication,
   getMyApplications,
   resubmitApplication,
+  submitDisbursalClaim,
+  getDisbursalClaims,
 } = require('../controllers/yogaIncentiveController');
 
 // Protected routes (require authentication)
@@ -109,5 +111,19 @@ router.post('/infrastructure', upload.fields([
   { name: 'media', maxCount: 10 }
 ]), addInfrastructure);
 router.delete('/infrastructure/:id', deleteInfrastructure);
+
+// Disbursal Claims routes
+router.post('/incentives/disbursal-claims', upload.fields([
+  { name: 'doc_bank_detail',           maxCount: 1 },
+  { name: 'doc_ca_eca_report',         maxCount: 1 },
+  { name: 'doc_fire_safety_audit',     maxCount: 1 },
+  { name: 'doc_wellness_registration', maxCount: 1 },
+  { name: 'doc_capex_certificate',     maxCount: 1 },
+  { name: 'doc_actual_bills',          maxCount: 1 },
+  { name: 'doc_others',                maxCount: 1 },
+  { name: 'doc_sessions_workshops',    maxCount: 1 },
+]), submitDisbursalClaim);
+
+router.get('/incentives/:applicationId/disbursal-claims', getDisbursalClaims);
 
 module.exports = router;

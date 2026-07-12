@@ -533,6 +533,62 @@ function YogaTCDirectorateReview() {
     finally { setLoading(false); }
   };
 
+  // ── Disbursal Claims Management states & methods ───────────────────────────
+  const [disbursalClaims, setDisbursalClaims] = useState({});
+  const [showClaimAction, setShowClaimAction] = useState(null); // { claim, actionType }
+  const [claimActionText, setClaimActionText] = useState("");
+  const [claimSLRCDecision, setClaimSLRCDecision] = useState(true);
+
+  const fetchClaimsForApp = async (appId) => {
+    try {
+      const res = await axiosInstance.get(`${API}/api/admin/incentives/directorate/${appId}/disbursal-claims`);
+      setDisbursalClaims(prev => ({
+        ...prev,
+        [appId]: res.data.data || []
+      }));
+    } catch (e) {
+      console.error("Error fetching claims:", e);
+    }
+  };
+
+  const handleClaimWorkflowSubmit = async (e) => {
+    e.preventDefault();
+    if (!showClaimAction) return;
+    const { claim, actionType } = showClaimAction;
+
+    try {
+      let endpoint = "";
+      let payload = {};
+
+      if (actionType === 'forward') {
+        endpoint = `${API}/api/admin/incentives/directorate/claims/${claim.id}/forward-committee`;
+      } else if (actionType === 'revert') {
+        if (!claimActionText.trim()) return alert("Revert reason is required.");
+        endpoint = `${API}/api/admin/incentives/directorate/claims/${claim.id}/revert-claim`;
+        payload = { revertComment: claimActionText };
+      } else if (actionType === 'verify') {
+        if (!claimActionText.trim()) return alert("Verification report is required.");
+        endpoint = `${API}/api/admin/incentives/directorate/claims/${claim.id}/verify-committee`;
+        payload = { verificationNote: claimActionText };
+      } else if (actionType === 'slrc') {
+        if (!claimActionText.trim()) return alert("SLRC recommendation notes are required.");
+        endpoint = `${API}/api/admin/incentives/directorate/claims/${claim.id}/slrc-recommend`;
+        payload = { approved: claimSLRCDecision, slrcNote: claimActionText };
+      } else if (actionType === 'release') {
+        endpoint = `${API}/api/admin/incentives/directorate/claims/${claim.id}/release-subsidy`;
+      }
+
+      await axiosInstance.put(endpoint, payload);
+      alert("Claim workflow status updated successfully!");
+      setShowClaimAction(null);
+      setClaimActionText("");
+      fetchClaimsForApp(claim.application_id);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to submit claim action.");
+    }
+  };
+
   useEffect(() => { load(); }, []);
 
   const openActionModal = (app, type) => {
@@ -543,6 +599,8 @@ function YogaTCDirectorateReview() {
     setSlrcRef("");
     setIpOrderNum("");
   };
+
+  const [slrcApprovedVal, setSlrcApprovedVal] = useState(true);
 
   const handleActionSubmit = async (e) => {
     e.preventDefault();
@@ -561,17 +619,29 @@ function YogaTCDirectorateReview() {
           return;
         }
         endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/revert`;
-      } else if (actionType === "forward_slrc") {
-        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/forward-slrc`;
-      } else if (actionType === "slrc_approved") {
-        if (!slrcDate || !slrcRef) {
-          alert("SLRC Date and Reference Number are required.");
+      } else if (actionType === "reject") {
+        if (!remarks.trim()) {
+          alert("Rejection remarks/reason are required.");
           setSaving(false);
           return;
         }
-        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/slrc-approved`;
-        payload.slrcApprovalDate = slrcDate;
-        payload.slrcReferenceNumber = slrcRef;
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/reject`;
+        payload = { reason: remarks };
+      } else if (actionType === "forward_slrc") {
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/forward-slrc`;
+      } else if (actionType === "slrc_decision") {
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/slrc-approval`;
+        payload = {
+          approved: slrcApprovedVal,
+          slrcReference: slrcApprovedVal ? slrcRef : null,
+          slrcDate: slrcApprovedVal ? slrcDate : null,
+          comment: remarks || (slrcApprovedVal ? "SLRC Approved" : "SLRC Rejected")
+        };
+        if (slrcApprovedVal && (!slrcDate || !slrcRef)) {
+          alert("SLRC Date and Reference Number are required for approvals.");
+          setSaving(false);
+          return;
+        }
       } else if (actionType === "grant_approval") {
         if (!ipOrderNum) {
           alert("In-Principle Order Number is required.");
@@ -633,7 +703,13 @@ function YogaTCDirectorateReview() {
               <div key={app.id} className="p-4">
                 <button
                   className="w-full flex items-center justify-between text-left"
-                  onClick={() => setExpanded(open ? null : app.id)}
+                  onClick={() => {
+                    const newOpen = !open;
+                    setExpanded(newOpen ? app.id : null);
+                    if (newOpen && ["SLRC_APPROVED", "IN_PRINCIPLE_APPROVED"].includes(app.status)) {
+                      fetchClaimsForApp(app.id);
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="bg-purple-100 rounded-full p-2 mt-0.5">
@@ -850,6 +926,161 @@ function YogaTCDirectorateReview() {
                       ]} />
                     </div>
 
+                    {/* Disbursal Claims management block */}
+                    {["SLRC_APPROVED", "IN_PRINCIPLE_APPROVED"].includes(app.status) && (
+                      <div className="md:col-span-3 bg-indigo-50/35 border border-indigo-100/60 rounded-2xl p-5 mt-4 space-y-4">
+                        <div>
+                          <h4 className="font-bold text-indigo-950 text-sm flex items-center gap-2">
+                            <span className="bg-indigo-600 text-white rounded p-1"><IndianRupee size={12} /></span>
+                            Subsidy Claims &amp; Disbursal Milestones
+                          </h4>
+                          <p className="text-[11px] text-indigo-700/80 mt-0.5">Manage claims submitted by the Yoga Training Centre for each of the three financial milestones.</p>
+                        </div>
+
+                        {/* List of claims */}
+                        <div className="grid md:grid-cols-3 gap-4">
+                          {[
+                            { type: 'FIRST_50', label: '1st Milestone Claim (50%)' },
+                            { type: 'SECOND_25', label: '2nd Milestone Claim (25%)' },
+                            { type: 'THIRD_25', label: '3rd Milestone Claim (25%)' }
+                          ].map((milestone, idx) => {
+                            const claim = (disbursalClaims[app.id] || []).find(c => c.claim_type === milestone.type);
+
+                            return (
+                              <div key={milestone.type} className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between space-y-4 ${claim ? 'border-emerald-200' : 'border-slate-200'}`}>
+                                <div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded">Stage {idx + 1}</span>
+                                    {claim && (
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                        claim.status === 'RELEASED' ? 'bg-emerald-100 text-emerald-800' :
+                                        claim.status === 'REVERTED' ? 'bg-red-100 text-red-800' :
+                                        claim.status === 'APPROVED_DISBURSAL' ? 'bg-indigo-100 text-indigo-800' :
+                                        'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {claim.status.replace(/_/g, ' ')}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h5 className="font-bold text-slate-800 text-xs mt-2">{milestone.label}</h5>
+                                </div>
+
+                                <div className="text-[11px] space-y-3 pt-2 border-t border-slate-100">
+                                  {claim ? (
+                                    <>
+                                      <div className="space-y-1">
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase">Bank details</p>
+                                        <p className="font-semibold text-slate-700">{claim.bank_name} - {claim.bank_account_number}</p>
+                                        <p className="text-slate-500 text-[10px]">Branch: {claim.branch_address}</p>
+                                        {claim.loan_account_number && <p className="text-slate-500 text-[10px]">Loan A/c: {claim.loan_account_number}</p>}
+                                      </div>
+                                      <div className="space-y-1">
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase">CAPEX Incurred</p>
+                                        <p className="font-bold text-slate-700">{fmt(claim.capex_incurred)}</p>
+                                      </div>
+
+                                      {/* Document files list */}
+                                      <div className="space-y-1 bg-slate-50 p-2 rounded border text-[10px]">
+                                        <p className="font-bold text-slate-500 uppercase text-[9px] mb-1">Submitted Files</p>
+                                        {[
+                                          { label: 'Bank details', path: claim.doc_bank_detail },
+                                          { label: 'CA Certified ECA', path: claim.doc_ca_eca_report },
+                                          { label: 'Fire & Safety Audit', path: claim.doc_fire_safety_audit },
+                                          { label: 'Wellness Centre Reg', path: claim.doc_wellness_registration },
+                                          { label: 'CAPEX Cert', path: claim.doc_capex_certificate },
+                                          { label: 'Actual Bills', path: claim.doc_actual_bills },
+                                          { label: 'Others', path: claim.doc_others },
+                                          { label: 'Sessions/Workshops Log', path: claim.doc_sessions_workshops },
+                                        ].map(f => {
+                                          if (!f.path) return null;
+                                          return (
+                                            <a key={f.label} href={docUrl(f.path)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-indigo-700 font-semibold hover:underline mt-0.5">
+                                              📄 {f.label}
+                                            </a>
+                                          );
+                                        })}
+                                      </div>
+
+                                      {/* Claim flow remarks */}
+                                      {claim.revert_comment && <p className="bg-red-50 text-red-700 p-2 rounded text-[10px] italic">Reverted: "{claim.revert_comment}"</p>}
+                                      {claim.committee_verification_note && <p className="bg-emerald-50 text-emerald-800 p-2 rounded text-[10px]">Committee verification note: "{claim.committee_verification_note}"</p>}
+                                      {claim.slrc_disbursal_note && <p className="bg-indigo-50 text-indigo-900 p-2 rounded text-[10px]">SLRC Recommendation note: "{claim.slrc_disbursal_note}"</p>}
+
+                                      {/* Admin Actions */}
+                                      <div className="space-y-1.5 pt-2">
+                                        {claim.status === 'SUBMITTED' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setShowClaimAction({ claim, actionType: 'forward' })}
+                                            className="w-full py-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px] transition"
+                                          >
+                                            Forward to Working Committee
+                                          </button>
+                                        )}
+                                        {['SUBMITTED', 'FORWARDED_TO_COMMITTEE'].includes(claim.status) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setShowClaimAction({ claim, actionType: 'revert' });
+                                              setClaimActionText("");
+                                            }}
+                                            className="w-full py-1 text-center bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[10px] transition"
+                                          >
+                                            Revert back for Clarification
+                                          </button>
+                                        )}
+                                        {claim.status === 'FORWARDED_TO_COMMITTEE' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setShowClaimAction({ claim, actionType: 'verify' });
+                                              setClaimActionText("");
+                                            }}
+                                            className="w-full py-1 text-center bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] transition"
+                                          >
+                                            Enter Physical Verification Notes
+                                          </button>
+                                        )}
+                                        {claim.status === 'COMMITTEE_VERIFIED' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setShowClaimAction({ claim, actionType: 'slrc' });
+                                              setClaimActionText("");
+                                              setClaimSLRCDecision(true);
+                                            }}
+                                            className="w-full py-1 text-center bg-purple-600 hover:bg-purple-700 text-white rounded font-bold text-[10px] transition"
+                                          >
+                                            Enter SLRC Disbursal Decision
+                                          </button>
+                                        )}
+                                        {claim.status === 'APPROVED_DISBURSAL' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setShowClaimAction({ claim, actionType: 'release' })}
+                                            className="w-full py-1 text-center bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold text-[10px] transition"
+                                          >
+                                            Mark Subsidy Amount Released
+                                          </button>
+                                        )}
+                                        {claim.status === 'RELEASED' && (
+                                          <div className="bg-emerald-100 text-emerald-900 border border-emerald-200 text-center rounded p-1.5 text-[9px] font-bold">
+                                            ✓ Subsidy claim fully released
+                                          </div>
+                                        )}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <span className="text-gray-400 italic">No disbursal claim submitted yet for this milestone.</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Additional compliance & report attachments */}
                     <AdditionalAttachments events={app.events} />
 
@@ -900,9 +1131,17 @@ function YogaTCDirectorateReview() {
                         {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
                           <button
                             onClick={() => openActionModal(app, "revert")}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
+                            className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
                             Revert to Yoga Centre (Need Info/Docs)
+                          </button>
+                        )}
+                        {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
+                          <button
+                            onClick={() => openActionModal(app, "reject")}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
+                          >
+                            Reject Application
                           </button>
                         )}
                         {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
@@ -915,10 +1154,13 @@ function YogaTCDirectorateReview() {
                         )}
                         {app.status === "FORWARDED_TO_SLRC" && (
                           <button
-                            onClick={() => openActionModal(app, "slrc_approved")}
+                            onClick={() => {
+                              openActionModal(app, "slrc_decision");
+                              setSlrcApprovedVal(true);
+                            }}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
-                            Mark SLRC Approved
+                            SLRC Decision (Approve / Reject)
                           </button>
                         )}
                         {app.status === "SLRC_APPROVED" && (
@@ -953,8 +1195,9 @@ function YogaTCDirectorateReview() {
               <h4 className="font-bold text-gray-800 text-base">
                 {actionType === "forward_district" && "Forward to District Nodal Officer"}
                 {actionType === "revert" && "Revert to Yoga Centre"}
+                {actionType === "reject" && "Reject Application"}
                 {actionType === "forward_slrc" && "Forward to SLRC"}
-                {actionType === "slrc_approved" && "Mark SLRC Approved"}
+                {actionType === "slrc_decision" && "SLRC Decision Review"}
                 {actionType === "grant_approval" && "Grant In-Principle Approval"}
               </h4>
               <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
@@ -966,29 +1209,61 @@ function YogaTCDirectorateReview() {
               </p>
 
               {/* SLRC input fields */}
-              {actionType === "slrc_approved" && (
+              {actionType === "slrc_decision" && (
                 <>
                   <div>
-                    <label className="block text-gray-600 font-bold mb-1">SLRC Meeting / Approval Date <span className="text-red-500">*</span></label>
-                    <input
-                      type="date"
-                      required
-                      value={slrcDate}
-                      onChange={(e) => setSlrcDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-                    />
+                    <label className="block text-gray-600 font-bold mb-1">SLRC Recommendation / Decision <span className="text-red-500">*</span></label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSlrcApprovedVal(true)}
+                        className={`py-2 px-3 rounded-lg border font-bold text-center transition-all ${
+                          slrcApprovedVal
+                            ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                            : "border-gray-200 text-gray-600 hover:border-gray-300"
+                        }`}
+                      >
+                        Approved
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSlrcApprovedVal(false)}
+                        className={`py-2 px-3 rounded-lg border font-bold text-center transition-all ${
+                          !slrcApprovedVal
+                            ? "border-red-600 bg-red-50 text-red-700"
+                            : "border-gray-200 text-gray-600 hover:border-gray-300"
+                        }`}
+                      >
+                        Rejected
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-gray-600 font-bold mb-1">SLRC Reference Number <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. SLRC/2026/YOGA-452"
-                      value={slrcRef}
-                      onChange={(e) => setSlrcRef(e.target.value)}
-                      className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-                    />
-                  </div>
+
+                  {slrcApprovedVal && (
+                    <>
+                      <div>
+                        <label className="block text-gray-600 font-bold mb-1">SLRC Meeting / Approval Date <span className="text-red-500">*</span></label>
+                        <input
+                          type="date"
+                          required
+                          value={slrcDate}
+                          onChange={(e) => setSlrcDate(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-600 font-bold mb-1">SLRC Reference Number <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. SLRC/2026/YOGA-452"
+                          value={slrcRef}
+                          onChange={(e) => setSlrcRef(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        />
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
@@ -1010,15 +1285,17 @@ function YogaTCDirectorateReview() {
               {/* Generic remarks / comments */}
               <div>
                 <label className="block text-gray-600 font-bold mb-1">
-                  {actionType === "revert" ? "Compliance instructions / reasons to revert *" : "Remarks / notes"}
+                  {actionType === "revert" && "Compliance instructions / reasons to revert *"}
+                  {actionType === "reject" && "Rejection reasons / remarks *"}
+                  {!["revert", "reject"].includes(actionType) && "Remarks / notes"}
                 </label>
                 <textarea
                   rows={3}
-                  required={actionType === "revert"}
+                  required={["revert", "reject"].includes(actionType)}
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-                  placeholder={actionType === "revert" ? "Specify missing documents or corrections required..." : "Add workflow remarks..."}
+                  placeholder={["revert", "reject"].includes(actionType) ? "Provide detailed comments..." : "Add workflow remarks..."}
                 />
               </div>
 
@@ -1030,6 +1307,101 @@ function YogaTCDirectorateReview() {
                   className="px-5 py-2 text-white rounded bg-purple-600 hover:bg-purple-700 disabled:opacity-60 font-bold"
                 >
                   {saving ? "Processing…" : "Confirm Action"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Disbursal Claim Nodal Officer Action Modal ────────────────────────── */}
+      {showClaimAction && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border overflow-hidden">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-bold text-gray-800 text-base capitalize">
+                {showClaimAction.actionType === 'forward' && "Forward Claim to Working Committee"}
+                {showClaimAction.actionType === 'revert' && "Revert Claim for Clarification"}
+                {showClaimAction.actionType === 'verify' && "Working Committee Verification Notes"}
+                {showClaimAction.actionType === 'slrc' && "SLRC Disbursal Decision"}
+                {showClaimAction.actionType === 'release' && "Confirm Subsidy Release"}
+              </h4>
+              <button onClick={() => setShowClaimAction(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+
+            <form onSubmit={handleClaimWorkflowSubmit} className="space-y-4 text-xs">
+              <p className="text-slate-500 leading-normal">
+                Applying milestone claim action to <strong>{showClaimAction.claim.claim_type.replace(/_/g, ' ')}</strong> (CAPEX: {fmt(showClaimAction.claim.capex_incurred)})
+              </p>
+
+              {showClaimAction.actionType === 'slrc' && (
+                <div>
+                  <label className="block text-gray-600 font-bold mb-1">SLRC Claim Recommendation <span className="text-red-500">*</span></label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setClaimSLRCDecision(true)}
+                      className={`py-2 px-3 rounded-lg border font-bold text-center transition-all ${
+                        claimSLRCDecision
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      Approved for Disbursal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setClaimSLRCDecision(false)}
+                      className={`py-2 px-3 rounded-lg border font-bold text-center transition-all ${
+                        !claimSLRCDecision
+                          ? "border-red-600 bg-red-50 text-red-700"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      Rejected
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Textarea fields for comments, verification notes etc. */}
+              {['revert', 'verify', 'slrc'].includes(showClaimAction.actionType) && (
+                <div>
+                  <label className="block text-gray-600 font-bold mb-1">
+                    {showClaimAction.actionType === 'revert' && "Revert Clarification Comments *"}
+                    {showClaimAction.actionType === 'verify' && "Physical Verification Report Notes *"}
+                    {showClaimAction.actionType === 'slrc' && "SLRC Meeting Decision Notes *"}
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={claimActionText}
+                    onChange={(e) => setClaimActionText(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    placeholder="Enter details..."
+                  />
+                </div>
+              )}
+
+              {showClaimAction.actionType === 'forward' && (
+                <p className="text-amber-700 font-medium bg-amber-50 p-2.5 rounded-lg border border-amber-100">
+                  ⚠️ This claim will be forwarded to the Working Committee for physical verification.
+                </p>
+              )}
+
+              {showClaimAction.actionType === 'release' && (
+                <p className="text-emerald-700 font-medium bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
+                  ⚠️ Confirm that the first 50% / next 25% subsidy amount has been successfully disbursed to the Yoga Centre.
+                </p>
+              )}
+
+              <div className="flex justify-end gap-3 mt-5 border-t pt-4">
+                <button type="button" onClick={() => setShowClaimAction(null)} className="px-4 py-2 border rounded text-gray-600 font-semibold">Cancel</button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-white rounded bg-indigo-600 hover:bg-indigo-700 font-bold"
+                >
+                  Confirm Action
                 </button>
               </div>
             </form>

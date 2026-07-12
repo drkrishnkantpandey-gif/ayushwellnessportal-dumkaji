@@ -83,6 +83,8 @@ const STATUS_META = {
   FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700",  icon: Clock        },
   SLRC_APPROVED:            { label: "SLRC Approved", color: "bg-indigo-100 text-indigo-700",    icon: CheckCircle  },
   IN_PRINCIPLE_APPROVED:    { label: "In-Principle Approved ✓",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
+  DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700",        icon: XCircle      },
+  SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700",        icon: XCircle      },
 };
 
 const fmt = (n) =>
@@ -459,6 +461,155 @@ export default function IncentiveApplication() {
     fetchProfileAndApplications();
   }, []);
 
+  // ── Disbursal Claims States ────────────────────────────────────────────────
+  const [disbursalClaims, setDisbursalClaims] = useState({});
+  const [showClaimForm, setShowClaimForm] = useState(null); // { app, claimType }
+  const [claimForm, setClaimForm] = useState({
+    bankAccountNumber: "",
+    bankName: "",
+    branchAddress: "",
+    loanAccountNumber: "",
+    capexIncurred: "",
+  });
+  const [claimUploadStatus, setClaimUploadStatus] = useState({}); // { field: { name, progress, uploading, path } }
+  const [submittingClaim, setSubmittingClaim] = useState(false);
+
+  const fetchClaimsForApp = async (appId) => {
+    try {
+      const res = await axiosInstance.get(`${API}/api/training-centre/incentives/${appId}/disbursal-claims`);
+      setDisbursalClaims(prev => ({
+        ...prev,
+        [appId]: res.data.data || []
+      }));
+    } catch (e) {
+      console.error("Error fetching disbursal claims:", e);
+    }
+  };
+
+  const handleClaimFileSelect = async (field, fileList) => {
+    const file = fileList[0];
+    if (!file) return;
+
+    setClaimUploadStatus(prev => ({
+      ...prev,
+      [field]: {
+        name: file.name,
+        uploading: true,
+        progress: 0,
+        path: null
+      }
+    }));
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await axios.post(`${API}/api/register/upload-temp-file`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setClaimUploadStatus(prev => ({
+              ...prev,
+              [field]: {
+                ...prev[field],
+                progress: percentCompleted
+              }
+            }));
+          }
+        }
+      });
+
+      setClaimUploadStatus(prev => ({
+        ...prev,
+        [field]: {
+          ...prev[field],
+          uploading: false,
+          progress: 100,
+          path: res.data.path
+        }
+      }));
+    } catch (err) {
+      console.error("Disbursal document upload failed:", err);
+      alert(`Failed to upload ${file.name}`);
+      setClaimUploadStatus(prev => {
+        const copy = { ...prev };
+        delete copy[field];
+        return copy;
+      });
+    }
+  };
+
+  const handleClaimSubmit = async (e) => {
+    e.preventDefault();
+    if (!showClaimForm) return;
+    const { app, claimType } = showClaimForm;
+
+    // Validation checks
+    if (!claimForm.bankAccountNumber || !claimForm.bankName || !claimForm.branchAddress || !claimForm.capexIncurred) {
+      return alert("Please fill in all mandatory bank and capex details.");
+    }
+
+    const mandatoryDocs = [
+      'doc_bank_detail',
+      'doc_ca_eca_report',
+      'doc_fire_safety_audit',
+      'doc_wellness_registration',
+      'doc_capex_certificate',
+      'doc_actual_bills'
+    ];
+
+    for (const doc of mandatoryDocs) {
+      if (!claimUploadStatus[doc] || !claimUploadStatus[doc].path) {
+        return alert(`Please upload the mandatory document for your claim.`);
+      }
+    }
+
+    if ((claimType === 'SECOND_25' || claimType === 'THIRD_25') && (!claimUploadStatus.doc_sessions_workshops || !claimUploadStatus.doc_sessions_workshops.path)) {
+      return alert("Workshop & Session Details document is mandatory for 2nd & 3rd claim stages.");
+    }
+
+    setSubmittingClaim(true);
+    try {
+      const payload = {
+        applicationId: app.id,
+        claimType,
+        bankAccountNumber: claimForm.bankAccountNumber,
+        bankName: claimForm.bankName,
+        branchAddress: claimForm.branchAddress,
+        loanAccountNumber: claimForm.loanAccountNumber,
+        capexIncurred: claimForm.capexIncurred,
+        doc_bank_detail: claimUploadStatus.doc_bank_detail.path,
+        doc_ca_eca_report: claimUploadStatus.doc_ca_eca_report.path,
+        doc_fire_safety_audit: claimUploadStatus.doc_fire_safety_audit.path,
+        doc_wellness_registration: claimUploadStatus.doc_wellness_registration.path,
+        doc_capex_certificate: claimUploadStatus.doc_capex_certificate.path,
+        doc_actual_bills: claimUploadStatus.doc_actual_bills.path,
+        doc_others: claimUploadStatus.doc_others?.path || null,
+        doc_sessions_workshops: claimUploadStatus.doc_sessions_workshops?.path || null,
+      };
+
+      await axiosInstance.post(`${API}/api/training-centre/incentives/disbursal-claims`, payload);
+      alert("Disbursal Claim submitted successfully!");
+      setShowClaimForm(null);
+      // Reset state
+      setClaimForm({
+        bankAccountNumber: "",
+        bankName: "",
+        branchAddress: "",
+        loanAccountNumber: "",
+        capexIncurred: "",
+      });
+      setClaimUploadStatus({});
+      fetchClaimsForApp(app.id);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to submit claim. Please try again.");
+    } finally {
+      setSubmittingClaim(false);
+    }
+  };
+
   const selectedRegion = REGIONS.find((r) => r.value === form.region);
   const eligibleEca = parseFloat(form.eligibleAssetsAmount) || 0;
 
@@ -716,7 +867,7 @@ export default function IncentiveApplication() {
             Apply for Greenfield or Expansion scheme subsidies for your Yoga Centre
           </p>
         </div>
-        {applications.length === 0 && (
+        {!applications.some(app => app.status !== 'DIRECTORATE_REJECTED' && app.status !== 'SLRC_REJECTED') && (
           <button
             onClick={() => { setShowForm(!showForm); setSuccessMsg(""); setErrorMsg(""); }}
             className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition font-semibold text-sm shadow-sm"
@@ -1396,7 +1547,13 @@ export default function IncentiveApplication() {
                 <div key={app.id} className="p-4 hover:bg-slate-50/50 transition">
                   <button
                     className="w-full flex items-center justify-between text-left"
-                    onClick={() => setExpandedId(open ? null : app.id)}
+                    onClick={() => {
+                      const newOpen = !open;
+                      setExpandedId(newOpen ? app.id : null);
+                      if (newOpen && app.status === 'SLRC_APPROVED') {
+                        fetchClaimsForApp(app.id);
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-4">
                       <div className="bg-emerald-100 rounded-full p-2.5">
@@ -1595,6 +1752,126 @@ export default function IncentiveApplication() {
                         </div>
                       )}
 
+                      {/* Incentive Disbursal Workflow */}
+                      {app.status === 'SLRC_APPROVED' && (
+                        <div className="md:col-span-3 bg-indigo-50/40 border border-indigo-100 rounded-2xl p-6 mt-4 space-y-6">
+                          <div className="flex flex-col md:flex-row justify-between md:items-center border-b border-indigo-100/60 pb-4">
+                            <div>
+                              <h3 className="font-bold text-indigo-950 text-base flex items-center gap-2">
+                                <span className="bg-indigo-600 text-white rounded-lg p-1.5"><IndianRupee size={16} /></span>
+                                Incentive Disbursal Workflow
+                              </h3>
+                              <p className="text-xs text-indigo-700/80 mt-1">
+                                Your application has been approved by SLRC. Submit claims below for each milestone subsidy.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Render claims list */}
+                          <div className="grid md:grid-cols-3 gap-6">
+                            {[
+                              { type: 'FIRST_50', label: '1st Claim: 50% Subsidy', desc: 'Released on commencement and basic asset verification.' },
+                              { type: 'SECOND_25', label: '2nd Claim: 25% Subsidy', desc: 'Released in next financial year after verification of continuous operations.' },
+                              { type: 'THIRD_25', label: '3rd Claim: 25% Subsidy', desc: 'Released in subsequent financial year after final review of sessions & workshops.' }
+                            ].map((stage, sIdx) => {
+                              const claim = (disbursalClaims[app.id] || []).find(c => c.claim_type === stage.type);
+
+                              return (
+                                <div key={stage.type} className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between space-y-4 transition ${claim ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-200'}`}>
+                                  <div>
+                                    <div className="flex justify-between items-start">
+                                      <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">Stage {sIdx + 1}</span>
+                                      {claim && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                          claim.status === 'RELEASED' ? 'bg-emerald-100 text-emerald-800' :
+                                          claim.status === 'REVERTED' ? 'bg-red-100 text-red-800' :
+                                          claim.status === 'APPROVED_DISBURSAL' ? 'bg-indigo-100 text-indigo-800' :
+                                          'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                          {claim.status.replace(/_/g, ' ')}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="font-bold text-slate-800 text-sm mt-2">{stage.label}</h4>
+                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{stage.desc}</p>
+                                  </div>
+
+                                  <div className="pt-2 border-t border-slate-100 space-y-3">
+                                    {claim ? (
+                                      <div className="space-y-2 text-[11px]">
+                                        <div>
+                                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Bank Details</span>
+                                          <span className="font-semibold text-slate-700">{claim.bank_name} ({claim.bank_account_number})</span>
+                                        </div>
+                                        <div>
+                                          <span className="text-[9px] text-slate-400 uppercase font-bold block">CAPEX Incurred</span>
+                                          <span className="font-semibold text-slate-700">{fmt(claim.capex_incurred)}</span>
+                                        </div>
+                                        {claim.revert_comment && (
+                                          <div className="bg-red-50 text-red-700 p-2 rounded text-[10px] italic border border-red-100">
+                                            Revert Comment: "{claim.revert_comment}"
+                                          </div>
+                                        )}
+                                        {claim.committee_verification_note && (
+                                          <div className="bg-emerald-50 text-emerald-800 p-2 rounded text-[10px] border border-emerald-100">
+                                            Verification Note: "{claim.committee_verification_note}"
+                                          </div>
+                                        )}
+                                        {claim.slrc_disbursal_note && (
+                                          <div className="bg-indigo-50/80 text-indigo-900 p-2 rounded text-[10px] border border-indigo-100">
+                                            SLRC Remarks: "{claim.slrc_disbursal_note}"
+                                          </div>
+                                        )}
+                                        
+                                        {/* Show resubmit option for reverted claims */}
+                                        {claim.status === 'REVERTED' && (
+                                          <button
+                                            onClick={() => {
+                                              setShowClaimForm({ app, claimType: stage.type });
+                                              setClaimForm({
+                                                bankAccountNumber: claim.bank_account_number,
+                                                bankName: claim.bank_name,
+                                                branchAddress: claim.branch_address,
+                                                loanAccountNumber: claim.loan_account_number || "",
+                                                capexIncurred: claim.capex_incurred,
+                                              });
+                                              setClaimUploadStatus({
+                                                doc_bank_detail: { path: claim.doc_bank_detail, progress: 100 },
+                                                doc_ca_eca_report: { path: claim.doc_ca_eca_report, progress: 100 },
+                                                doc_fire_safety_audit: { path: claim.doc_fire_safety_audit, progress: 100 },
+                                                doc_wellness_registration: { path: claim.doc_wellness_registration, progress: 100 },
+                                                doc_capex_certificate: { path: claim.doc_capex_certificate, progress: 100 },
+                                                doc_actual_bills: { path: claim.doc_actual_bills, progress: 100 },
+                                                doc_others: claim.doc_others ? { path: claim.doc_others, progress: 100 } : null,
+                                                doc_sessions_workshops: claim.doc_sessions_workshops ? { path: claim.doc_sessions_workshops, progress: 100 } : null,
+                                              });
+                                            }}
+                                            className="w-full text-center bg-red-600 hover:bg-red-700 text-white font-bold py-1.5 rounded transition"
+                                          >
+                                            Update &amp; Resubmit Claim
+                                          </button>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setShowClaimForm({ app, claimType: stage.type });
+                                          setClaimUploadStatus({});
+                                        }}
+                                        className="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 rounded transition text-xs"
+                                      >
+                                        Submit claim details
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Additional compliance & report attachments */}
                       <AdditionalAttachments events={app.events} />
 
@@ -1714,6 +1991,189 @@ export default function IncentiveApplication() {
           </div>
         </div>
       )}
+      {/* ── Disbursal Claim Submission Modal ─────────────────────────────────── */}
+      {showClaimForm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full shadow-xl border overflow-hidden my-8">
+            <div className="bg-slate-50 px-6 py-4 border-b flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-gray-800 text-base">
+                  Submit Claim - {showClaimForm.claimType.replace(/_/g, ' ')}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">Application UPN: {showClaimForm.app.upn}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowClaimForm(null); setClaimUploadStatus({}); }}
+                className="text-gray-400 hover:text-gray-600 hover:bg-slate-100 p-1.5 rounded-full transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleClaimSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Bank account fields */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Bank Name <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={claimForm.bankName}
+                    onChange={(e) => setClaimForm(p => ({ ...p, bankName: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                    placeholder="SBI, HDFC, PNB etc."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Bank Account Number <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={claimForm.bankAccountNumber}
+                    onChange={(e) => setClaimForm(p => ({ ...p, bankAccountNumber: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                    placeholder="Enter Account Number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Branch Address <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={claimForm.branchAddress}
+                    onChange={(e) => setClaimForm(p => ({ ...p, branchAddress: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                    placeholder="Branch Street, City"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Loan Account Number (If Term Loan availed)</label>
+                  <input
+                    type="text"
+                    value={claimForm.loanAccountNumber}
+                    onChange={(e) => setClaimForm(p => ({ ...p, loanAccountNumber: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                    placeholder="Optional Loan Account"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">CAPEX Incurred (Amount in Rupees) <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    required
+                    value={claimForm.capexIncurred}
+                    onChange={(e) => setClaimForm(p => ({ ...p, capexIncurred: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800"
+                    placeholder="e.g. 1500000"
+                  />
+                </div>
+              </div>
+
+              {/* Document upload grid */}
+              <div className="border-t pt-4">
+                <h4 className="font-bold text-gray-700 text-sm mb-3">Upload Claim Documents</h4>
+                <p className="text-[11px] text-gray-400 mb-4">Files will upload instantly. All fields marked with * are mandatory.</p>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  {[
+                    { field: 'doc_bank_detail', label: 'Bank Details Document (Cheque/Passbook) *' },
+                    { field: 'doc_ca_eca_report', label: 'CA Certified ECA Report *' },
+                    { field: 'doc_fire_safety_audit', label: 'Fire & Safety Audit Certificate *' },
+                    { field: 'doc_wellness_registration', label: 'Wellness Centre Registration Certificate *' },
+                    { field: 'doc_capex_certificate', label: 'CAPEX Certificate (countersigned by CA) *' },
+                    { field: 'doc_actual_bills', label: 'Actual Bills (Invoices/Receipts bundle) *' },
+                    { field: 'doc_others', label: 'Other Support Documents' },
+                    ...(showClaimForm.claimType === 'SECOND_25' || showClaimForm.claimType === 'THIRD_25' ? [
+                      { field: 'doc_sessions_workshops', label: 'Workshop & Session conduction log report *' }
+                    ] : [])
+                  ].map(doc => {
+                    const status = claimUploadStatus[doc.field];
+                    return (
+                      <div key={doc.field} className="border border-slate-200 rounded-xl p-4 bg-slate-50 flex items-center justify-between gap-4">
+                        <div className="truncate pr-2 max-w-[70%]">
+                          <span className="font-semibold text-xs text-gray-700 block truncate">{doc.label}</span>
+                          {status?.path ? (
+                            <span className="text-[10px] text-emerald-600 font-bold block mt-0.5 truncate">✓ {status.name || 'Uploaded'}</span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400 block mt-0.5">No file chosen</span>
+                          )}
+                        </div>
+
+                        {status?.uploading ? (
+                          <CircularProgressBar progress={status.progress} />
+                        ) : (
+                          <label className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer transition shrink-0">
+                            Upload
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="hidden"
+                              onChange={(e) => handleClaimFileSelect(doc.field, e.target.files)}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => { setShowClaimForm(null); setClaimUploadStatus({}); }}
+                  className="px-5 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingClaim || Object.values(claimUploadStatus).some(f => f.uploading)}
+                  className="px-6 py-2.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm disabled:opacity-50"
+                >
+                  {submittingClaim ? "Submitting..." : "Submit Claim for Verification"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CircularProgressBar({ progress }) {
+  const radius = 12;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center w-8 h-8 shrink-0">
+      <svg className="w-full h-full transform -rotate-90">
+        <circle
+          cx="16"
+          cy="16"
+          r={radius}
+          className="text-slate-200"
+          strokeWidth="2.5"
+          stroke="currentColor"
+          fill="transparent"
+        />
+        <circle
+          cx="16"
+          cy="16"
+          r={radius}
+          className="text-emerald-600 transition-all duration-300"
+          strokeWidth="2.5"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+        />
+      </svg>
+      <span className="absolute text-[8px] font-bold text-slate-700">{progress}%</span>
     </div>
   );
 }

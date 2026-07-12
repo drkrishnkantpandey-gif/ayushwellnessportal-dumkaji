@@ -323,6 +323,33 @@ async function runIncentiveApplicationsMigration() {
       ALTER TABLE yoga_incentive_events 
       ADD COLUMN IF NOT EXISTS actor_name VARCHAR(255),
       ADD COLUMN IF NOT EXISTS attachment_paths TEXT[];
+
+      CREATE TABLE IF NOT EXISTS yoga_incentive_disbursal_claims (
+        id                          SERIAL PRIMARY KEY,
+        application_id              INTEGER NOT NULL REFERENCES yoga_incentive_applications(id) ON DELETE CASCADE,
+        claim_type                  VARCHAR(20) NOT NULL,
+        status                      VARCHAR(50) NOT NULL,
+        bank_account_number         VARCHAR(100) NOT NULL,
+        bank_name                   VARCHAR(255) NOT NULL,
+        branch_address              TEXT NOT NULL,
+        loan_account_number         VARCHAR(100),
+        capex_incurred              NUMERIC NOT NULL,
+        doc_bank_detail             TEXT NOT NULL,
+        doc_ca_eca_report           TEXT NOT NULL,
+        doc_fire_safety_audit       TEXT NOT NULL,
+        doc_wellness_registration   TEXT NOT NULL,
+        doc_capex_certificate       TEXT NOT NULL,
+        doc_actual_bills            TEXT NOT NULL,
+        doc_others                  TEXT,
+        doc_sessions_workshops      TEXT,
+        revert_comment              TEXT,
+        committee_verification_note TEXT,
+        committee_verified_at       TIMESTAMP,
+        slrc_disbursal_note         TEXT,
+        released_at                 TIMESTAMP,
+        created_at                  TIMESTAMP DEFAULT NOW(),
+        updated_at                  TIMESTAMP DEFAULT NOW()
+      );
     `);
     console.log("Database Migration: yoga_incentive_applications table and events tracker updated successfully");
   } catch (err) {

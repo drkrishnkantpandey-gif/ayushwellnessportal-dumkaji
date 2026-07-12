@@ -37,9 +37,13 @@ async function submitApplication(req, res) {
     const centreId = await getCentreId(userId);
 
     // Limit check: A logged-in user can submit only one application at most.
-    const existing = await db.query('SELECT id FROM yoga_incentive_applications WHERE user_id = $1', [userId]);
+    const existing = await db.query(
+      `SELECT id FROM yoga_incentive_applications 
+       WHERE user_id = $1 AND status NOT IN ('DIRECTORATE_REJECTED', 'SLRC_REJECTED')`,
+      [userId]
+    );
     if (existing.rows.length > 0) {
-      return res.status(400).json({ message: 'You have already submitted an incentive application. Only one application is allowed.' });
+      return res.status(400).json({ message: 'You have already submitted an incentive application. Only one active application is allowed.' });
     }
 
     const {
@@ -553,6 +557,367 @@ async function getAllApplications(req, res) {
   }
 }
 
+// Reject application by Directorate
+async function rejectApplicationByDirectorate(req, res) {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const actorId = req.user.userId;
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = 'DIRECTORATE_REJECTED', revert_comment = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [reason || 'Rejected by Directorate Nodal Officer', id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not found.' });
+    }
+
+    const actorName = await getActorName(actorId);
+    await logEvent(id, 'DIRECTORATE_REJECTED', 'directorate', actorId, actorName, reason || 'Application rejected by Directorate');
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('rejectApplicationByDirectorate error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Mark SLRC Approval or Rejection
+async function markSLRCApproval(req, res) {
+  try {
+    const { id } = req.params;
+    const { approved, slrcReference, slrcDate, comment } = req.body;
+    const actorId = req.user.userId;
+
+    const targetStatus = approved ? 'SLRC_APPROVED' : 'SLRC_REJECTED';
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = $1, 
+           slrc_reference_number = $2, 
+           slrc_approval_date = $3, 
+           updated_at = NOW()
+       WHERE id = $4
+       RETURNING *`,
+      [targetStatus, slrcReference || null, slrcDate || null, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not found.' });
+    }
+
+    const actorName = await getActorName(actorId);
+    await logEvent(id, targetStatus, 'directorate', actorId, actorName, comment || `SLRC review completed: ${targetStatus.replace(/_/g, ' ')}`);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('markSLRCApproval error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Submit a Disbursal Claim (50%, 25%, 25%)
+async function submitDisbursalClaim(req, res) {
+  try {
+    const { applicationId } = req.body;
+    const userId = req.user.userId;
+
+    // Verify application ownership and approval status
+    const appRes = await db.query(
+      `SELECT * FROM yoga_incentive_applications WHERE id = $1 AND user_id = $2`,
+      [applicationId, userId]
+    );
+    if (!appRes.rows.length) {
+      return res.status(404).json({ message: 'Approved application not found.' });
+    }
+
+    const app = appRes.rows[0];
+    if (app.status !== 'SLRC_APPROVED') {
+      return res.status(400).json({ message: 'Application must be SLRC Approved before submitting disbursal claims.' });
+    }
+
+    const {
+      claimType, // 'FIRST_50', 'SECOND_25', 'THIRD_25'
+      bankAccountNumber,
+      bankName,
+      branchAddress,
+      loanAccountNumber,
+      capexIncurred,
+      doc_bank_detail,
+      doc_ca_eca_report,
+      doc_fire_safety_audit,
+      doc_wellness_registration,
+      doc_capex_certificate,
+      doc_actual_bills,
+      doc_others,
+      doc_sessions_workshops
+    } = req.body;
+
+    if (!claimType || !bankAccountNumber || !bankName || !branchAddress || !capexIncurred) {
+      return res.status(400).json({ message: 'All bank and financial details are required.' });
+    }
+
+    if (!doc_bank_detail || !doc_ca_eca_report || !doc_fire_safety_audit || !doc_wellness_registration || !doc_capex_certificate || !doc_actual_bills) {
+      return res.status(400).json({ message: 'All mandatory disbursal documents must be uploaded.' });
+    }
+
+    if ((claimType === 'SECOND_25' || claimType === 'THIRD_25') && !doc_sessions_workshops) {
+      return res.status(400).json({ message: 'Workshop and Session details document is mandatory for 2nd and 3rd subsidy claims.' });
+    }
+
+    // Check if a claim of this type already exists for this application
+    const claimCheck = await db.query(
+      `SELECT id, status FROM yoga_incentive_disbursal_claims 
+       WHERE application_id = $1 AND claim_type = $2`,
+      [applicationId, claimType]
+    );
+
+    let result;
+    const actorName = await getActorName(userId);
+
+    if (claimCheck.rows.length > 0) {
+      const existingClaim = claimCheck.rows[0];
+      // If it is in REVERTED status, they can update/resubmit it
+      if (existingClaim.status !== 'REVERTED') {
+        return res.status(400).json({ message: `A claim for ${claimType.replace(/_/g, ' ')} has already been submitted (Status: ${existingClaim.status}).` });
+      }
+
+      result = await db.query(
+        `UPDATE yoga_incentive_disbursal_claims
+         SET status = 'SUBMITTED',
+             bank_account_number = $1,
+             bank_name = $2,
+             branch_address = $3,
+             loan_account_number = $4,
+             capex_incurred = $5,
+             doc_bank_detail = $6,
+             doc_ca_eca_report = $7,
+             doc_fire_safety_audit = $8,
+             doc_wellness_registration = $9,
+             doc_capex_certificate = $10,
+             doc_actual_bills = $11,
+             doc_others = $12,
+             doc_sessions_workshops = $13,
+             updated_at = NOW()
+         WHERE id = $14
+         RETURNING *`,
+        [
+          bankAccountNumber, bankName, branchAddress, loanAccountNumber || null, capexIncurred,
+          doc_bank_detail, doc_ca_eca_report, doc_fire_safety_audit, doc_wellness_registration,
+          doc_capex_certificate, doc_actual_bills, doc_others || null, doc_sessions_workshops || null,
+          existingClaim.id
+        ]
+      );
+    } else {
+      // Create new claim entry
+      result = await db.query(
+        `INSERT INTO yoga_incentive_disbursal_claims (
+          application_id, claim_type, status, bank_account_number, bank_name, branch_address, 
+          loan_account_number, capex_incurred, doc_bank_detail, doc_ca_eca_report, 
+          doc_fire_safety_audit, doc_wellness_registration, doc_capex_certificate, 
+          doc_actual_bills, doc_others, doc_sessions_workshops
+         ) VALUES ($1, $2, 'SUBMITTED', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+         RETURNING *`,
+        [
+          applicationId, claimType, bankAccountNumber, bankName, branchAddress, loanAccountNumber || null,
+          capexIncurred, doc_bank_detail, doc_ca_eca_report, doc_fire_safety_audit,
+          doc_wellness_registration, doc_capex_certificate, doc_actual_bills, doc_others || null,
+          doc_sessions_workshops || null
+        ]
+      );
+    }
+
+    await logEvent(applicationId, `DISBURSAL_CLAIM_${claimType}_SUBMITTED`, 'applicant', userId, actorName, `Disbursal claim submitted for ${claimType.replace(/_/g, ' ')}`);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('submitDisbursalClaim error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Fetch all Disbursal Claims for an application
+async function getDisbursalClaims(req, res) {
+  try {
+    const { applicationId } = req.params;
+    const result = await db.query(
+      `SELECT * FROM yoga_incentive_disbursal_claims 
+       WHERE application_id = $1 
+       ORDER BY created_at ASC`,
+      [applicationId]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('getDisbursalClaims error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Forward Disbursal Claim to Working Committee
+async function forwardClaimToCommittee(req, res) {
+  try {
+    const { claimId } = req.params;
+    const actorId = req.user.userId;
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_disbursal_claims
+       SET status = 'FORWARDED_TO_COMMITTEE', updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [claimId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Claim not found.' });
+    }
+
+    const claim = result.rows[0];
+    const actorName = await getActorName(actorId);
+    await logEvent(claim.application_id, `DISBURSAL_${claim.claim_type}_FORWARDED_TO_COMMITTEE`, 'directorate', actorId, actorName, `Claim forwarded to Working Committee for physical verification`);
+
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    console.error('forwardClaimToCommittee error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Verify Disbursal Claim by Working Committee (Directorate enters verification)
+async function verifyClaimByCommittee(req, res) {
+  try {
+    const { claimId } = req.params;
+    const { verificationNote } = req.body;
+    const actorId = req.user.userId;
+
+    if (!verificationNote || !verificationNote.trim()) {
+      return res.status(400).json({ message: 'Verification report notes are required.' });
+    }
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_disbursal_claims
+       SET status = 'COMMITTEE_VERIFIED', 
+           committee_verification_note = $1, 
+           committee_verified_at = NOW(), 
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [verificationNote, claimId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Claim not found.' });
+    }
+
+    const claim = result.rows[0];
+    const actorName = await getActorName(actorId);
+    await logEvent(claim.application_id, `DISBURSAL_${claim.claim_type}_COMMITTEE_VERIFIED`, 'directorate', actorId, actorName, `Working Committee physical verification completed: ${verificationNote}`);
+
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    console.error('verifyClaimByCommittee error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Revert Disbursal Claim back to Yoga Centre
+async function revertClaimToApplicant(req, res) {
+  try {
+    const { claimId } = req.params;
+    const { revertComment } = req.body;
+    const actorId = req.user.userId;
+
+    if (!revertComment || !revertComment.trim()) {
+      return res.status(400).json({ message: 'Revert comment is required.' });
+    }
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_disbursal_claims
+       SET status = 'REVERTED', revert_comment = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [revertComment, claimId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Claim not found.' });
+    }
+
+    const claim = result.rows[0];
+    const actorName = await getActorName(actorId);
+    await logEvent(claim.application_id, `DISBURSAL_${claim.claim_type}_REVERTED`, 'directorate', actorId, actorName, `Disbursal claim reverted to applicant: ${revertComment}`);
+
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    console.error('revertClaimToApplicant error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Recommend Disbursal Claim by SLRC (Approve or Reject)
+async function recommendClaimBySLRC(req, res) {
+  try {
+    const { claimId } = req.params;
+    const { approved, slrcNote } = req.body;
+    const actorId = req.user.userId;
+
+    const targetStatus = approved ? 'APPROVED_DISBURSAL' : 'REJECTED_DISBURSAL';
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_disbursal_claims
+       SET status = $1, slrc_disbursal_note = $2, updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [targetStatus, slrcNote || null, claimId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Claim not found.' });
+    }
+
+    const claim = result.rows[0];
+    const actorName = await getActorName(actorId);
+    await logEvent(claim.application_id, `DISBURSAL_${claim.claim_type}_SLRC_${approved ? 'APPROVED' : 'REJECTED'}`, 'directorate', actorId, actorName, slrcNote || `SLRC Disbursal Decision: ${targetStatus.replace(/_/g, ' ')}`);
+
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    console.error('recommendClaimBySLRC error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Mark Subsidy Released
+async function releaseClaimSubsidy(req, res) {
+  try {
+    const { claimId } = req.params;
+    const actorId = req.user.userId;
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_disbursal_claims
+       SET status = 'RELEASED', released_at = NOW(), updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [claimId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Claim not found.' });
+    }
+
+    const claim = result.rows[0];
+    const actorName = await getActorName(actorId);
+    await logEvent(claim.application_id, `DISBURSAL_${claim.claim_type}_RELEASED`, 'directorate', actorId, actorName, `Subsidy disbursal released for claim ${claim.claim_type.replace(/_/g, ' ')}`);
+
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    console.error('releaseClaimSubsidy error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -566,4 +931,13 @@ module.exports = {
   directorateMarkSlrcApproved,
   directorateGrantInPrinciple,
   getAllApplications,
+  rejectApplicationByDirectorate,
+  markSLRCApproval,
+  submitDisbursalClaim,
+  getDisbursalClaims,
+  forwardClaimToCommittee,
+  verifyClaimByCommittee,
+  revertClaimToApplicant,
+  recommendClaimBySLRC,
+  releaseClaimSubsidy,
 };
