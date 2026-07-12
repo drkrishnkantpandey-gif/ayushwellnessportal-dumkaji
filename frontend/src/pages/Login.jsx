@@ -128,26 +128,46 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {roles.map((role) => {
-                  const Icon = role.icon;
-                  return (
-                    <button
-                      key={role.id}
-                      onClick={() => handleRoleSelect(role.id)}
-                      className="p-5 border-2 border-gray-100 rounded-2xl hover:border-teal-400 hover:bg-teal-50 transition-all group text-left"
-                    >
-                      <div className="w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-600 transition-colors">
-                        <Icon className="text-teal-700 group-hover:text-white transition-colors" size={28} />
-                      </div>
-                      <h3 className="font-bold text-gray-800 text-sm mb-1">
-                        {language === "EN" ? role.en : role.hi}
-                      </h3>
-                      <p className="text-gray-400 text-xs">{role.desc}</p>
-                    </button>
-                  );
-                })}
+{[
+  {
+    title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री",
+    roleIds: ["wellness_centre", "yoga_professional"],
+  },
+  {
+    title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान",
+    roleIds: ["yoga_centre", "institution", "ayush_hospital", "ayush_college", "research_org"],
+  },
+  {
+    title: language === "EN" ? "Officials" : "अधिकारी",
+    roleIds: ["district_officer", "directorate", "admin"],
+  },
+].map((section) => (
+  <div key={section.title} className="mb-8">
+    <h2 className="text-2xl font-semibold text-gray-800 mb-4">{section.title}</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {roles
+        .filter((r) => section.roleIds.includes(r.id))
+        .map((role) => {
+          const Icon = role.icon;
+          return (
+            <button
+              key={role.id}
+              onClick={() => handleRoleSelect(role.id)}
+              className="p-5 border-2 border-gray-100 rounded-2xl hover:border-teal-400 hover:bg-teal-50 transition-all group text-left"
+            >
+              <div className="w-14 h-14 bg-teal-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-600 transition-colors">
+                <Icon className="text-teal-700 group-hover:text-white transition-colors" size={28} />
               </div>
+              <h3 className="font-bold text-gray-800 text-sm mb-1">
+                {language === "EN" ? role.en : role.hi}
+              </h3>
+              <p className="text-gray-400 text-xs">{role.desc}</p>
+            </button>
+          );
+        })}
+    </div>
+  </div>
+))}
 
               <div className="mt-8 text-center">
                 <p className="text-gray-600 text-sm">
