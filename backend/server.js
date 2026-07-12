@@ -174,7 +174,7 @@ app.use('/uploads', (req, res, next) => {
     return res.status(403).json({ message: 'Forbidden' });
   }
   next();
-}, express.static('uploads', { index: false }));
+}, express.static(require('path').join(__dirname, 'uploads'), { index: false }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',              authRoutes);

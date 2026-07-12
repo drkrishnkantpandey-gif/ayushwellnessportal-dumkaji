@@ -10,7 +10,12 @@ const {
 } = require('../controllers/trainerFeeController');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'uploads');
+    const fs = require('fs');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
   filename:    (req, file, cb) =>
     cb(null, `trainerfee-${Date.now()}${path.extname(file.originalname)}`),
 });
