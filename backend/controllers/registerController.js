@@ -1298,7 +1298,7 @@ async function registerDirectorate(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3 
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
          WHERE id = $4`,
         [fullName, contactNumber, passwordHash, userId]
       );
@@ -1307,8 +1307,8 @@ async function registerDirectorate(req, res) {
       await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
          RETURNING id`,
         [fullName, email, contactNumber, passwordHash, 'directorate', false]
       );
