@@ -113,7 +113,7 @@ const registerUser = async (req, res) => {
             is_verified
           ) VALUES ($1, $2, $3, $4, $5, $6) 
           RETURNING id`,
-          [fullName, normalizedEmail, phone, hashedPassword, role, false]
+          [fullName, normalizedEmail, phone, hashedPassword, role, true]
         );
         userId = newUser.rows[0].id;
       }
@@ -177,12 +177,12 @@ const registerUser = async (req, res) => {
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful. Please check your email for OTP.',
+        message: 'Registration successful.',
         user: {
           id: userId,
           email: normalizedEmail,
           role: role,
-          is_verified: false
+          is_verified: true
         }
       });
 

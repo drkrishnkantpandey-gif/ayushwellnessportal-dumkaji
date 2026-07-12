@@ -100,7 +100,7 @@ async function registerWellnessCentre(req, res) {
       const passwordHash = await bcrypt.hash(password, 10);
       const userResult = await client.query(
         `INSERT INTO users (full_name, email, password_hash, role, is_verified)
-         VALUES ($1, LOWER($2), $3, $4, false)
+         VALUES ($1, LOWER($2), $3, $4, true)
          RETURNING id`,
         [contactPerson, contactEmail, passwordHash, "wellness_centre"]
       );
@@ -347,7 +347,7 @@ async function registerTrainingCentre(req, res) {
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
          VALUES ($1, LOWER($2), $3, $4, $5, $6)
          RETURNING id`,
-        [centreName, email, phone, passwordHash, 'yoga_centre', false]
+        [centreName, email, phone, passwordHash, 'yoga_centre', true]
       );
       userId = userResult.rows[0].id;
     }
@@ -538,7 +538,7 @@ async function registerYogaProfessional(req, res) {
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, aadhaar_number, pan_number, qualification)
          VALUES ($1, LOWER($2), $3, $4, $5, $6, $7, $8, $9)
          RETURNING id`,
-        [fullName, email, phone, passwordHash, 'yoga_professional', false, aadhaar || null, pan || null, qualification || null]
+        [fullName, email, phone, passwordHash, 'yoga_professional', true, aadhaar || null, pan || null, qualification || null]
       );
       userId = userResult.rows[0].id;
     }
@@ -1012,7 +1012,7 @@ async function registerResearchOrg(req, res) {
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
          VALUES ($1, LOWER($2), $3, $4, $5, $6)
          RETURNING id`,
-        [applicantName, email, contactNumber, passwordHash, 'research_org', false]
+        [applicantName, email, contactNumber, passwordHash, 'research_org', true]
       );
       userId = userResult.rows[0].id;
     }
@@ -1168,7 +1168,7 @@ async function registerDistrictOfficer(req, res) {
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
          VALUES ($1, LOWER($2), $3, $4, $5, $6)
          RETURNING id`,
-        [fullName, email, contactNumber, passwordHash, 'district_officer', false]
+        [fullName, email, contactNumber, passwordHash, 'district_officer', true]
       );
       userId = userResult.rows[0].id;
     }
@@ -1310,7 +1310,7 @@ async function registerDirectorate(req, res) {
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
          VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
          RETURNING id`,
-        [fullName, email, contactNumber, passwordHash, 'directorate', false]
+        [fullName, email, contactNumber, passwordHash, 'directorate', true]
       );
       userId = userResult.rows[0].id;
     }

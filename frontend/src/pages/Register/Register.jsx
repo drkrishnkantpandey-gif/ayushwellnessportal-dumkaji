@@ -17,7 +17,7 @@ import DirectorateForm from "./forms/DirectorateForm";
 import AdminForm from "./forms/AdminForm";
 import ResearchInstitutionForm from "./forms/ResearchInstitutionForm";
 
-const Register = ({ setCurrentPage }) => {
+const Register = ({ setCurrentPage, language }) => {
   const [step, setStep] = useState(1);
 
   // 🔹 OTP state
@@ -647,40 +647,22 @@ const Register = ({ setCurrentPage }) => {
       try {
         if (isTrainingCentre) {
           const payload = buildPayload();
-          const res = await axios.post(`${API}/api/register/training-centre`, payload);
-          setVerificationEmail(res.data?.email || formData.email || formData.contactEmail);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/register/training-centre`, payload);
         } else if (isYogaProfessional) {
           const payload = buildPayload();
-          const res = await axios.post(`${API}/api/register/yoga-professional`, payload);
-          setVerificationEmail(res.data?.email || formData.email);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/register/yoga-professional`, payload);
         } else if (isWellnessCentre) {
           const payload = buildPayload();
-          const res = await axios.post(`${API}/api/register/wellness-centre`, payload);
-          setVerificationEmail(res.data?.contactEmail || formData.contactEmail);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/register/wellness-centre`, payload);
         } else if (formData.userType === "research_org") {
           const payload = buildPayload();
-          const res = await axios.post(`${API}/api/register/research-org`, payload);
-          setVerificationEmail(res.data?.email || formData.email);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/register/research-org`, payload);
         } else if (formData.userType === "district_officer") {
           const payload = buildPayload();
-          const res = await axios.post(`${API}/api/register/district-officer`, payload);
-          setVerificationEmail(res.data?.email || formData.email);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/register/district-officer`, payload);
         } else if (formData.userType === "directorate") {
           const payload = buildPayload();
-          const res = await axios.post(`${API}/api/register/directorate`, payload);
-          setVerificationEmail(res.data?.email || formData.email);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/register/directorate`, payload);
         } else {
           // Handle other user types (no files)
           const payload = { ...formData };
@@ -701,11 +683,15 @@ const Register = ({ setCurrentPage }) => {
             payload.phone = payload.contactMobile || payload.phone;
           }
 
-          const res = await axios.post(`${API}/api/auth/register`, payload);
-          setVerificationEmail(res.data?.user?.email || payload.email || formData.email);
-          setOtp(["", "", "", ""]);
-          setShowOTP(true);
+          await axios.post(`${API}/api/auth/register`, payload);
         }
+
+        alert(
+          language === "EN"
+            ? "Registration successful! Your account is under admin review. Please wait for approval before logging in."
+            : "पंजीकरण सफल! आपका खाता व्यवस्थापक समीक्षा के अधीन है। कृपया लॉग इन करने से पहले स्वीकृति की प्रतीक्षा करें।"
+        );
+        setCurrentPage("home");
       } catch (err) {
         console.error("Registration error:", err.response?.data || err.message);
         const errorMessage =
