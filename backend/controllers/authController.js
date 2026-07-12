@@ -110,8 +110,9 @@ const registerUser = async (req, res) => {
             phone, 
             password_hash, 
             role, 
-            is_verified
-          ) VALUES ($1, $2, $3, $4, $5, $6) 
+            is_verified,
+            registration_status
+          ) VALUES ($1, $2, $3, $4, $5, $6, 'pending') 
           RETURNING id`,
           [fullName, normalizedEmail, phone, hashedPassword, role, true]
         );

@@ -91,7 +91,7 @@ async function registerWellnessCentre(req, res) {
       userId = existingUser.rows[0].id;
       const passwordHash = await bcrypt.hash(password, 10);
       await client.query(
-        `UPDATE users SET full_name = $1, password_hash = $2 WHERE id = $3`,
+        `UPDATE users SET full_name = $1, password_hash = $2, registration_status = 'pending' WHERE id = $3`,
         [contactPerson, passwordHash, userId]
       );
       // Clean up previous registration attempts
@@ -99,8 +99,8 @@ async function registerWellnessCentre(req, res) {
     } else {
       const passwordHash = await bcrypt.hash(password, 10);
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, password_hash, role, is_verified)
-         VALUES ($1, LOWER($2), $3, $4, true)
+        `INSERT INTO users (full_name, email, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, true, 'pending')
          RETURNING id`,
         [contactPerson, contactEmail, passwordHash, "wellness_centre"]
       );
@@ -335,7 +335,7 @@ async function registerTrainingCentre(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3 
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
          WHERE id = $4`,
         [centreName, phone, passwordHash, userId]
       );
@@ -344,8 +344,8 @@ async function registerTrainingCentre(req, res) {
       await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
          RETURNING id`,
         [centreName, email, phone, passwordHash, 'yoga_centre', true]
       );
@@ -521,10 +521,9 @@ async function registerYogaProfessional(req, res) {
 
       userId = userRecord.id;
 
-      // Update existing unverified user
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3, aadhaar_number = $4, pan_number = $5, qualification = $6
+         SET full_name = $1, phone = $2, password_hash = $3, aadhaar_number = $4, pan_number = $5, qualification = $6, registration_status = 'pending'
          WHERE id = $7`,
         [fullName, phone, passwordHash, aadhaar || null, pan || null, qualification || null, userId]
       );
@@ -535,8 +534,8 @@ async function registerYogaProfessional(req, res) {
     } else {
       // Create new user
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, aadhaar_number, pan_number, qualification)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status, aadhaar_number, pan_number, qualification)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending', $7, $8, $9)
          RETURNING id`,
         [fullName, email, phone, passwordHash, 'yoga_professional', true, aadhaar || null, pan || null, qualification || null]
       );
@@ -1000,7 +999,7 @@ async function registerResearchOrg(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3 
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
          WHERE id = $4`,
         [applicantName, contactNumber, passwordHash, userId]
       );
@@ -1009,8 +1008,8 @@ async function registerResearchOrg(req, res) {
       await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
          RETURNING id`,
         [applicantName, email, contactNumber, passwordHash, 'research_org', true]
       );
@@ -1156,7 +1155,7 @@ async function registerDistrictOfficer(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3 
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
          WHERE id = $4`,
         [fullName, contactNumber, passwordHash, userId]
       );
@@ -1165,8 +1164,8 @@ async function registerDistrictOfficer(req, res) {
       await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6)
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
          RETURNING id`,
         [fullName, email, contactNumber, passwordHash, 'district_officer', true]
       );
