@@ -14,6 +14,11 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showLoginForm, setShowLoginForm] = useState(false);
+  // Accordion state for sections
+  const [expandedSection, setExpandedSection] = useState(null);
+  const handleSectionToggle = (title) => {
+    setExpandedSection(prev => (prev === title ? null : title));
+  };
 
   const roles = [
     { id: 'yoga_professional', en: 'Yoga Professional', hi: 'योग प्रोफेशनल', icon: User, desc: 'For certified yoga practitioners' },
@@ -114,7 +119,8 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
           {!showLoginForm ? (
             /* ── Role Selection Screen ── */
             <div className="p-8">
-              <div className="text-center mb-10">
+              {/* Header */}
+              <div className="text-center mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
                   <Users className="text-white" size={40} />
                 </div>
@@ -122,13 +128,36 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                   {language === "EN" ? "Select Your Role" : "अपनी भूमिका चुनें"}
                 </h2>
                 <p className="text-gray-500 mt-2">
-                  {language === "EN"
-                    ? "Click on your role to proceed directly to login"
-                    : "सीधे लॉगिन के लिए अपनी भूमिका पर क्लिक करें"}
+                  {language === "EN" ? "Click on your role to proceed directly to login" : "सीधे लॉगिन के लिए अपनी भूमिका पर क्लिक करें"}
                 </p>
               </div>
-
-}
+              {/* Sections */}
+              {[{ title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री", roleIds: ["yoga_professional", "wellness_centre"] }, { title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान", roleIds: ["yoga_centre", "institution", "ayush_hospital", "ayush_college", "research_org"] }, { title: language === "EN" ? "Officials" : "अधिकारी", roleIds: ["district_officer", "directorate", "admin"] }].map(section => (
+                <div key={section.title} className="mb-4">
+                  <button
+                    className="w-full flex justify-between items-center bg-teal-600 text-white p-4 rounded-lg hover:bg-teal-700 transition"
+                    onClick={() => handleSectionToggle(section.title)}
+                  >
+                    <span className="font-semibold text-lg">{section.title}</span>
+                    <span>{expandedSection === section.title ? '▴' : '▾'}</span>
+                  </button>
+                  {expandedSection === section.title && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                      {roles.filter(r => section.roleIds.includes(r.id)).map(r => (
+                        <div
+                          key={r.id}
+                          className="cursor-pointer p-4 border rounded-xl hover:shadow-lg transition flex flex-col items-center text-center"
+                          onClick={() => handleRoleSelect(r.id)}
+                        >
+                          <r.icon className="text-teal-600 mb-2" size={48} />
+                          <h3 className="font-medium">{language === "EN" ? r.en : r.hi}</h3>
+                          <p className="text-sm text-gray-500">{r.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
 
               <div className="mt-8 text-center">
                 <p className="text-gray-600 text-sm">
