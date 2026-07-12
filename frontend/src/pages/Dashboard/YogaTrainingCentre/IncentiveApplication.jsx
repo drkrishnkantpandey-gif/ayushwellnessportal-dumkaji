@@ -328,6 +328,11 @@ export default function IncentiveApplication() {
   // Track status of uploads: { fieldName: { name, progress, uploading, path } }
   const [uploadStatus, setUploadStatus] = useState({});
 
+  // Resubmission flow states
+  const [resubmitApp, setResubmitApp] = useState(null);
+  const [complianceNote, setComplianceNote] = useState("");
+  const [resubmitUploads, setResubmitUploads] = useState({}); // distinct file status for resubmissions
+
   const fetchProfileAndApplications = async () => {
     try {
       setLoading(true);
@@ -437,6 +442,76 @@ export default function IncentiveApplication() {
       delete copy[field];
       return copy;
     });
+  };
+
+  const handleResubmitFileSelect = async (field, fileList) => {
+    const file = fileList[0];
+    if (!file) return;
+
+    setResubmitUploads(prev => ({
+      ...prev,
+      [field]: { name: file.name, uploading: true, progress: 0, path: null }
+    }));
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await axios.post(`${API}/api/register/upload-temp-file`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setResubmitUploads(prev => ({
+              ...prev,
+              [field]: { ...prev[field], progress: percentCompleted }
+            }));
+          }
+        }
+      });
+
+      setResubmitUploads(prev => ({
+        ...prev,
+        [field]: { ...prev[field], uploading: false, progress: 100, path: res.data.path }
+      }));
+    } catch (err) {
+      console.error("Instant upload failed:", err);
+      alert(`Failed to upload ${file.name}`);
+      setResubmitUploads(prev => {
+        const copy = { ...prev };
+        delete copy[field];
+        return copy;
+      });
+    }
+  };
+
+  const handleResubmitSubmit = async (e) => {
+    e.preventDefault();
+    if (!complianceNote.trim()) {
+      alert("Compliance note is required.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = { complianceNote };
+      DOCS.forEach(doc => {
+        if (resubmitUploads[doc.field]?.path) {
+          payload[doc.field] = resubmitUploads[doc.field].path;
+        }
+      });
+
+      await axiosInstance.put(`${API}/api/training-centre/incentives/${resubmitApp.id}/resubmit`, payload);
+      setSuccessMsg("Application resubmitted successfully with compliance details!");
+      setResubmitApp(null);
+      setComplianceNote("");
+      setResubmitUploads({});
+      fetchProfileAndApplications();
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.response?.data?.message || "Failed to resubmit application.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleServiceCheckboxChange = (service, checked) => {
@@ -1407,6 +1482,25 @@ export default function IncentiveApplication() {
                           <p className="text-xs text-purple-800 mt-1">{app.directorate_remarks}</p>
                         </div>
                       )}
+
+                      {/* Revert Compliance Section */}
+                      {app.status === 'REVERTED_TO_APPLICANT' && (
+                        <div className="md:col-span-3 bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 mt-2">
+                          <div>
+                            <p className="font-bold text-red-800 text-xs uppercase tracking-wide">⚠️ Additional Documents / Compliance Required</p>
+                            <p className="text-xs text-red-700 mt-1">Remarks: "{app.revert_comment || 'No remarks provided'}"</p>
+                          </div>
+                          <button
+                            onClick={() => { setResubmitApp(app); setComplianceNote(""); }}
+                            className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition shrink-0 shadow-sm"
+                          >
+                            Resubmit Compliance
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Application History & Timeline */}
+                      <ApplicationTimeline events={app.events} />
                     </div>
                   )}
                 </div>
@@ -1415,6 +1509,96 @@ export default function IncentiveApplication() {
           </div>
         )}
       </div>
+      {/* ── Resubmit Compliance Modal ─────────────────────────────────────── */}
+      {resubmitApp && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-xl border overflow-hidden">
+            <div className="bg-slate-50 px-6 py-4 border-b flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-gray-800 text-base">Resubmit Incentive Application</h3>
+                <p className="text-xs text-gray-500 mt-0.5">UPN: {resubmitApp.upn}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setResubmitApp(null); setComplianceNote(""); setResubmitUploads({}); }}
+                className="text-gray-400 hover:text-gray-600 hover:bg-slate-100 p-1.5 rounded-full transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleResubmitSubmit} className="p-6 space-y-5">
+              <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-xs text-red-800">
+                <strong>Revert Comments from Directorate:</strong>
+                <p className="mt-1 italic">"{resubmitApp.revert_comment}"</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Compliance / Correction Explanation Note <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows="3"
+                  value={complianceNote}
+                  onChange={(e) => setComplianceNote(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  placeholder="Explain the updates or corrections made in response to the comments..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                  Upload Corrected / Missing Documents (If Any)
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
+                  {DOCS.map(doc => {
+                    const statusVal = resubmitUploads[doc.field];
+                    return (
+                      <div key={doc.field} className="p-2.5 border rounded-lg bg-slate-50 flex items-center justify-between text-xs">
+                        <div className="truncate pr-2">
+                          <span className="font-bold text-gray-700 block truncate">{doc.label}</span>
+                          {statusVal?.name ? (
+                            <span className="text-[10px] text-emerald-600 font-semibold truncate block">✓ {statusVal.name}</span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400 italic block">Original document will be retained</span>
+                          )}
+                        </div>
+                        <label className="bg-white hover:bg-slate-100 border text-gray-700 px-2.5 py-1 rounded cursor-pointer font-bold text-[10px] shrink-0">
+                          Choose File
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            onChange={(e) => handleResubmitFileSelect(doc.field, e.target.files)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => { setResubmitApp(null); setComplianceNote(""); setResubmitUploads({}); }}
+                  className="px-4 py-2 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm"
+                >
+                  {submitting ? "Resubmitting..." : "Submit Resubmission"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -69,7 +69,10 @@ function YogaTCIncentiveReview() {
   const load = async () => {
     setLoading(true);
     try {
-      const r = await axiosInstance.get(`${API}/api/admin/incentives/district`);
+      const userRes = await axiosInstance.get(`${API}/api/admin/pending-registrations?status=approved`);
+      const me = userRes.data?.data?.[0]; // Get current DO district if possible, fallback to query
+      const district = me?.district || localStorage.getItem("district") || "";
+      const r = await axiosInstance.get(`${API}/api/admin/incentives/district?district=${encodeURIComponent(district)}`);
       setApps(r.data.data || []);
     } catch (e) {
       console.error(e);
@@ -80,22 +83,22 @@ function YogaTCIncentiveReview() {
 
   useEffect(() => { load(); }, []);
 
-  const openModal = (id, decision) => { setModal({ id, decision }); setRemarks(""); };
+  const openModal = (id) => { setModal({ id }); setRemarks(""); };
 
-  const submitDecision = async () => {
-    if (!modal) return;
+  const submitVerification = async () => {
+    if (!modal || !remarks.trim()) return;
     setSaving(true);
     try {
       await axiosInstance.put(
-        `${API}/api/admin/incentives/district/${modal.id}`,
-        { decision: modal.decision, remarks }
+        `${API}/api/admin/incentives/district/${modal.id}/verify`,
+        { verificationNote: remarks }
       );
-      setMsg(`Application ${modal.id} has been ${modal.decision === "APPROVED" ? "approved" : "disapproved"}.`);
+      setMsg(`Verification report submitted successfully for Application #${modal.id}.`);
       setModal(null);
       setExpanded(null);
       load();
     } catch (e) {
-      alert(e.response?.data?.message || "Action failed.");
+      alert(e.response?.data?.message || "Verification submission failed.");
     } finally {
       setSaving(false);
     }
@@ -211,25 +214,26 @@ function YogaTCIncentiveReview() {
                       { label: "Others",                    path: app.doc_others },
                     ]} />
 
-                    {/* State Level Review Committee Decision */}
+                    {/* District Officer Site Verification Status */}
                     <div className="border-t pt-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">
-                        State Level Review Committee — Decision
-                      </p>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => openModal(app.id, "APPROVED")}
-                          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700"
-                        >
-                          <CheckCircle size={15} /> Approved
-                        </button>
-                        <button
-                          onClick={() => openModal(app.id, "DISAPPROVED")}
-                          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600"
-                        >
-                          <XCircle size={15} /> Disapproved
-                        </button>
-                      </div>
+                      {app.status === 'FORWARDED_TO_DISTRICT' ? (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-2">
+                            Action Required: Physical Verification & Report
+                          </p>
+                          <button
+                            onClick={() => openModal(app.id)}
+                            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs hover:bg-emerald-700 font-bold transition shadow-sm"
+                          >
+                            Submit Verification Report
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-lg">
+                          <p className="font-bold text-xs uppercase tracking-wide">✓ Verification Report Submitted</p>
+                          <p className="mt-1">Note: "{app.district_verification_note}"</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -239,32 +243,36 @@ function YogaTCIncentiveReview() {
         </div>
       )}
 
-      {/* Decision Modal */}
+      {/* Verification Report Submission Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h4 className="font-semibold text-gray-800 mb-1">
-              {modal.decision === "APPROVED" ? "Approve" : "Disapprove"} Application #{modal.id}
-            </h4>
-            <p className="text-sm text-gray-500 mb-4">
-              State Level Review Committee — District Officer Decision
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-bold text-gray-800 text-base">
+                Submit Verification Report
+              </h4>
+              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Please enter detailed remarks regarding physical site verification, assets check, and compliance.
             </p>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (optional)</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Verification Note <span className="text-red-500">*</span></label>
             <textarea
-              rows={3}
+              required
+              rows={4}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Add any remarks or conditions..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              placeholder="Detailed physical verification comments..."
             />
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600">Cancel</button>
+            <div className="flex justify-end gap-3 mt-5 border-t pt-4">
+              <button onClick={() => setModal(null)} className="px-4 py-2 text-xs border border-gray-300 rounded-lg text-gray-600 font-semibold">Cancel</button>
               <button
-                onClick={submitDecision}
-                disabled={saving}
-                className={`px-5 py-2 text-sm text-white rounded-lg ${modal.decision === "APPROVED" ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"} disabled:opacity-60`}
+                onClick={submitVerification}
+                disabled={saving || !remarks.trim()}
+                className="px-5 py-2 text-xs text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 font-bold shadow-sm"
               >
-                {saving ? "Saving…" : `Confirm ${modal.decision === "APPROVED" ? "Approval" : "Disapproval"}`}
+                {saving ? "Submitting…" : "Submit Report"}
               </button>
             </div>
           </div>

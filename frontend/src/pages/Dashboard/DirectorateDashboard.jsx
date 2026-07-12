@@ -277,12 +277,14 @@ function ResearchGrantReview() {
 function YogaTCDirectorateReview() {
   const [apps, setApps]         = useState([]);
   const [loading, setLoading]   = useState(true);
-  const [expanded, setExpanded] = useState(null);
   const [modal, setModal]       = useState(null);
+  const [actionType, setActionType] = useState("");
   const [remarks, setRemarks]   = useState("");
+  const [slrcDate, setSlrcDate] = useState("");
+  const [slrcRef, setSlrcRef]   = useState("");
+  const [ipOrderNum, setIpOrderNum] = useState("");
   const [saving, setSaving]     = useState(false);
   const [msg, setMsg]           = useState("");
-
 
   const load = async () => {
     setLoading(true);
@@ -295,22 +297,65 @@ function YogaTCDirectorateReview() {
 
   useEffect(() => { load(); }, []);
 
-  const openModal = (id, decision) => { setModal({ id, decision }); setRemarks(""); };
+  const openActionModal = (app, type) => {
+    setModal(app);
+    setActionType(type);
+    setRemarks("");
+    setSlrcDate("");
+    setSlrcRef("");
+    setIpOrderNum("");
+  };
 
-  const submitDecision = async () => {
+  const handleActionSubmit = async (e) => {
+    e.preventDefault();
     if (!modal) return;
     setSaving(true);
     try {
-      await axiosInstance.put(
-        `${API}/api/admin/incentives/directorate/${modal.id}`,
-        { decision: modal.decision, remarks }
-      );
-      setMsg(`Application ${modal.id} has been ${modal.decision === "APPROVED" ? "approved" : "rejected"} by Directorate.`);
+      let endpoint = "";
+      let payload = { remarks };
+
+      if (actionType === "forward_district") {
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/forward-district`;
+      } else if (actionType === "revert") {
+        if (!remarks.trim()) {
+          alert("Compliance remarks are required.");
+          setSaving(false);
+          return;
+        }
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/revert`;
+      } else if (actionType === "forward_slrc") {
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/forward-slrc`;
+      } else if (actionType === "slrc_approved") {
+        if (!slrcDate || !slrcRef) {
+          alert("SLRC Date and Reference Number are required.");
+          setSaving(false);
+          return;
+        }
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/slrc-approved`;
+        payload.slrcApprovalDate = slrcDate;
+        payload.slrcReferenceNumber = slrcRef;
+      } else if (actionType === "grant_approval") {
+        if (!ipOrderNum) {
+          alert("In-Principle Order Number is required.");
+          setSaving(false);
+          return;
+        }
+        endpoint = `${API}/api/admin/incentives/directorate/${modal.id}/grant-approval`;
+        payload.inPrincipleOrderNumber = ipOrderNum;
+      }
+
+      await axiosInstance.put(endpoint, payload);
+      setMsg(`Action completed successfully for Application #${modal.id}.`);
       setModal(null);
+      setActionType("");
+      setRemarks("");
+      setSlrcDate("");
+      setSlrcRef("");
+      setIpOrderNum("");
       setExpanded(null);
       load();
-    } catch (e) {
-      alert(e.response?.data?.message || "Action failed.");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to submit action.");
     } finally {
       setSaving(false);
     }
@@ -437,24 +482,136 @@ function YogaTCDirectorateReview() {
                       { label: "Others",                    path: app.doc_others },
                     ]} />
 
-                    {/* Directorate SLRC Decision */}
+                     {/* Status history log / Verification report details if verified */}
+                    {app.district_verified_at && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs">
+                        <p className="font-semibold text-orange-700">District verification report</p>
+                        <p className="text-orange-800 mt-1">"{app.district_verification_note}"</p>
+                        <p className="text-[10px] text-orange-500 mt-1">Verified Date: {new Date(app.district_verified_at).toLocaleDateString("en-IN")}</p>
+                      </div>
+                    )}
+
+                    {app.status === 'REVERTED_TO_APPLICANT' && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800">
+                        <p className="font-semibold uppercase tracking-wider">⚠️ Reverted to applicant</p>
+                        <p className="mt-1">Revert Comment: "{app.revert_comment}"</p>
+                      </div>
+                    )}
+
+                    {app.status === 'SLRC_APPROVED' && (
+                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-800">
+                        <p className="font-semibold uppercase tracking-wider">✓ SLRC Approved</p>
+                        <p className="mt-1">Approval Date: {app.slrc_approval_date ? new Date(app.slrc_approval_date).toLocaleDateString("en-IN") : "—"}</p>
+                        <p className="mt-0.5">Reference Number: {app.slrc_reference_number}</p>
+                      </div>
+                    )}
+
+                    {app.status === 'IN_PRINCIPLE_APPROVED' && (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-800">
+                        <p className="font-semibold uppercase tracking-wider">✓ In-Principle Approved</p>
+                        <p className="mt-1">Approval Order: {app.in_principle_order_number}</p>
+                        <p className="mt-0.5">Approved Date: {app.in_principle_approved_at ? new Date(app.in_principle_approved_at).toLocaleDateString("en-IN") : "—"}</p>
+                      </div>
+                    )}
+
+                    {/* Documents submitted by applicant */}
+                    <DocList docs={[
+                      { label: "Fire & Safety NOC",         path: app.doc_fire_safety },
+                      { label: "Udyog Registration",        path: app.doc_udyog_reg },
+                      { label: "GST Registration Certificate", path: app.doc_gst_reg },
+                      { label: "Pollution Control Board NOC", path: app.doc_pollution_cert },
+                      { label: "Detailed Project Report",   path: app.doc_dpr },
+                      { label: "CA Project Cost Cert.",     path: app.doc_ca_project_cost },
+                      { label: "CA Certified ECA",          path: app.doc_ca_eca },
+                      { label: "Land Document",             path: app.doc_land_document },
+                      { label: "Constitution of Firm/Society/MOA", path: app.doc_constitution },
+                      { label: "Registration certificate of Entity", path: app.doc_entity_registration },
+                      { label: "MAP Approved by Dev Authority", path: app.doc_map_approval },
+                      { label: "Non-Agriculture Land Cert", path: app.doc_non_agri_land },
+                      { label: "Land Possession / Lease Proof", path: app.doc_land_possession },
+                      { label: "Affidavit (No construction started & no other state subsidy claimed)", path: app.doc_affidavit },
+                      { label: "Others",                    path: app.doc_others },
+                    ]} />
+
+                    {/* Audit Trail Timeline */}
+                    <div className="border-t pt-4">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Workflow Timeline</p>
+                      <div className="relative border-l border-slate-200 ml-2 space-y-3 pl-4">
+                        {(app.events || []).map((ev, i) => (
+                          <div key={i} className="relative">
+                            <span className="absolute -left-[22px] top-1 bg-purple-600 rounded-full w-2.5 h-2.5 border border-white"></span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
+                              <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
+                              <span className="text-[9px] text-slate-400 ml-auto">{new Date(ev.created_at).toLocaleDateString("en-IN")}</span>
+                            </div>
+                            {ev.comment && <p className="text-[10px] text-slate-600 italic bg-white p-1.5 rounded border border-slate-100 mt-0.5">"{ev.comment}"</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Directorate Action Panel */}
                     <div className="border-t pt-4">
                       <p className="text-sm font-semibold text-gray-700 mb-3">
-                        State Level Review Committee — Directorate Decision
+                        Directorate Action Panel — Current Status: <strong className="text-purple-700">{app.status.replace(/_/g, ' ')}</strong>
                       </p>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => openModal(app.id, "APPROVED")}
-                          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700"
-                        >
-                          <CheckCircle size={15} /> Approved
-                        </button>
-                        <button
-                          onClick={() => openModal(app.id, "REJECTED")}
-                          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600"
-                        >
-                          <XCircle size={15} /> Rejected
-                        </button>
+                      <div className="flex gap-2 flex-wrap">
+                        {/* Action 1: Forward to District */}
+                        {["SUBMITTED", "RESUBMITTED"].includes(app.status) && (
+                          <button
+                            onClick={() => openActionModal(app, "forward_district")}
+                            className="bg-yellow-600 text-white px-3 py-1.5 rounded text-xs hover:bg-yellow-700 font-bold transition shadow-sm"
+                          >
+                            Forward to District for Verification
+                          </button>
+                        )}
+
+                        {/* Action 2: Revert to Applicant */}
+                        {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
+                          <button
+                            onClick={() => openActionModal(app, "revert")}
+                            className="bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 font-bold transition shadow-sm"
+                          >
+                            Revert to Yoga Centre (Need Info/Docs)
+                          </button>
+                        )}
+
+                        {/* Action 3: Forward to SLRC */}
+                        {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
+                          <button
+                            onClick={() => openActionModal(app, "forward_slrc")}
+                            className="bg-purple-600 text-white px-3 py-1.5 rounded text-xs hover:bg-purple-700 font-bold transition shadow-sm"
+                          >
+                            Forward to SLRC
+                          </button>
+                        )}
+
+                        {/* Action 4: SLRC Approved */}
+                        {app.status === "FORWARDED_TO_SLRC" && (
+                          <button
+                            onClick={() => openActionModal(app, "slrc_approved")}
+                            className="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs hover:bg-indigo-700 font-bold transition shadow-sm"
+                          >
+                            Mark SLRC Approved
+                          </button>
+                        )}
+
+                        {/* Action 5: Grant In-Principle Approval */}
+                        {app.status === "SLRC_APPROVED" && (
+                          <button
+                            onClick={() => openActionModal(app, "grant_approval")}
+                            className="bg-emerald-600 text-white px-3 py-1.5 rounded text-xs hover:bg-emerald-700 font-bold transition shadow-sm"
+                          >
+                            Grant In-Principle Approval
+                          </button>
+                        )}
+
+                        {app.status === "IN_PRINCIPLE_APPROVED" && (
+                          <span className="text-emerald-700 font-bold bg-emerald-100 px-3 py-1.5 rounded text-xs">
+                            ✓ In-Principle Approval Granted
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -465,34 +622,94 @@ function YogaTCDirectorateReview() {
         </div>
       )}
 
-      {/* Directorate Decision Modal */}
+      {/* Directorate Multi-stage Action Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h4 className="font-semibold text-gray-800 mb-1">
-              {modal.decision === "APPROVED" ? "Approve" : "Reject"} Application #{modal.id}
-            </h4>
-            <p className="text-sm text-gray-500 mb-4">
-              State Level Review Committee — Directorate Final Decision
-            </p>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (optional)</label>
-            <textarea
-              rows={3}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Add any remarks or conditions..."
-            />
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600">Cancel</button>
-              <button
-                onClick={submitDecision}
-                disabled={saving}
-                className={`px-5 py-2 text-sm text-white rounded-lg ${modal.decision === "APPROVED" ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"} disabled:opacity-60`}
-              >
-                {saving ? "Saving…" : `Confirm ${modal.decision === "APPROVED" ? "Approval" : "Rejection"}`}
-              </button>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border overflow-hidden">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-bold text-gray-800 text-base">
+                {actionType === "forward_district" && "Forward to District Nodal Officer"}
+                {actionType === "revert" && "Revert to Yoga Centre"}
+                {actionType === "forward_slrc" && "Forward to SLRC"}
+                {actionType === "slrc_approved" && "Mark SLRC Approved"}
+                {actionType === "grant_approval" && "Grant In-Principle Approval"}
+              </h4>
+              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
             </div>
+
+            <form onSubmit={handleActionSubmit} className="space-y-4 text-xs">
+              <p className="text-slate-500 leading-normal">
+                Applying workflow action to Application <strong>#{modal.id}</strong> (UPN: {modal.upn})
+              </p>
+
+              {/* SLRC input fields */}
+              {actionType === "slrc_approved" && (
+                <>
+                  <div>
+                    <label className="block text-gray-600 font-bold mb-1">SLRC Meeting / Approval Date <span className="text-red-500">*</span></label>
+                    <input
+                      type="date"
+                      required
+                      value={slrcDate}
+                      onChange={(e) => setSlrcDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-600 font-bold mb-1">SLRC Reference Number <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. SLRC/2026/YOGA-452"
+                      value={slrcRef}
+                      onChange={(e) => setSlrcRef(e.target.value)}
+                      className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* In-principle order input fields */}
+              {actionType === "grant_approval" && (
+                <div>
+                  <label className="block text-gray-600 font-bold mb-1">In-Principle Approval Order Number <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. AYUSH-IP/2026/09"
+                    value={ipOrderNum}
+                    onChange={(e) => setIpOrderNum(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  />
+                </div>
+              )}
+
+              {/* Generic remarks / comments */}
+              <div>
+                <label className="block text-gray-600 font-bold mb-1">
+                  {actionType === "revert" ? "Compliance instructions / reasons to revert *" : "Remarks / notes"}
+                </label>
+                <textarea
+                  rows={3}
+                  required={actionType === "revert"}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  placeholder={actionType === "revert" ? "Specify missing documents or corrections required..." : "Add workflow remarks..."}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-5 border-t pt-4">
+                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 border rounded text-gray-600 font-semibold">Cancel</button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-5 py-2 text-white rounded bg-purple-600 hover:bg-purple-700 disabled:opacity-60 font-bold"
+                >
+                  {saving ? "Processing…" : "Confirm Action"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
