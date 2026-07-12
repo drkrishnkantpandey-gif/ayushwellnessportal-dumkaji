@@ -9,10 +9,12 @@ const AdminDashboard = ({ activeTab }) => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  const fetchPendingUsers = async () => {
+  const [filterStatus, setFilterStatus] = useState("pending");
+
+  const fetchPendingUsers = async (statusVal = filterStatus) => {
     setLoadingUsers(true);
     try {
-      const res = await axiosInstance.get(`${API}/api/admin/pending-registrations`);
+      const res = await axiosInstance.get(`${API}/api/admin/pending-registrations?status=${statusVal}`);
       if (res.data.success) {
         setPendingUsers(res.data.data);
       }
@@ -25,9 +27,9 @@ const AdminDashboard = ({ activeTab }) => {
 
   useEffect(() => {
     if (activeTab === "approvals") {
-      fetchPendingUsers();
+      fetchPendingUsers(filterStatus);
     }
-  }, [activeTab]);
+  }, [activeTab, filterStatus]);
 
   const handleAction = async (targetUserId, decision) => {
     if (!window.confirm(`Are you sure you want to ${decision} this registration?`)) return;
@@ -191,12 +193,29 @@ const AdminDashboard = ({ activeTab }) => {
           <p className="text-gray-500 mt-1">Review and approve incoming registration requests from Directorate officers</p>
         </div>
 
+        {/* Status Filter Tabs */}
+        <div className="flex gap-2 border-b border-gray-200 pb-px">
+          {["pending", "approved", "rejected"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`pb-3 px-4 text-sm font-semibold capitalize border-b-2 transition-all ${
+                filterStatus === status
+                  ? "border-teal-600 text-teal-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {status === "pending" ? "Pending Approvals" : status === "approved" ? "Approved History" : "Rejected History"}
+            </button>
+          ))}
+        </div>
+
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           {loadingUsers ? (
-            <div className="p-8 text-center text-teal-600 font-medium">Loading pending applications...</div>
+            <div className="p-8 text-center text-teal-600 font-medium">Loading applications...</div>
           ) : pendingUsers.length === 0 ? (
             <div className="p-12 text-center text-gray-400 font-medium bg-gray-50 rounded-xl">
-              No pending Directorate registrations found.
+              No {filterStatus} Directorate registrations found.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -255,18 +274,30 @@ const AdminDashboard = ({ activeTab }) => {
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
-                        <button
-                          onClick={() => handleAction(u.id, "approved")}
-                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleAction(u.id, "rejected")}
-                          className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition"
-                        >
-                          Reject
-                        </button>
+                        {filterStatus === "pending" ? (
+                          <>
+                            <button
+                              onClick={() => handleAction(u.id, "approved")}
+                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleAction(u.id, "rejected")}
+                              className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                            filterStatus === "approved"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-rose-100 text-rose-800"
+                          }`}>
+                            {filterStatus === "approved" ? "Approved" : "Rejected"}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

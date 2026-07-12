@@ -345,23 +345,31 @@ const getDashboardStats = async (req, res) => {
 const getPendingRegistrations = async (req, res) => {
   const requesterId = req.user.id || req.user.userId;
   const requesterRole = req.user.role;
+  const filterStatus = req.query.status || 'pending';
+
+  let statuses = "('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')";
+  if (filterStatus === 'approved') {
+    statuses = "('approved', 'APPROVED')";
+  } else if (filterStatus === 'rejected') {
+    statuses = "('rejected', 'REJECTED')";
+  }
 
   try {
     if (requesterRole === 'admin') {
-      // Admin sees pending Directorate users
+      // Admin sees pending/processed Directorate users
       const query = `
         SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
                dp.designation, dp.id_type, dp.id_number, dp.id_upload_path, dp.authority_order_path
         FROM users u
         LEFT JOIN directorate_profile dp ON dp.user_id = u.id
-        WHERE u.role = 'directorate' AND u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')
+        WHERE u.role = 'directorate' AND u.registration_status IN ${statuses}
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query);
       return res.status(200).json({ success: true, data: rows });
 
     } else if (requesterRole === 'directorate') {
-      // Directorate sees pending District Officers, Colleges, Research Orgs, plus other entities
+      // Directorate sees pending/processed District Officers, Colleges, Research Orgs, plus other entities
       const query = `
         SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
                COALESCE(w.district, t.district, y.district, r.district, c.district, h.district, dop.district) as district,
@@ -374,7 +382,7 @@ const getPendingRegistrations = async (req, res) => {
         LEFT JOIN ayush_colleges c ON c.id = u.id
         LEFT JOIN ayush_hospitals h ON h.user_id = u.id
         LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
-        WHERE u.role NOT IN ('admin', 'directorate') AND u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')
+        WHERE u.role NOT IN ('admin', 'directorate') AND u.registration_status IN ${statuses}
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query);
@@ -388,7 +396,7 @@ const getPendingRegistrations = async (req, res) => {
       }
       const officerDistrict = officerCheck.rows[0].district;
 
-      // District Officer sees pending wellness_centre, yoga_centre, yoga_professional, ayush_hospital in their district
+      // District Officer sees pending/processed wellness_centre, yoga_centre, yoga_professional, ayush_hospital in their district
       const query = `
         SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
                COALESCE(w.district, t.district, y.district, h.district) as district
@@ -399,7 +407,7 @@ const getPendingRegistrations = async (req, res) => {
         LEFT JOIN ayush_hospitals h ON h.user_id = u.id
         WHERE u.role IN ('wellness_centre', 'yoga_centre', 'yoga_professional', 'ayush_hospital')
           AND COALESCE(w.district, t.district, y.district, h.district) = $1
-          AND u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')
+          AND u.registration_status IN ${statuses}
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query, [officerDistrict]);
