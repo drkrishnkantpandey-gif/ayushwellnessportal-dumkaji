@@ -222,7 +222,7 @@ const getDashboardStats = async (req, res) => {
 
     // 3. Approved entities count
     const approvedEntitiesRes = await db.query(
-      "SELECT COUNT(*) as count FROM users WHERE registration_status = 'approved' AND role NOT IN ('admin', 'directorate')"
+      "SELECT COUNT(*) as count FROM users WHERE registration_status IN ('approved', 'APPROVED') AND role NOT IN ('admin', 'directorate')"
     );
     const totalEntities = parseInt(approvedEntitiesRes.rows[0].count) || 0;
 
@@ -234,7 +234,7 @@ const getDashboardStats = async (req, res) => {
       LEFT JOIN training_centres t ON t.user_id = u.id
       LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
       LEFT JOIN research_org_profile r ON r.user_id = u.id
-      WHERE u.registration_status = 'approved' AND u.role NOT IN ('admin', 'directorate')
+      WHERE u.registration_status IN ('approved', 'APPROVED') AND u.role NOT IN ('admin', 'directorate')
       GROUP BY district_name
       HAVING COALESCE(w.district, t.district, y.district, r.district) IS NOT NULL
     `;
@@ -300,7 +300,7 @@ const getDashboardStats = async (req, res) => {
 
     // 6. Entity overview by role/type
     const roleStatsQuery = `
-      SELECT role, COUNT(*) as count, COUNT(CASE WHEN registration_status = 'approved' THEN 1 END) as active, COUNT(CASE WHEN registration_status IN ('pending', 'under_review', 'UNDER_REVIEW') THEN 1 END) as pending
+      SELECT role, COUNT(*) as count, COUNT(CASE WHEN registration_status IN ('approved', 'APPROVED') THEN 1 END) as active, COUNT(CASE WHEN registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW') THEN 1 END) as pending
       FROM users
       WHERE role NOT IN ('admin', 'directorate')
       GROUP BY role
@@ -354,7 +354,7 @@ const getPendingRegistrations = async (req, res) => {
                dp.designation, dp.id_type, dp.id_number, dp.id_upload_path, dp.authority_order_path
         FROM users u
         LEFT JOIN directorate_profile dp ON dp.user_id = u.id
-        WHERE u.role = 'directorate' AND u.registration_status IN ('pending', 'under_review', 'UNDER_REVIEW')
+        WHERE u.role = 'directorate' AND u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query);
@@ -374,7 +374,7 @@ const getPendingRegistrations = async (req, res) => {
         LEFT JOIN ayush_colleges c ON c.id = u.id
         LEFT JOIN ayush_hospitals h ON h.user_id = u.id
         LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
-        WHERE u.role NOT IN ('admin', 'directorate') AND u.registration_status IN ('pending', 'under_review', 'UNDER_REVIEW')
+        WHERE u.role NOT IN ('admin', 'directorate') AND u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query);
@@ -399,7 +399,7 @@ const getPendingRegistrations = async (req, res) => {
         LEFT JOIN ayush_hospitals h ON h.user_id = u.id
         WHERE u.role IN ('wellness_centre', 'yoga_centre', 'yoga_professional', 'ayush_hospital')
           AND COALESCE(w.district, t.district, y.district, h.district) = $1
-          AND u.registration_status IN ('pending', 'under_review', 'UNDER_REVIEW')
+          AND u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW')
         ORDER BY u.created_at DESC
       `;
       const { rows } = await db.query(query, [officerDistrict]);
