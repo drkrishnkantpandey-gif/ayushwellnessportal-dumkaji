@@ -268,32 +268,35 @@ async function registerWellnessCentre(req, res) {
  * Body (multipart/form-data):
  *  - centreName, establishmentYear, email, phone, institutionType
  *  - address, city, state, pincode, registrationNumber, registrationAuthority
- *  - description, facilities (comma-separated), coursesOffered (comma-separated)
- *  - files: centrePhotos[]
+ *  - applicantName, designation, centreName, entityType, alreadyOperating, otherBusiness
+ *  - operationalBusinessName, operationalBusinessRegNumber, website, email, phone
+ *  - idProofType, idNumber, address, district, gpsCoordinates
+ *  - files: entityCertificate, operationalBusinessCertificate, idProofFile
  */
 async function registerTrainingCentre(req, res) {
   const {
-    centreName,
-    establishmentYear,
-    email,
-    phone,
-    institutionType,
+    applicantName,
+    designation,
+    centreName, // Entity Name
+    entityType,
+    alreadyOperating,
+    otherBusiness,
+    operationalBusinessName,
+    operationalBusinessRegNumber,
+    website,
+    email, // Email Address for login
+    phone, // Mobile Number
+    idProofType,
+    idNumber,
     address,
-    city,
-    state,
     district,
-    pincode,
-    registrationNumber,
-    registrationAuthority,
-    description,
-    facilities,
-    coursesOffered,
+    gpsCoordinates,
     password,
     confirmPassword
   } = req.body;
 
   // Basic validation
-  if (!centreName || !email || !phone || !password || !confirmPassword) {
+  if (!applicantName || !designation || !centreName || !entityType || !alreadyOperating || !email || !phone || !idProofType || !idNumber || !address || !district || !gpsCoordinates || !password || !confirmPassword) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -301,13 +304,15 @@ async function registerTrainingCentre(req, res) {
     return res.status(400).json({ message: "Passwords do not match" });
   }
 
-  // Process arrays from comma-separated strings
-  const facilitiesArray = facilities ? facilities.split(',').map(f => f.trim()) : [];
-  const coursesArray = coursesOffered ? coursesOffered.split(',').map(c => c.trim()) : [];
-
   // Process uploaded files
   const files = req.files || {};
-  const photoPaths = (files.centrePhotos || []).map(file => file.path);
+  const entityCertificateFile = files.entityCertificate && files.entityCertificate[0];
+  const operationalBusinessCertificateFile = files.operationalBusinessCertificate && files.operationalBusinessCertificate[0];
+  const idProofFile = files.idProofFile && files.idProofFile[0];
+
+  const entityCertificatePath = entityCertificateFile ? `/uploads/${entityCertificateFile.filename}` : null;
+  const operationalBusinessCertificatePath = operationalBusinessCertificateFile ? `/uploads/${operationalBusinessCertificateFile.filename}` : null;
+  const idProofPath = idProofFile ? `/uploads/${idProofFile.filename}` : null;
 
   const client = await db.pool.connect();
   try {
@@ -316,7 +321,6 @@ async function registerTrainingCentre(req, res) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Check for existing user with same email/role (case-insensitive)
     // Check for existing user with same email/role (case-insensitive)
     const existingUser = await client.query(
       `SELECT id, is_verified, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
@@ -365,34 +369,38 @@ async function registerTrainingCentre(req, res) {
       userId = userResult.rows[0].id;
     }
 
-    // Create training centre
+    // Create training centre with revised fields
     await client.query(
       `INSERT INTO training_centres (
-        user_id, centre_name, establishment_year, email, phone, 
-        institution_type, address, city, state, district, pincode, 
-        registration_number, registration_authority, description, 
-        facilities, courses_offered, centre_photos
+        user_id, centre_name, email, phone, address, district, website,
+        applicant_name, designation, entity_type, entity_certificate_path,
+        already_operating, other_business, operational_business_name,
+        operational_business_reg_number, operational_business_certificate_path,
+        id_proof_type, id_proof_number, id_proof_path, gps_coordinates
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
       )`,
       [
         userId,
         centreName,
-        establishmentYear || null,
         email,
         phone,
-        institutionType || null,
         address || null,
-        city || null,
-        state || null,
         district || null,
-        pincode || null,
-        registrationNumber || null,
-        registrationAuthority || null,
-        description || null,
-        facilitiesArray,
-        coursesArray,
-        photoPaths
+        website || null,
+        applicantName || null,
+        designation || null,
+        entityType || null,
+        entityCertificatePath,
+        alreadyOperating || null,
+        otherBusiness || null,
+        operationalBusinessName || null,
+        operationalBusinessRegNumber || null,
+        operationalBusinessCertificatePath,
+        idProofType || null,
+        idNumber || null,
+        idProofPath,
+        gpsCoordinates || null
       ]
     );
 
@@ -406,6 +414,7 @@ async function registerTrainingCentre(req, res) {
     );
 
     await client.query("COMMIT");
+    client.release();
 
     const mailOptions = {
       from: process.env.EMAIL_FROM,
@@ -440,6 +449,7 @@ async function registerTrainingCentre(req, res) {
 
   } catch (error) {
     try { await client.query("ROLLBACK"); } catch (rbErr) { }
+    client.release();
     console.error("Registration error:", error);
 
     if (error.code === '23505') { // Unique violation

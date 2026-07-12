@@ -236,12 +236,38 @@ async function bootstrapAdmin() {
   }
 }
 
+async function runTrainingCentresMigration() {
+  try {
+    await pool.query(`
+      ALTER TABLE training_centres 
+      ADD COLUMN IF NOT EXISTS applicant_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS designation VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS entity_type VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS entity_certificate_path TEXT,
+      ADD COLUMN IF NOT EXISTS already_operating VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS other_business VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS operational_business_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS operational_business_reg_number VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS operational_business_certificate_path TEXT,
+      ADD COLUMN IF NOT EXISTS id_proof_type VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS id_proof_number VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS id_proof_path TEXT,
+      ADD COLUMN IF NOT EXISTS gps_coordinates VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS website VARCHAR(255);
+    `);
+    console.log("Database Migration: training_centres table updated successfully with revised fields");
+  } catch (err) {
+    console.error("Database Migration: Failed to update training_centres table:", err);
+  }
+}
+
 pool.query('SELECT NOW()', (err) => {
   if (err) {
     console.error('Error connecting to the database:', err);
   } else {
     console.log('Successfully connected to the database');
     bootstrapAdmin();
+    runTrainingCentresMigration();
   }
 });
 

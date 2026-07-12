@@ -39,7 +39,7 @@ const populatePreUploadedFiles = (req, res, next) => {
     "profilePhoto", "certificateFiles", "centrePhotos", "idProofFile",
     "ownershipProof", "therapyMenu", "facilityImages", "staffCerts",
     "naacCertificate", "auditReport", "extraNaac", "affiliationLetter",
-    "trustCertificate", "digitalSign", "idProof"
+    "trustCertificate", "digitalSign", "idProof", "entityCertificate", "operationalBusinessCertificate"
   ];
 
   fileFields.forEach(field => {
@@ -102,8 +102,9 @@ router.post(
 router.post(
   "/training-centre",
   upload.fields([
-    { name: "centrePhotos", maxCount: 10 },
-    { name: "idProofFile", maxCount: 1 },
+    { name: "entityCertificate", maxCount: 1 },
+    { name: "operationalBusinessCertificate", maxCount: 1 },
+    { name: "idProofFile", maxCount: 1 }
   ]),
   populatePreUploadedFiles,
   registerTrainingCentre

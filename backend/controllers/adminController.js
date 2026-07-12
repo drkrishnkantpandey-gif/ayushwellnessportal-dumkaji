@@ -373,7 +373,15 @@ const getPendingRegistrations = async (req, res) => {
       const query = `
         SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
                COALESCE(w.district, t.district, y.district, r.district, c.city, h.district, dop.district) as district,
-               dop.employee_id, dop.designation, dop.id_type, dop.id_number, dop.id_upload_path, dop.authority_order_path
+               dop.employee_id, dop.designation, dop.id_type, dop.id_number, dop.id_upload_path, dop.authority_order_path,
+               t.applicant_name as tc_applicant_name, t.designation as tc_designation, t.entity_type as tc_entity_type,
+               t.entity_certificate_path as tc_entity_certificate, t.already_operating as tc_already_operating,
+               t.other_business as tc_other_business, t.operational_business_name as tc_operational_business_name,
+               t.operational_business_reg_number as tc_operational_business_reg_number,
+               t.operational_business_certificate_path as tc_operational_business_certificate,
+               t.id_proof_type as tc_id_proof_type, t.id_proof_number as tc_id_proof_number,
+               t.id_proof_path as tc_id_proof_path, t.gps_coordinates as tc_gps_coordinates, t.website as tc_website,
+               t.address as tc_address
         FROM users u
         LEFT JOIN wellness_centres w ON w.user_id = u.id
         LEFT JOIN training_centres t ON t.user_id = u.id
@@ -399,7 +407,15 @@ const getPendingRegistrations = async (req, res) => {
       // District Officer sees pending/processed wellness_centre, yoga_centre, yoga_professional, ayush_hospital in their district
       const query = `
         SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
-               COALESCE(w.district, t.district, y.district, h.district) as district
+               COALESCE(w.district, t.district, y.district, h.district) as district,
+               t.applicant_name as tc_applicant_name, t.designation as tc_designation, t.entity_type as tc_entity_type,
+               t.entity_certificate_path as tc_entity_certificate, t.already_operating as tc_already_operating,
+               t.other_business as tc_other_business, t.operational_business_name as tc_operational_business_name,
+               t.operational_business_reg_number as tc_operational_business_reg_number,
+               t.operational_business_certificate_path as tc_operational_business_certificate,
+               t.id_proof_type as tc_id_proof_type, t.id_proof_number as tc_id_proof_number,
+               t.id_proof_path as tc_id_proof_path, t.gps_coordinates as tc_gps_coordinates, t.website as tc_website,
+               t.address as tc_address
         FROM users u
         LEFT JOIN wellness_centres w ON w.user_id = u.id
         LEFT JOIN training_centres t ON t.user_id = u.id

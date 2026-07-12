@@ -1,7 +1,7 @@
 import API from '../../config/api';
 import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
-import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip } from "lucide-react";
+import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X } from "lucide-react";
 import { toast } from "react-toastify";
 
 
@@ -250,6 +250,7 @@ const DistrictOfficer = ({ activeTab }) => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [filterStatus, setFilterStatus] = useState("pending");
+  const [selectedEntity, setSelectedEntity] = useState(null);
 
   const fetchPendingUsers = async (statusVal = filterStatus) => {
     setLoadingUsers(true);
@@ -417,9 +418,15 @@ const DistrictOfficer = ({ activeTab }) => {
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2">
+                       <td className="px-6 py-4 text-right space-x-2">
                         {filterStatus === "pending" ? (
                           <>
+                            <button
+                              onClick={() => setSelectedEntity(u)}
+                              className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg text-xs transition"
+                            >
+                              View Details
+                            </button>
                             <button
                               onClick={() => handleAction(u.id, "approved")}
                               className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition"
@@ -434,13 +441,21 @@ const DistrictOfficer = ({ activeTab }) => {
                             </button>
                           </>
                         ) : (
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                            filterStatus === "approved"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-rose-100 text-rose-800"
-                          }`}>
-                            {filterStatus === "approved" ? "Approved" : "Rejected"}
-                          </span>
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              onClick={() => setSelectedEntity(u)}
+                              className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg text-xs transition"
+                            >
+                              View Details
+                            </button>
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                              filterStatus === "approved"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-rose-100 text-rose-800"
+                            }`}>
+                              {filterStatus === "approved" ? "Approved" : "Rejected"}
+                            </span>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -450,6 +465,202 @@ const DistrictOfficer = ({ activeTab }) => {
             </div>
           )}
         </div>
+
+        {/* --- Entity Profile Details Modal --- */}
+        {selectedEntity && (
+          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden transform transition-all border border-slate-100 text-left">
+              <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 flex items-center justify-between text-white">
+                <h3 className="text-lg font-bold">Review Registration Profile</h3>
+                <button
+                  onClick={() => setSelectedEntity(null)}
+                  className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                {selectedEntity.role === "yoga_centre" ? (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2">Yoga Centre Details</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Applicant Name</span> 
+                        <span className="text-gray-600">{selectedEntity.tc_applicant_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Designation</span> 
+                        <span className="text-gray-600">{selectedEntity.tc_designation || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Entity Name</span> 
+                        <span className="text-gray-600">{selectedEntity.full_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Entity Type</span> 
+                        <span className="text-gray-600">{selectedEntity.tc_entity_type || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Already Operating</span> 
+                        <span className="text-gray-600">{selectedEntity.tc_already_operating || "N/A"}</span>
+                      </div>
+                      {selectedEntity.tc_already_operating === "Other" && (
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Other Business</span> 
+                          <span className="text-gray-600">{selectedEntity.tc_other_business || "N/A"}</span>
+                        </div>
+                      )}
+                      
+                      {selectedEntity.tc_already_operating && selectedEntity.tc_already_operating !== "None" && (
+                        <div className="col-span-2 mt-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                          <div className="font-bold text-slate-700 text-xs uppercase tracking-wider">Operational Business Details</div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <span className="font-semibold text-gray-800 block text-xs">Name of Business</span>
+                              <span className="text-sm text-gray-600">{selectedEntity.tc_operational_business_name || "N/A"}</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold text-gray-800 block text-xs">Registration Number</span>
+                              <span className="text-sm text-gray-600">{selectedEntity.tc_operational_business_reg_number || "N/A"}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="font-semibold text-gray-800 block text-xs mb-1">Registration Certificate</span>
+                              {selectedEntity.tc_operational_business_certificate ? (
+                                <a 
+                                  href={`${API}/${selectedEntity.tc_operational_business_certificate}`} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-1 text-sm"
+                                >
+                                  <FileText size={14} /> View Document
+                                </a>
+                              ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block mb-1">Entity Registration Certificate</span>
+                        {selectedEntity.tc_entity_certificate ? (
+                          <a 
+                            href={`${API}/${selectedEntity.tc_entity_certificate}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-1 text-sm"
+                          >
+                            <FileText size={14} /> View Certificate
+                          </a>
+                        ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Website</span>
+                        {selectedEntity.tc_website ? (
+                          <a href={selectedEntity.tc_website} target="_blank" rel="noreferrer" className="text-teal-600 font-semibold hover:underline text-sm break-all">
+                            {selectedEntity.tc_website}
+                          </a>
+                        ) : <span className="text-gray-500">N/A</span>}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">GPS Coordinates</span> 
+                        <span className="text-gray-600">{selectedEntity.tc_gps_coordinates || "N/A"}</span>
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-gray-800 block">ID Proof Type</span> 
+                        <span className="text-gray-600 capitalize">{selectedEntity.tc_id_proof_type || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">ID Number</span> 
+                        <span className="text-gray-600">{selectedEntity.tc_id_proof_number || "N/A"}</span>
+                      </div>
+
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block mb-1">Uploaded ID Proof</span>
+                        {selectedEntity.tc_id_proof_path ? (
+                          <a 
+                            href={`${API}/${selectedEntity.tc_id_proof_path}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-1 text-sm"
+                          >
+                            <FileText size={14} /> View ID Proof File
+                          </a>
+                        ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                      </div>
+
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block">Address of Business</span> 
+                        <span className="text-gray-600 block bg-gray-50 p-3 rounded-lg border border-gray-100">{selectedEntity.tc_address || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2">Profile Details</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Name</span> 
+                        <span>{selectedEntity.full_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Role</span> 
+                        <span className="uppercase text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">{selectedEntity.role}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Email</span> 
+                        <span>{selectedEntity.email || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Mobile</span> 
+                        <span>{selectedEntity.phone || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">District</span> 
+                        <span>{selectedEntity.district || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Submitted On</span> 
+                        <span>{new Date(selectedEntity.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                <button
+                  onClick={() => setSelectedEntity(null)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition text-sm"
+                >
+                  Close
+                </button>
+                {selectedEntity.registration_status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleAction(selectedEntity.id, "approved");
+                        setSelectedEntity(null);
+                      }}
+                      className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition text-sm"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleAction(selectedEntity.id, "rejected");
+                        setSelectedEntity(null);
+                      }}
+                      className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg transition text-sm"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

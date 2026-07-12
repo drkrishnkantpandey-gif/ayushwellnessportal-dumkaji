@@ -60,23 +60,22 @@ const Register = ({ setCurrentPage, language }) => {
     district: "",
     pincode: "",
 
-    // 🔹 Training Centre extra fields
-    establishmentYear: "",
-    institutionType: "",
-    category: "",
-    ownerName: "",
-    ownerEmail: "",
-    ownerPhone: "",
+    // 🔹 Training Centre extra fields (Revised)
+    applicantName: "",
+    designation: "",
+    entityType: "",
+    entityCertificate: null,
+    alreadyOperating: "",
+    otherBusiness: "",
+    operationalBusinessName: "",
+    operationalBusinessRegNumber: "",
+    operationalBusinessCertificate: null,
+    website: "",
     idProofType: "",
     idProofFile: null,
     idNumber: "",
-    website: "",
-    aboutCentre: "",
-    amenities: [],
-    otherAmenityChecked: false,
-    otherAmenity: "",
-    centrePhotos: [],
-    accreditation: "",
+    gpsCoordinates: "",
+    tcDeclaration: false,
 
     // 🔹 Yoga Professional extra fields
     dob: "",
@@ -377,14 +376,23 @@ const Register = ({ setCurrentPage, language }) => {
 
     if (currentStep === 2) {
       if (isTrainingCentre) {
-        const requiredFields = ["centreName", "establishmentYear", "email", "phone", "institutionType", "address", "district", "ownerName", "ownerEmail", "ownerPhone", "idProofType", "idNumber"];
+        const requiredFields = ["applicantName", "designation", "centreName", "entityType", "entityCertificate", "alreadyOperating", "email", "phone", "idProofType", "idNumber", "idProofFile", "address", "district", "gpsCoordinates"];
         const missing = requiredFields.filter(f => !formData[f]);
+
+        // If operational business is selected, operational business details are also required
+        if (formData.alreadyOperating && formData.alreadyOperating !== "None") {
+          if (!formData.operationalBusinessName || !formData.operationalBusinessRegNumber || !formData.operationalBusinessCertificate) {
+            alert("Please fill in operational business details and upload registration certificate.");
+            return false;
+          }
+        }
+
         if (missing.length > 0) {
-          alert(`Please fill in all required fields: ${missing.join(", ")}`);
+          alert(`Please fill in all required fields and upload all requested certificates/documents.`);
           return false;
         }
-        if (formData.phone.length !== 10 || formData.ownerPhone.length !== 10) {
-          alert("Phone numbers must be exactly 10 digits.");
+        if (formData.phone.length !== 10) {
+          alert("Mobile number must be exactly 10 digits.");
           return false;
         }
         if (formData.idProofType === 'aadhar' && formData.idNumber.length !== 12) {
@@ -393,6 +401,10 @@ const Register = ({ setCurrentPage, language }) => {
         }
         if (formData.idProofType === 'pan' && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.idNumber)) {
           alert("Invalid PAN format.");
+          return false;
+        }
+        if (!formData.tcDeclaration) {
+          alert("Please check the declaration box to proceed.");
           return false;
         }
       }
@@ -611,7 +623,9 @@ const Register = ({ setCurrentPage, language }) => {
         "certificateFiles",
         "facilityImages",
         "staffCerts",
-        "relevantDocs"
+        "relevantDocs",
+        "entityCertificate",
+        "operationalBusinessCertificate"
       ];
 
       const buildPayload = () => {

@@ -1,5 +1,6 @@
 // src/pages/Register/forms/TrainingCentreForm.jsx
 import React from "react";
+import { FileText, Upload, CheckCircle2, AlertCircle, X } from "lucide-react";
 
 const DISTRICT_OPTIONS = [
   "Almora",
@@ -17,578 +18,423 @@ const DISTRICT_OPTIONS = [
   "Uttarkashi"
 ];
 
-const TrainingCentreForm = ({ formData, setFormData, step }) => {
-  // ------------------ DELETE PHOTO HANDLER ------------------
-  const removeCentrePhoto = (index) => {
-    const updated = [...formData.centrePhotos];
-    updated.splice(index, 1);
-    setFormData({ ...formData, centrePhotos: updated });
+const ENTITY_TYPES = [
+  "Proprietorship",
+  "Trust",
+  "Society",
+  "NGO",
+  "Company",
+  "LLP"
+];
+
+const OPERATING_TYPES = [
+  "None",
+  "Yoga Centre",
+  "Wellness Centre",
+  "Homestay",
+  "School",
+  "Hotel",
+  "Resort",
+  "Other"
+];
+
+const ID_PROOFS = [
+  "Aadhaar",
+  "PAN",
+  "Other Document"
+];
+
+const TrainingCentreForm = ({ formData, setFormData }) => {
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFileInput = (field, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Simulate temp file upload structure expected by Register.jsx
+    setFormData(prev => ({
+      ...prev,
+      [field]: {
+        name: file.name,
+        uploading: true,
+        progress: 0
+      }
+    }));
+
+    // Perform background upload using API just like handleFileChange in Register.jsx
+    const uploadForm = new FormData();
+    uploadForm.append("file", file);
+
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+    fetch(`${API_URL}/api/register/upload-temp-file`, {
+      method: "POST",
+      body: uploadForm
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setFormData(prev => ({
+            ...prev,
+            [field]: {
+              name: file.name,
+              filename: data.filename,
+              uploading: false,
+              progress: 100
+            }
+          }));
+        } else {
+          alert("Failed to upload certificate");
+          setFormData(prev => ({ ...prev, [field]: null }));
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Upload error. Please try again.");
+        setFormData(prev => ({ ...prev, [field]: null }));
+      });
+  };
+
+  const removeFile = (field) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: null
+    }));
+  };
+
+  const FileUploadField = ({ label, field, accept = "image/*,.pdf" }) => {
+    const fileVal = formData[field];
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">{label} <span className="text-red-500">*</span></label>
+        {!fileVal ? (
+          <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-teal-500 transition-colors group cursor-pointer relative bg-gray-50/50">
+            <div className="space-y-1 text-center">
+              <Upload className="mx-auto h-10 w-10 text-gray-400 group-hover:text-teal-500 transition-colors" />
+              <div className="flex text-sm text-gray-600">
+                <label className="relative cursor-pointer rounded-md font-semibold text-teal-600 hover:text-teal-700 focus-within:outline-none">
+                  <span>Upload a file</span>
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept={accept}
+                    onChange={(e) => handleFileInput(field, e)}
+                  />
+                </label>
+                <p className="pl-1">or drag and drop</p>
+              </div>
+              <p className="text-xs text-gray-400">PDF, PNG, JPG up to 10MB</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between p-4 bg-teal-50/60 border border-teal-100 rounded-xl">
+            <div className="flex items-center space-x-3 min-w-0">
+              <FileText className="h-6 w-6 text-teal-600 shrink-0" />
+              <div className="truncate">
+                <p className="text-sm font-semibold text-gray-800 truncate">{fileVal.name}</p>
+                {fileVal.uploading ? (
+                  <p className="text-xs text-teal-600 font-medium">Uploading...</p>
+                ) : (
+                  <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Uploaded & verified
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeFile(field)}
+              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      {/* ------------------- Step 2 ------------------- */}
-      {step === 2 && formData.userType === "yoga_centre" && (
-        <>
-          <h3 className="text-xl font-semibold text-gray-800">
-            Centre Details
-          </h3>
-
-          <div className="grid md:grid-cols-2 gap-6">
-
-            {/* Centre Name */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Centre’s Official Name
-              </label>
-              <input
-                type="text"
-                value={formData.centreName}
-                onChange={(e) =>
-                  setFormData({ ...formData, centreName: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter your Centre's Official name"
-                required
-              />
-            </div>
-
-            {/* Centre Establishment Year */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Year of Establishment
-              </label>
-              <input
-                type="number"
-                value={formData.establishmentYear || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, establishmentYear: e.target.value })
-                }
-                min="1900"
-                max={new Date().getFullYear()}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="e.g. 2005"
-                required
-              />
-            </div>
-
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Centre Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter centre email"
-                required
-              />
-            </div>
-
-            {/* Contact Number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Centre Contact Number <span className="text-red-500">*</span>
-              </label>
-
-              <input
-                type="text"
-                value={formData.phone}
-                maxLength={10}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "");
-                  setFormData({ ...formData, phone: val });
-                }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 ${formData.phone && formData.phone.length !== 10
-                    ? "border-red-500"
-                    : "border-gray-300"
-                  }`}
-                placeholder="10-digit centre contact"
-                required
-              />
-              {formData.phone && formData.phone.length !== 10 && (
-                <p className="text-xs text-red-500 mt-1">
-                  Phone number must be exactly 10 digits.
-                </p>
-              )}
-            </div>
-
-
-            {/* Institution Type */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Type of Institution
-              </label>
-              <select
-                value={formData.institutionType}
-                onChange={(e) =>
-                  setFormData({ ...formData, institutionType: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="">Select type</option>
-                <option value="private">Private</option>
-                <option value="trust">Trust</option>
-                <option value="society">Society</option>
-                <option value="government">Government Recognized</option>
-              </select>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Choose Category
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="">Select Category</option>
-                <option value="Exclusive Yoga Centre (Yet to be Established)">Exclusive Yoga Centre (Yet to be Established)</option>
-                <option value="Exclusive Yoga Centre (Existing)">Exclusive Yoga Centre (Existing)</option>
-                <option value="Homestay">Homestay</option>
-                <option value="School">School</option>
-                <option value="College">College</option>
-                <option value="Hotel">Hotel</option>
-                <option value="Resort">Resort</option>
-                <option value="Other Institution">Other Institution</option>
-              </select>
-            </div>
-
-            {/* -------------------- OWNER DETAILS -------------------- */}
-
-            {/* Owner Name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Owner Name
-              </label>
-              <input
-                type="text"
-                value={formData.ownerName || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, ownerName: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Owner full name"
-                required
-              />
-            </div>
-
-            {/* Owner Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Owner Email
-              </label>
-              <input
-                type="email"
-                value={formData.ownerEmail || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, ownerEmail: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Owner email address"
-                required
-              />
-            </div>
-
-            {/* Owner Phone */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Owner Contact Number <span className="text-red-500">*</span>
-              </label>
-
-              <input
-                type="text"
-                value={formData.ownerPhone || ""}
-                maxLength={10}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "");
-                  setFormData({ ...formData, ownerPhone: val });
-                }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 ${formData.ownerPhone && formData.ownerPhone.length !== 10
-                    ? "border-red-500"
-                    : "border-gray-300"
-                  }`}
-                placeholder="10-digit owner contact"
-                required
-              />
-
-              {formData.ownerPhone && formData.ownerPhone.length !== 10 && (
-                <p className="text-xs text-red-500 mt-1">
-                  Phone number must be exactly 10 digits.
-                </p>
-              )}
-            </div>
-
-            {/* -------------------- ID PROOF -------------------- */}
-
-            {/* ID Proof Type */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ID Proof Type
-              </label>
-              <select
-                value={formData.idProofType || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, idProofType: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                required
-              >
-                <option value="">Select ID</option>
-                <option value="aadhar">Aadhaar</option>
-                <option value="pan">PAN</option>
-              </select>
-            </div>
-            {/* ------------------ ID Proof Section ------------------ */}
-            <div className="mt-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Upload ID Proof (Aadhaar / PAN) – PDF or Image
-              </label>
-
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (!file) return;
-
-                  setFormData({ ...formData, idProofFile: file });
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg cursor-pointer"
-              />
-
-              {/* Preview Section */}
-              {formData.idProofFile && (
-                <div className="mt-3">
-                  {formData.idProofFile.type === "application/pdf" ? (
-                    <p className="text-sm text-gray-700">
-                      📄 Uploaded PDF: <span className="font-medium">{formData.idProofFile.name}</span>
-                    </p>
-                  ) : (
-                    <img
-                      src={URL.createObjectURL(formData.idProofFile)}
-                      alt="ID Preview"
-                      className="w-40 h-40 object-cover border rounded-md shadow-sm"
-                    />
-                  )}
-
-                  {/* Remove Button */}
-                  <button
-                    onClick={() =>
-                      setFormData({ ...formData, idProofFile: null })
-                    }
-                    className="mt-2 bg-red-500 text-white text-xs px-3 py-1 rounded-md"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-            </div>
-
-
-            {/* ID Number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ID Number <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.idNumber || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, idNumber: e.target.value.toUpperCase() })
-                }
-                placeholder="Enter Aadhaar or PAN number"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 ${formData.idNumber &&
-                    (formData.idProofType === 'aadhar' ? formData.idNumber.length !== 12 : !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.idNumber))
-                    ? "border-red-500"
-                    : "border-gray-300"
-                  }`}
-                required
-              />
-              {formData.idNumber && formData.idProofType === 'aadhar' && formData.idNumber.length !== 12 && (
-                <p className="text-xs text-red-500 mt-1">Aadhaar must be 12 digits.</p>
-              )}
-              {formData.idNumber && formData.idProofType === 'pan' && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.idNumber) && (
-                <p className="text-xs text-red-500 mt-1">Invalid PAN format.</p>
-              )}
-            </div>
-
-            {/* ----------------- WEBSITE ----------------- */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Centre Website (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.website || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, website: e.target.value })
-                }
-                placeholder="https://yourcentrewebsite.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            {/* Address */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Physical Address
-              </label>
-              <textarea
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-                placeholder="Enter complete address"
-                required
-              />
-            </div>
-
-            {/* District */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                District <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.district || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, district: e.target.value })
-                }
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="">Select District</option>
-                {DISTRICT_OPTIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Map Placeholder */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Location Pin (Map Autofill)
-              </label>
-              <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600">
-                📍 Map Autocomplete & Pin Drop (Coming Soon)
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* Rest of your code remains SAME (About, Amenities, Photos, Accreditation) */}
-      {/* ---------------------------------------------------------------------- */}
-
-      {/* About Centre */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          About Centre & Facilities
-        </label>
-        <textarea
-          value={formData.aboutCentre}
-          onChange={(e) =>
-            setFormData({ ...formData, aboutCentre: e.target.value })
-          }
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-          placeholder="Describe your centre's mission, facilities, specialization…"
-          required
-        />
+    <div className="space-y-8 bg-white p-2 rounded-2xl">
+      <div className="border-b border-gray-100 pb-4">
+        <h3 className="text-2xl font-bold text-gray-800">Yoga Centre Details</h3>
+        <p className="text-sm text-gray-500 mt-1">Please provide verified applicant and entity credentials below.</p>
       </div>
 
-      {/* Amenities */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Available Amenities
-        </label>
-
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          {["Yoga Mats", "Meditation Room", "Locker Facility", "Drinking Water"].map(
-            (item) => (
-              <label key={item} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData?.amenities?.includes(item)}
-                  onChange={(e) => {
-                    const updated = formData.amenities || [];
-                    if (e.target.checked) updated.push(item);
-                    else updated.splice(updated.indexOf(item), 1);
-                    setFormData({ ...formData, amenities: [...updated] });
-                  }}
-                />
-                <span>{item}</span>
-              </label>
-            )
-          )}
-
-          {/* Other Amenity */}
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={formData?.otherAmenityChecked || false}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  otherAmenityChecked: e.target.checked,
-                  otherAmenity: e.target.checked ? formData.otherAmenity : "",
-                })
-              }
-            />
-            <span>Any Other (specify)</span>
-          </label>
-
-          {formData?.otherAmenityChecked && (
-            <input
-              type="text"
-              placeholder="Enter additional amenity"
-              value={formData.otherAmenity || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, otherAmenity: e.target.value })
-              }
-              className="col-span-2 mt-1 p-2 border rounded text-sm"
-            />
-          )}
-        </div>
-      </div>
-
-      {/* -------------------- PHOTO UPLOAD SECTION (unchanged) -------------------- */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Upload Centre Photos (Min 3, Max 6)
-        </label>
-
-        <div
-          className="w-full border border-dashed border-teal-400 p-5 rounded-lg text-center text-gray-600 bg-teal-50 cursor-pointer"
-          onClick={() => document.getElementById("centrePhotoInput").click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const files = Array.from(e.dataTransfer.files);
-
-            if ((formData.centrePhotos?.length || 0) + files.length > 6) {
-              alert("Maximum 6 photos allowed.");
-              return;
-            }
-
-            setFormData({
-              ...formData,
-              centrePhotos: [...(formData.centrePhotos || []), ...files].slice(
-                0,
-                6
-              ),
-            });
-          }}
-        >
-          <p className="font-medium">Drag & Drop or Click to Upload</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Recommended: JPG, PNG — Max 5MB each
-          </p>
-
-          {formData.centrePhotos && formData.centrePhotos.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {formData.centrePhotos.map((file, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt="preview"
-                    className="w-full h-24 object-cover rounded-lg border"
-                  />
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeCentrePhoto(index);
-                    }}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full px-2 py-1 text-xs opacity-90 hover:opacity-100"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <p className="text-xs text-gray-500 mt-3">
-            {formData.centrePhotos?.length || 0} / 6 photos uploaded
-          </p>
-        </div>
-
-        <input
-          id="centrePhotoInput"
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            const files = Array.from(e.target.files);
-
-            if ((formData.centrePhotos?.length || 0) + files.length > 6) {
-              alert("Maximum 6 photos allowed.");
-              return;
-            }
-
-            setFormData({
-              ...formData,
-              centrePhotos: [...(formData.centrePhotos || []), ...files].slice(
-                0,
-                6
-              ),
-            });
-          }}
-        />
-      </div>
-
-      {/* Accreditation */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Centre Accreditation / Affiliations
-        </label>
-        <input
-          type="text"
-          placeholder="Enter affiliations (ex: Govt Approved, Yoga Alliance…) "
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
-          value={formData.accreditation}
-          onChange={(e) =>
-            setFormData({ ...formData, accreditation: e.target.value })
-          }
-        />
-      </div>
-
-      {/* Upload Accreditation Proof */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Upload Accreditation Proof (PDF / Images)
-        </label>
-        <input type="file" className="w-full" accept="image/*,.pdf" multiple />
-      </div>
-
-      {/* Declaration */}
-      <div>
-        <label className="flex items-start">
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* 1. Applicant Name */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Applicant Name <span className="text-red-500">*</span></label>
           <input
-            type="checkbox"
-            className="w-4 h-4 mt-1 text-teal-600 border-gray-300 rounded"
+            type="text"
+            value={formData.applicantName || ""}
+            onChange={(e) => handleInputChange("applicantName", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="Enter applicant full name"
             required
           />
-          <span className="ml-2 text-sm text-gray-700">
-            I certify that all information provided is true and accurate.
-          </span>
-        </label>
+        </div>
+
+        {/* 2. Designation */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Designation <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={formData.designation || ""}
+            onChange={(e) => handleInputChange("designation", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="e.g. Director, Manager, Owner"
+            required
+          />
+        </div>
+
+        {/* 3. Entity Name */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Entity Name <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={formData.centreName || ""}
+            onChange={(e) => handleInputChange("centreName", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="Enter Entity / Centre name"
+            required
+          />
+        </div>
+
+        {/* 4. Entity Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Entity Type <span className="text-red-500">*</span></label>
+          <select
+            value={formData.entityType || ""}
+            onChange={(e) => handleInputChange("entityType", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white"
+            required
+          >
+            <option value="">Select Entity Type</option>
+            {ENTITY_TYPES.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 5. Upload Entity Registration Certificate */}
+        <div className="md:col-span-2">
+          <FileUploadField
+            label="Upload Entity's Registration Certificate"
+            field="entityCertificate"
+          />
+        </div>
+
+        {/* 6. Already Operating */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Already Operating <span className="text-red-500">*</span></label>
+          <select
+            value={formData.alreadyOperating || ""}
+            onChange={(e) => handleInputChange("alreadyOperating", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white"
+            required
+          >
+            <option value="">Select Operational Status</option>
+            {OPERATING_TYPES.map(o => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 7. Other Business (Dynamic) */}
+        {formData.alreadyOperating === "Other" && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Other Business <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={formData.otherBusiness || ""}
+              onChange={(e) => handleInputChange("otherBusiness", e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+              placeholder="Specify other business type"
+              required
+            />
+          </div>
+        )}
+
+        {/* Operational Business Section (Dynamic if Already Operating !== "None") */}
+        {formData.alreadyOperating && formData.alreadyOperating !== "None" && (
+          <div className="md:col-span-2 grid md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <h4 className="md:col-span-2 text-sm font-bold text-slate-700 uppercase tracking-wide">Operational Business details</h4>
+            
+            {/* 8. Name of Operational Business */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Name of Operational Business <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={formData.operationalBusinessName || ""}
+                onChange={(e) => handleInputChange("operationalBusinessName", e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white"
+                placeholder="Enter operational business name"
+                required
+              />
+            </div>
+
+            {/* 9. Registration Number */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Registration Number <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={formData.operationalBusinessRegNumber || ""}
+                onChange={(e) => handleInputChange("operationalBusinessRegNumber", e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white"
+                placeholder="Registration Number"
+                required
+              />
+            </div>
+
+            {/* 10. Upload Registration Certificate */}
+            <div className="md:col-span-2">
+              <FileUploadField
+                label="Upload Registration Certificate of Operational Business"
+                field="operationalBusinessCertificate"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 11. Website */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Website <span className="text-gray-400 font-normal">(if any)</span></label>
+          <input
+            type="url"
+            value={formData.website || ""}
+            onChange={(e) => handleInputChange("website", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="e.g. https://www.yourdomain.com"
+          />
+        </div>
+
+        {/* 12. Email Address */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address <span className="text-gray-400 font-normal">(for login)</span> <span className="text-red-500">*</span></label>
+          <input
+            type="email"
+            value={formData.email || ""}
+            onChange={(e) => handleInputChange("email", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="example@domain.com"
+            required
+          />
+        </div>
+
+        {/* 13. Mobile Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Mobile Number <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            maxLength={10}
+            value={formData.phone || ""}
+            onChange={(e) => handleInputChange("phone", e.target.value.replace(/\D/g, ""))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="10-digit mobile number"
+            required
+          />
+        </div>
+
+        {/* 14. ID Proof Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">ID Proof Type <span className="text-red-500">*</span></label>
+          <select
+            value={formData.idProofType || ""}
+            onChange={(e) => handleInputChange("idProofType", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white"
+            required
+          >
+            <option value="">Select ID Proof</option>
+            {ID_PROOFS.map(p => (
+              <option key={p} value={p.toLowerCase()}>{p}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 15. ID Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">ID Number <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={formData.idNumber || ""}
+            onChange={(e) => handleInputChange("idNumber", e.target.value.toUpperCase())}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="Enter ID Number"
+            required
+          />
+        </div>
+
+        {/* 16. Upload ID Proof file */}
+        <div className="md:col-span-2">
+          <FileUploadField
+            label="Upload Selected ID Proof"
+            field="idProofFile"
+          />
+        </div>
+
+        {/* 17. Address of Business */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Address of Business <span className="text-red-500">*</span></label>
+          <textarea
+            value={formData.address || ""}
+            onChange={(e) => handleInputChange("address", e.target.value)}
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="Enter business address details..."
+            required
+          />
+        </div>
+
+        {/* 18. District */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">District <span className="text-red-500">*</span></label>
+          <select
+            value={formData.district || ""}
+            onChange={(e) => handleInputChange("district", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition bg-white"
+            required
+          >
+            <option value="">Select District</option>
+            {DISTRICT_OPTIONS.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 19. GPS Coordinates */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">GPS Coordinates <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={formData.gpsCoordinates || ""}
+            onChange={(e) => handleInputChange("gpsCoordinates", e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
+            placeholder="e.g. 30.3165, 78.0322"
+            required
+          />
+        </div>
+
+        {/* 20. Declaration box */}
+        <div className="md:col-span-2 mt-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+          <label className="flex items-start space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.tcDeclaration || false}
+              onChange={(e) => handleInputChange("tcDeclaration", e.target.checked)}
+              className="mt-1 h-5 w-5 text-teal-600 border-gray-300 rounded-lg focus:ring-teal-500 transition-colors"
+              required
+            />
+            <span className="text-sm font-semibold text-gray-700 select-none">
+              I hereby declare that all the information provided in this registration form is true, correct and complete to the best of my knowledge and belief.
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   );
