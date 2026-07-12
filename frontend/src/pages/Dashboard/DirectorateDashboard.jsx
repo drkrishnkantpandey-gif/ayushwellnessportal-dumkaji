@@ -194,12 +194,6 @@ const DOCS = [
   { field: "doc_others",                      label: "Any Other Supporting Document" },
 ];
 
-// Handle both Cloudinary full URLs and local /uploads paths
-const docUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return `${API}/${path.replace(/^\//, '')}`;
-};
 
 function DocList({ docs }) {
   const hasAny = docs.some(d => d.path);

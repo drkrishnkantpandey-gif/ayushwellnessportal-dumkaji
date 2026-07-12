@@ -219,7 +219,7 @@ function YogaTCIncentiveReview() {
                       {app.status === 'FORWARDED_TO_DISTRICT' ? (
                         <div>
                           <p className="text-sm font-semibold text-gray-700 mb-2">
-                            Action Required: Physical Verification & Report
+                            Action Required: Physical Verification &amp; Report
                           </p>
                           <button
                             onClick={() => openModal(app.id)}
@@ -234,6 +234,24 @@ function YogaTCIncentiveReview() {
                           <p className="mt-1">Note: "{app.district_verification_note}"</p>
                         </div>
                       )}
+                    </div>
+
+                    {/* Workflow Events Timeline */}
+                    <div className="border-t pt-4">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Workflow Timeline</p>
+                      <div className="relative border-l border-slate-200 ml-2 space-y-3 pl-4">
+                        {(app.events || []).map((ev, i) => (
+                          <div key={i} className="relative">
+                            <span className="absolute -left-[22px] top-1 bg-emerald-600 rounded-full w-2 h-2 border border-white"></span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
+                              <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
+                              <span className="text-[9px] text-slate-400 ml-auto">{new Date(ev.created_at).toLocaleDateString("en-IN")}</span>
+                            </div>
+                            {ev.comment && <p className="text-[10px] text-slate-600 italic bg-white p-1.5 rounded border border-slate-100 mt-0.5">"{ev.comment}"</p>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

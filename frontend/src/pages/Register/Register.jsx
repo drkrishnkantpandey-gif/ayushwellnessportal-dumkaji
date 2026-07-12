@@ -90,7 +90,6 @@ const Register = ({ setCurrentPage, language }) => {
     directorateName: "",
     department: "",
     nodalOfficerName: "",
-    designation: "",
     landline: "",
     managedModules: [],
     receiveEmailAlerts: false,
