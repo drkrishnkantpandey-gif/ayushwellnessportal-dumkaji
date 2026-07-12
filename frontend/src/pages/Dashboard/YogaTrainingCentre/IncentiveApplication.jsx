@@ -97,13 +97,24 @@ const docUrl = (path) => {
 };
 
 // ── Application History & Status Timeline ──────────────────────────────────
-function ApplicationTimeline({ events }) {
-  if (!events || events.length === 0) return null;
+function ApplicationTimeline({ events, createdAt }) {
+  const allEvents = [...(events || [])];
+  const hasSubmitted = allEvents.some(ev => ev.event_type === 'SUBMITTED');
+  if (!hasSubmitted && createdAt) {
+    allEvents.unshift({
+      event_type: 'SUBMITTED',
+      actor_role: 'applicant',
+      comment: 'Application submitted successfully',
+      created_at: createdAt
+    });
+  }
+
+  if (allEvents.length === 0) return null;
   return (
     <div className="md:col-span-3 border-t pt-4 mt-2">
       <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Application History &amp; Status Timeline</h4>
       <div className="relative border-l border-slate-200 ml-2 space-y-4">
-        {events.map((ev, index) => {
+        {allEvents.map((ev, index) => {
           const dateStr = new Date(ev.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
           const timeStr = new Date(ev.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
           return (
@@ -118,6 +129,26 @@ function ApplicationTimeline({ events }) {
                 <p className="text-[11px] text-slate-600 mt-1 bg-white p-2 rounded border border-slate-100 italic">
                   "{ev.comment}"
                 </p>
+              )}
+              {ev.actor_name && (
+                <p className="text-[9px] text-slate-400 mt-0.5 ml-1">
+                  By: <strong>{ev.actor_name}</strong>
+                </p>
+              )}
+              {ev.attachment_paths && ev.attachment_paths.length > 0 && (
+                <div className="flex gap-2 flex-wrap mt-1.5 ml-1">
+                  {ev.attachment_paths.map((path, idx) => (
+                    <a
+                      key={idx}
+                      href={docUrl(path)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1 transition shadow-xs"
+                    >
+                      <Paperclip size={9} /> Attached Doc #{idx + 1}
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           );
@@ -445,14 +476,14 @@ export default function IncentiveApplication() {
     });
   };
 
-  const handleResubmitFileSelect = async (field, fileList) => {
+  const [complianceFiles, setComplianceFiles] = useState([]);
+
+  const handleComplianceFileSelect = async (fileList) => {
     const file = fileList[0];
     if (!file) return;
 
-    setResubmitUploads(prev => ({
-      ...prev,
-      [field]: { name: file.name, uploading: true, progress: 0, path: null }
-    }));
+    const fileId = Math.random().toString(36).substring(7);
+    setComplianceFiles(prev => [...prev, { id: fileId, name: file.name, uploading: true, progress: 0, path: null }]);
 
     const fd = new FormData();
     fd.append("file", file);
@@ -463,27 +494,21 @@ export default function IncentiveApplication() {
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setResubmitUploads(prev => ({
-              ...prev,
-              [field]: { ...prev[field], progress: percentCompleted }
-            }));
+            setComplianceFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: percentCompleted } : f));
           }
         }
       });
 
-      setResubmitUploads(prev => ({
-        ...prev,
-        [field]: { ...prev[field], uploading: false, progress: 100, path: res.data.path }
-      }));
+      setComplianceFiles(prev => prev.map(f => f.id === fileId ? { ...f, uploading: false, progress: 100, path: res.data.path } : f));
     } catch (err) {
-      console.error("Instant upload failed:", err);
+      console.error(err);
       alert(`Failed to upload ${file.name}`);
-      setResubmitUploads(prev => {
-        const copy = { ...prev };
-        delete copy[field];
-        return copy;
-      });
+      setComplianceFiles(prev => prev.filter(f => f.id !== fileId));
     }
+  };
+
+  const removeComplianceFile = (id) => {
+    setComplianceFiles(prev => prev.filter(f => f.id !== id));
   };
 
   const handleResubmitSubmit = async (e) => {
@@ -494,18 +519,16 @@ export default function IncentiveApplication() {
     }
     setSubmitting(true);
     try {
-      const payload = { complianceNote };
-      DOCS.forEach(doc => {
-        if (resubmitUploads[doc.field]?.path) {
-          payload[doc.field] = resubmitUploads[doc.field].path;
-        }
-      });
+      const payload = {
+        complianceNote,
+        attachments: complianceFiles.filter(f => f.path).map(f => f.path)
+      };
 
       await axiosInstance.put(`${API}/api/training-centre/incentives/${resubmitApp.id}/resubmit`, payload);
       setSuccessMsg("Application resubmitted successfully with compliance details!");
       setResubmitApp(null);
       setComplianceNote("");
-      setResubmitUploads({});
+      setComplianceFiles([]);
       fetchProfileAndApplications();
     } catch (err) {
       console.error(err);
@@ -1516,7 +1539,7 @@ export default function IncentiveApplication() {
                       )}
 
                       {/* Application History & Timeline */}
-                      <ApplicationTimeline events={app.events} />
+                      <ApplicationTimeline events={app.events} createdAt={app.created_at} />
                     </div>
                   )}
                 </div>
@@ -1536,7 +1559,7 @@ export default function IncentiveApplication() {
               </div>
               <button
                 type="button"
-                onClick={() => { setResubmitApp(null); setComplianceNote(""); setResubmitUploads({}); }}
+                onClick={() => { setResubmitApp(null); setComplianceNote(""); setComplianceFiles([]); }}
                 className="text-gray-400 hover:text-gray-600 hover:bg-slate-100 p-1.5 rounded-full transition"
               >
                 <X size={18} />
@@ -1565,47 +1588,63 @@ export default function IncentiveApplication() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                  Upload Corrected / Missing Documents (If Any)
+                  Upload Compliance Documents (Attachments)
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
-                  {DOCS.map(doc => {
-                    const statusVal = resubmitUploads[doc.field];
-                    return (
-                      <div key={doc.field} className="p-2.5 border rounded-lg bg-slate-50 flex items-center justify-between text-xs">
-                        <div className="truncate pr-2">
-                          <span className="font-bold text-gray-700 block truncate">{doc.label}</span>
-                          {statusVal?.name ? (
-                            <span className="text-[10px] text-emerald-600 font-semibold truncate block">✓ {statusVal.name}</span>
+                
+                {/* Uploaded files list */}
+                {complianceFiles.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {complianceFiles.map((file) => (
+                      <div key={file.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between text-xs">
+                        <div className="truncate pr-2 max-w-[70%]">
+                          <span className="font-semibold text-gray-700 block truncate">{file.name}</span>
+                          {file.uploading ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-gray-400">Uploading ({file.progress}%)</span>
+                              <div className="w-20 bg-gray-200 h-1 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${file.progress}%` }}></div>
+                              </div>
+                            </div>
                           ) : (
-                            <span className="text-[10px] text-gray-400 italic block">Original document will be retained</span>
+                            <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">✓ Uploaded successfully</span>
                           )}
                         </div>
-                        <label className="bg-white hover:bg-slate-100 border text-gray-700 px-2.5 py-1 rounded cursor-pointer font-bold text-[10px] shrink-0">
-                          Choose File
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            onChange={(e) => handleResubmitFileSelect(doc.field, e.target.files)}
-                            className="hidden"
-                          />
-                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeComplianceFile(file.id)}
+                          className="text-red-500 hover:text-red-700 font-bold text-xs"
+                        >
+                          Remove
+                        </button>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload trigger */}
+                <label className="border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl p-6 text-center cursor-pointer flex flex-col items-center justify-center transition bg-slate-50/50">
+                  <span className="text-xs font-bold text-emerald-700">+ Select Document to Upload</span>
+                  <span className="text-[10px] text-gray-400 mt-1">Accepts PDF, JPG, PNG up to 10MB</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleComplianceFileSelect(e.target.files)}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button
                   type="button"
-                  onClick={() => { setResubmitApp(null); setComplianceNote(""); setResubmitUploads({}); }}
+                  onClick={() => { setResubmitApp(null); setComplianceNote(""); setComplianceFiles([]); }}
                   className="px-4 py-2 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || complianceFiles.some(f => f.uploading)}
                   className="px-5 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm"
                 >
                   {submitting ? "Resubmitting..." : "Submit Resubmission"}

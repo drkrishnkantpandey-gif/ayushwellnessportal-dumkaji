@@ -797,17 +797,29 @@ function YogaTCDirectorateReview() {
                     <div className="border-t pt-4">
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Workflow Timeline</p>
                       <div className="relative border-l border-slate-200 ml-2 space-y-3 pl-4">
-                        {(app.events || []).map((ev, i) => (
-                          <div key={i} className="relative">
-                            <span className="absolute -left-[22px] top-1 bg-purple-600 rounded-full w-2 h-2 border border-white"></span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
-                              <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
-                              <span className="text-[9px] text-slate-400 ml-auto">{new Date(ev.created_at).toLocaleDateString("en-IN")}</span>
+                        {(() => {
+                          const timelineEvents = [...(app.events || [])];
+                          const hasSubmitted = timelineEvents.some(ev => ev.event_type === 'SUBMITTED');
+                          if (!hasSubmitted && app.created_at) {
+                            timelineEvents.unshift({
+                              event_type: 'SUBMITTED',
+                              actor_role: 'applicant',
+                              comment: 'Application submitted successfully',
+                              created_at: app.created_at
+                            });
+                          }
+                          return timelineEvents.map((ev, i) => (
+                            <div key={i} className="relative">
+                              <span className="absolute -left-[22px] top-1 bg-purple-600 rounded-full w-2 h-2 border border-white"></span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
+                                <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
+                                <span className="text-[9px] text-slate-400 ml-auto">{new Date(ev.created_at).toLocaleDateString("en-IN")}</span>
+                              </div>
+                              {ev.comment && <p className="text-[10px] text-slate-600 italic bg-white p-1.5 rounded border border-slate-100 mt-0.5">"{ev.comment}"</p>}
                             </div>
-                            {ev.comment && <p className="text-[10px] text-slate-600 italic bg-white p-1.5 rounded border border-slate-100 mt-0.5">"{ev.comment}"</p>}
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     </div>
 
@@ -1774,6 +1786,21 @@ const Directorate = ({ activeTab }) => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [filterStatus, setFilterStatus] = useState("pending");
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const r = await axiosInstance.get(`${API}/api/auth/profile`);
+        if (r.data?.data) {
+          setProfile(r.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching Directorate profile:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const fetchPendingUsers = async (statusVal = filterStatus) => {
     setLoadingUsers(true);
@@ -2334,9 +2361,9 @@ const Directorate = ({ activeTab }) => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-800">
-          Welcome Back, Directorate Officer!
+          Welcome Back, {profile?.full_name || "Directorate Officer"}!
         </h1>
-        <p className="text-gray-500">State AYUSH Directorate Dashboard</p>
+        <p className="text-gray-500 font-semibold mt-1">State AYUSH Directorate Dashboard</p>
       </div>
 
       {/* Trainer Fee Reimbursement Review */}

@@ -11,16 +11,22 @@ async function getCentreId(userId) {
 }
 
 // Helper: log application workflow events
-async function logEvent(applicationId, eventType, actorRole, actorId, comment = null) {
+async function logEvent(applicationId, eventType, actorRole, actorId, actorName, comment = null, attachmentPaths = null) {
   try {
     await db.query(
-      `INSERT INTO yoga_incentive_events (application_id, event_type, actor_role, actor_id, comment)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [applicationId, eventType, actorRole, actorId, comment]
+      `INSERT INTO yoga_incentive_events (application_id, event_type, actor_role, actor_id, actor_name, comment, attachment_paths)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [applicationId, eventType, actorRole, actorId, actorName, comment, attachmentPaths]
     );
   } catch (err) {
     console.error('Error logging event:', err);
   }
+}
+
+// Helper: get full name of actor
+async function getActorName(userId) {
+  const r = await db.query('SELECT full_name FROM users WHERE id = $1', [userId]);
+  return r.rows[0]?.full_name || 'System Official';
 }
 
 // ── POST /api/training-centre/incentives ────────────────────────────────────
@@ -145,7 +151,8 @@ async function submitApplication(req, res) {
     );
 
     const app = result.rows[0];
-    await logEvent(app.id, 'SUBMITTED', 'applicant', userId, 'Application submitted successfully');
+    const actorName = await getActorName(userId);
+    await logEvent(app.id, 'SUBMITTED', 'applicant', userId, actorName, 'Application submitted successfully');
 
     res.status(201).json({ success: true, data: app });
   } catch (err) {
@@ -179,7 +186,7 @@ async function getMyApplications(req, res) {
 }
 
 // ── PUT /api/training-centre/incentives/:id/resubmit ──────────────────────────
-// Applicant resubmits an application after it was reverted
+// Applicant resubmits an application after it was reverted with compliance attachments
 async function resubmitApplication(req, res) {
   try {
     const { id } = req.params;
@@ -198,7 +205,8 @@ async function resubmitApplication(req, res) {
     const {
       investmentAmount,
       eligibleAssetsAmount,
-      complianceNote
+      complianceNote,
+      attachments // Array of temp uploaded files
     } = req.body;
 
     const totalInv = investmentAmount ? parseFloat(investmentAmount) : parseFloat(app.investment_amount);
@@ -245,7 +253,11 @@ async function resubmitApplication(req, res) {
       ]
     );
 
-    await logEvent(id, 'RESUBMITTED', 'applicant', userId, complianceNote || 'Compliance resubmitted by applicant');
+    const actorName = await getActorName(userId);
+    // Parse compliance attachments if sent
+    const parsedAttachments = Array.isArray(attachments) ? attachments : (attachments ? [attachments] : null);
+
+    await logEvent(id, 'RESUBMITTED', 'applicant', userId, actorName, complianceNote || 'Compliance resubmitted by applicant', parsedAttachments);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -289,11 +301,11 @@ async function getDistrictApplications(req, res) {
 }
 
 // ── PUT /api/admin/incentives/district/:id/verify ───────────────────────────
-// District Officer: submit verification report
+// District Officer: submit verification report with attachments
 async function districtSubmitVerification(req, res) {
   try {
     const { id } = req.params;
-    const { verificationNote } = req.body;
+    const { verificationNote, attachments } = req.body;
     const actorId = req.user.userId;
 
     if (!verificationNote || !verificationNote.trim()) {
@@ -313,7 +325,10 @@ async function districtSubmitVerification(req, res) {
       return res.status(404).json({ message: 'Forwarded application not found or already verified.' });
     }
 
-    await logEvent(id, 'DISTRICT_VERIFIED', 'district', actorId, verificationNote);
+    const actorName = await getActorName(actorId);
+    const parsedAttachments = Array.isArray(attachments) ? attachments : (attachments ? [attachments] : null);
+
+    await logEvent(id, 'DISTRICT_VERIFIED', 'district', actorId, actorName, verificationNote, parsedAttachments);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -369,7 +384,8 @@ async function directorateForwardToDistrict(req, res) {
       return res.status(404).json({ message: 'Application not in correct state for district forwarding.' });
     }
 
-    await logEvent(id, 'FORWARDED_TO_DISTRICT', 'directorate', actorId, remarks || 'Forwarded to District Officer for site verification');
+    const actorName = await getActorName(actorId);
+    await logEvent(id, 'FORWARDED_TO_DISTRICT', 'directorate', actorId, actorName, remarks || 'Forwarded to District Officer for site verification');
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -402,7 +418,8 @@ async function directorateRevertToApplicant(req, res) {
       return res.status(404).json({ message: 'Application not found or not in correct state for revert.' });
     }
 
-    await logEvent(id, 'REVERTED_TO_APPLICANT', 'directorate', actorId, remarks);
+    const actorName = await getActorName(actorId);
+    await logEvent(id, 'REVERTED_TO_APPLICANT', 'directorate', actorId, actorName, remarks);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -431,7 +448,8 @@ async function directorateForwardToSlrc(req, res) {
       return res.status(404).json({ message: 'Application not found or not verified for SLRC.' });
     }
 
-    await logEvent(id, 'FORWARDED_TO_SLRC', 'directorate', actorId, remarks || 'Application forwarded to SLRC');
+    const actorName = await getActorName(actorId);
+    await logEvent(id, 'FORWARDED_TO_SLRC', 'directorate', actorId, actorName, remarks || 'Application forwarded to SLRC');
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -464,8 +482,9 @@ async function directorateMarkSlrcApproved(req, res) {
       return res.status(404).json({ message: 'Application not in FORWARDED_TO_SLRC state.' });
     }
 
+    const actorName = await getActorName(actorId);
     const note = `SLRC Approved on ${slrcApprovalDate}. Ref: ${slrcReferenceNumber}. Note: ${remarks || 'None'}`;
-    await logEvent(id, 'SLRC_APPROVED', 'directorate', actorId, note);
+    await logEvent(id, 'SLRC_APPROVED', 'directorate', actorId, actorName, note);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -498,8 +517,9 @@ async function directorateGrantInPrinciple(req, res) {
       return res.status(404).json({ message: 'Application not SLRC approved.' });
     }
 
+    const actorName = await getActorName(actorId);
     const note = `In-Principle Approval granted. Order: ${inPrincipleOrderNumber}. Note: ${remarks || 'None'}`;
-    await logEvent(id, 'IN_PRINCIPLE_APPROVED', 'directorate', actorId, note);
+    await logEvent(id, 'IN_PRINCIPLE_APPROVED', 'directorate', actorId, actorName, note);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {

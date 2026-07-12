@@ -314,9 +314,15 @@ async function runIncentiveApplicationsMigration() {
         event_type     VARCHAR(60) NOT NULL,
         actor_role     VARCHAR(40),
         actor_id       INTEGER,
+        actor_name     VARCHAR(255),
         comment        TEXT,
+        attachment_paths TEXT[],
         created_at     TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE yoga_incentive_events 
+      ADD COLUMN IF NOT EXISTS actor_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS attachment_paths TEXT[];
     `);
     console.log("Database Migration: yoga_incentive_applications table and events tracker updated successfully");
   } catch (err) {

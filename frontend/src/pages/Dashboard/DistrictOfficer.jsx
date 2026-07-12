@@ -1,7 +1,7 @@
 import API from '../../config/api';
 import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
-import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X } from "lucide-react";
+import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X, Download } from "lucide-react";
 import { toast } from "react-toastify";
 
 
@@ -16,6 +16,146 @@ const docUrl = (path) => {
   // strip leading slash if present to avoid double-slash
   return `${API}/${path.replace(/^\//, '')}`;
 };
+
+// ── GPS Map using OpenStreetMap (no API key required) ─────────────────────────
+function GpsMap({ coords }) {
+  if (!coords) return null;
+  const parts = coords.split(',').map(s => s.trim());
+  if (parts.length < 2) return null;
+  const [lat, lng] = parts;
+  const la = parseFloat(lat);
+  const ln = parseFloat(lng);
+  if (isNaN(la) || isNaN(ln)) return null;
+
+  const bbox = `${ln - 0.01},${la - 0.01},${ln + 0.01},${la + 0.01}`;
+  const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${la},${ln}`;
+
+  return (
+    <div className="md:col-span-3 bg-white p-3 rounded-lg border">
+      <span className="text-[10px] text-gray-400 font-bold block uppercase mb-2">Project Site Map (GPS Location)</span>
+      <div className="w-full h-48 rounded-lg overflow-hidden border border-slate-200">
+        <iframe
+          title="OSM Site Map"
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          scrolling="no"
+          marginHeight="0"
+          marginWidth="0"
+          src={embedUrl}
+        ></iframe>
+      </div>
+    </div>
+  );
+}
+
+// ── PDF generator using browser print ─────────────────────────────────────────
+function generatePDF(app) {
+  const submittedDate = app.created_at
+    ? new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '—';
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Incentive Application — ${app.upn || app.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1a202c; padding: 32px; }
+    .header { text-align: center; border-bottom: 3px solid #059669; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { font-size: 18px; color: #065f46; }
+    .header p { font-size: 11px; color: #64748b; margin-top: 4px; }
+    .badge { display: inline-block; background: #d1fae5; color: #065f46; font-weight: 700; font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-top: 8px; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .field label { display: block; font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+    .field span { font-weight: 600; color: #1a202c; }
+    .docs ul { padding-left: 16px; }
+    .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+    .footer .sig { margin-top: 40px; display: flex; justify-content: flex-end; }
+    .footer .sig-box { text-align: center; }
+    .footer .sig-box .line { border-top: 1px solid #1a202c; width: 200px; margin-bottom: 4px; }
+    .footer .sig-box p { font-size: 11px; font-weight: 700; }
+    .footer .sig-box small { font-size: 10px; color: #64748b; }
+    @media print { body { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p style="font-size:10px;color:#94a3b8;font-weight:600">GOVERNMENT OF UTTARAKHAND — AYUSH WELLNESS PORTAL</p>
+    <h1>Yoga Centre Incentive Scheme Application</h1>
+    <p>UPN: <strong>${app.upn || '—'}</strong> &nbsp;|&nbsp; Submitted on: <strong>${submittedDate}</strong></p>
+    <span class="badge">${app.status || 'SUBMITTED'}</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Applicant Details</div>
+    <div class="grid3">
+      <div class="field"><label>Applicant Name</label><span>${app.applicant_name || '—'}</span></div>
+      <div class="field"><label>Designation</label><span>${app.designation || '—'}</span></div>
+      <div class="field"><label>Entity Type</label><span>${app.entity_type || '—'}</span></div>
+      <div class="field"><label>Mobile</label><span>${app.mobile_number || '—'}</span></div>
+      <div class="field"><label>Email</label><span>${app.email_id || '—'}</span></div>
+      <div class="field"><label>District</label><span>${app.district || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Project Details</div>
+    <div class="grid3">
+      <div class="field"><label>Project Type</label><span>${app.project_type || '—'}</span></div>
+      <div class="field"><label>Region</label><span>${app.region || '—'}</span></div>
+      <div class="field"><label>Subsidy Rate</label><span>${app.subsidy_percentage || '—'}%</span></div>
+      <div class="field"><label>Proposed Centre Name</label><span>${app.proposed_centre_name || app.centre_name || '—'}</span></div>
+      <div class="field"><label>Proposed Location</label><span>${app.proposed_location || '—'}${app.other_location_name ? ' (' + app.other_location_name + ')' : ''}</span></div>
+      <div class="field"><label>GPS Coordinates</label><span>${app.gps_coordinates || '—'}</span></div>
+      <div class="field" style="grid-column: span 3"><label>Complete Address</label><span>${app.address || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Financial Details</div>
+    <div class="grid3">
+      <div class="field"><label>Total Investment</label><span>${fmt(app.investment_amount)}</span></div>
+      <div class="field"><label>Eligible Capital Assets (ECA)</label><span>${fmt(app.eligible_assets_amount)}</span></div>
+      <div class="field"><label>Claimed Subsidy (Tentative)</label><span>${fmt(app.subsidy_amount)}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Site & Operational Details</div>
+    <div class="grid3">
+      <div class="field"><label>Site Total Area</label><span>${app.site_total_area ? app.site_total_area + ' sq ft' : '—'}</span></div>
+      <div class="field"><label>Proposed Constructed Area</label><span>${app.proposed_constructed_area ? app.proposed_constructed_area + ' sq ft' : '—'}</span></div>
+      <div class="field"><label>Tentative Employees</label><span>${app.tentative_employees || '—'}</span></div>
+      <div class="field"><label>YCB Certified Instructors</label><span>${app.ycb_certified_instructors || '—'}</span></div>
+      <div class="field"><label>Clinical Services</label><span>${app.clinical_services_provided ? 'Yes (' + (app.certified_ayush_doctors || 0) + ' AYUSH Doctors)' : 'No'}</span></div>
+      <div class="field"><label>Services Offered</label><span>${Array.isArray(app.services_offered) ? app.services_offered.join(', ') : (app.services_offered || '—')}</span></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p style="font-size:10px;color:#64748b">This is a system-generated copy of the submitted application. The authenticity of this document is subject to verification by the concerned authority.</p>
+    <div class="sig">
+      <div class="sig-box">
+        <div class="line"></div>
+        <p>${app.applicant_name || 'Applicant'}</p>
+        <small>${app.designation || ''}</small><br/>
+        <small>Date: ${submittedDate}</small>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.print(); };
+}
 
 function DocList({ docs }) {
   const hasAny = docs.some(d => d.path);
@@ -60,11 +200,45 @@ function YogaTCIncentiveReview() {
   const [apps, setApps]         = useState([]);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState(null);
-  const [modal, setModal]       = useState(null); // { id, decision }
+  const [modal, setModal]       = useState(null); // { id }
   const [remarks, setRemarks]   = useState("");
   const [saving, setSaving]     = useState(false);
   const [msg, setMsg]           = useState("");
 
+  const [verificationFiles, setVerificationFiles] = useState([]);
+
+  const handleVerificationFileSelect = async (fileList) => {
+    const file = fileList[0];
+    if (!file) return;
+
+    const fileId = Math.random().toString(36).substring(7);
+    setVerificationFiles(prev => [...prev, { id: fileId, name: file.name, uploading: true, progress: 0, path: null }]);
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await axiosInstance.post(`${API}/api/register/upload-temp-file`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setVerificationFiles(prev => prev.map(f => f.id === fileId ? { ...f, progress: percentCompleted } : f));
+          }
+        }
+      });
+
+      setVerificationFiles(prev => prev.map(f => f.id === fileId ? { ...f, uploading: false, progress: 100, path: res.data.path } : f));
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to upload ${file.name}`);
+      setVerificationFiles(prev => prev.filter(f => f.id !== fileId));
+    }
+  };
+
+  const removeVerificationFile = (id) => {
+    setVerificationFiles(prev => prev.filter(f => f.id !== id));
+  };
 
   const load = async () => {
     setLoading(true);
@@ -83,7 +257,7 @@ function YogaTCIncentiveReview() {
 
   useEffect(() => { load(); }, []);
 
-  const openModal = (id) => { setModal({ id }); setRemarks(""); };
+  const openModal = (id) => { setModal({ id }); setRemarks(""); setVerificationFiles([]); };
 
   const submitVerification = async () => {
     if (!modal || !remarks.trim()) return;
@@ -91,11 +265,15 @@ function YogaTCIncentiveReview() {
     try {
       await axiosInstance.put(
         `${API}/api/admin/incentives/district/${modal.id}/verify`,
-        { verificationNote: remarks }
+        {
+          verificationNote: remarks,
+          attachments: verificationFiles.filter(f => f.path).map(f => f.path)
+        }
       );
       setMsg(`Verification report submitted successfully for Application #${modal.id}.`);
       setModal(null);
       setExpanded(null);
+      setVerificationFiles([]);
       load();
     } catch (e) {
       alert(e.response?.data?.message || "Verification submission failed.");
@@ -164,36 +342,86 @@ function YogaTCIncentiveReview() {
                 </button>
 
                 {open && (
-                  <div className="mt-4 ml-11 space-y-4 text-xs">
-                    <div className="grid grid-cols-4 gap-3 bg-white p-3 rounded-lg border">
-                      <div className="bg-gray-50 rounded-lg p-2.5">
+                  <div className="mt-4 ml-11 space-y-4 text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200/60">
+                    
+                    {/* Action buttons */}
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => generatePDF(app)}
+                        className="flex items-center gap-2 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg shadow-sm transition"
+                      >
+                        <Download size={13} /> Download Form PDF
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="bg-white rounded-lg p-3 border">
                         <p className="text-[10px] text-gray-400 uppercase font-bold">Total Investment</p>
-                        <p className="font-semibold text-gray-800">{fmt(app.investment_amount)}</p>
+                        <p className="font-bold text-gray-800 text-sm mt-0.5">{fmt(app.investment_amount)}</p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-2.5">
+                      <div className="bg-white rounded-lg p-3 border">
                         <p className="text-[10px] text-gray-400 uppercase font-bold">Eligible Assets Amount</p>
-                        <p className="font-semibold text-gray-800">{fmt(app.eligible_assets_amount || app.claim_amount)}</p>
+                        <p className="font-bold text-gray-800 text-sm mt-0.5">{fmt(app.eligible_assets_amount || app.claim_amount)}</p>
                       </div>
-                      <div className="bg-emerald-50 rounded-lg p-2.5">
-                        <p className="text-[10px] text-emerald-600 uppercase font-bold">Subsidy ({app.subsidy_percentage}%)</p>
-                        <p className="font-bold text-emerald-700">{fmt(app.subsidy_amount)}</p>
+                      <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                        <p className="text-[10px] text-emerald-600 uppercase font-bold">Claimed Subsidy (Tentative)</p>
+                        <p className="font-bold text-emerald-700 text-sm mt-0.5">{fmt(app.subsidy_amount)} ({app.subsidy_percentage}%)</p>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-2.5">
+                      <div className="bg-white rounded-lg p-3 border">
                         <p className="text-[10px] text-slate-500 uppercase font-bold">Proposed Location</p>
-                        <p className="font-semibold text-slate-800">{app.proposed_location || "—"}</p>
+                        <p className="font-bold text-slate-800 text-sm mt-0.5">{app.proposed_location || "—"}{app.other_location_name ? ` (${app.other_location_name})` : ""}</p>
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 p-3 rounded-lg border grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Complete Site Address</span>
-                        <span className="text-gray-700 font-medium">{app.address || "—"}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase block">GPS Coordinates</span>
-                        <span className="text-gray-700 font-medium">{app.gps_coordinates || "—"}</span>
+                    {/* Site Location specifications */}
+                    <div className="bg-white p-3 rounded-lg border space-y-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1">Proposed Project Site Info</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="col-span-2">
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Complete Site Address</span>
+                          <span className="font-bold text-gray-700">{app.address || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">GPS Coordinates</span>
+                          <span className="font-bold text-gray-700">{app.gps_coordinates || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">District</span>
+                          <span className="font-bold text-gray-700">{app.district || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Site Total Area</span>
+                          <span className="font-bold text-gray-700">{app.site_total_area ? `${app.site_total_area} sq ft` : "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Constructed Area</span>
+                          <span className="font-bold text-gray-700">{app.proposed_constructed_area ? `${app.proposed_constructed_area} sq ft` : "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Tentative Employees</span>
+                          <span className="font-bold text-gray-700">{app.tentative_employees || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">YCB Certified Instructors</span>
+                          <span className="font-bold text-gray-700">{app.ycb_certified_instructors || "—"}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Services Offered</span>
+                          <span className="font-bold text-gray-700">{Array.isArray(app.services_offered) ? app.services_offered.join(", ") : (app.services_offered || "—")}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Clinical Services?</span>
+                          <span className="font-bold text-gray-700">{app.clinical_services_provided ? "Yes" : "No"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">AYUSH Doctors</span>
+                          <span className="font-bold text-gray-700">{app.certified_ayush_doctors || "0"}</span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Site Map Embed */}
+                    <GpsMap coords={app.gps_coordinates} />
 
                     {/* Documents submitted by applicant */}
                     <DocList docs={[
@@ -240,17 +468,29 @@ function YogaTCIncentiveReview() {
                     <div className="border-t pt-4">
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Workflow Timeline</p>
                       <div className="relative border-l border-slate-200 ml-2 space-y-3 pl-4">
-                        {(app.events || []).map((ev, i) => (
-                          <div key={i} className="relative">
-                            <span className="absolute -left-[22px] top-1 bg-emerald-600 rounded-full w-2 h-2 border border-white"></span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
-                              <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
-                              <span className="text-[9px] text-slate-400 ml-auto">{new Date(ev.created_at).toLocaleDateString("en-IN")}</span>
+                        {(() => {
+                          const timelineEvents = [...(app.events || [])];
+                          const hasSubmitted = timelineEvents.some(ev => ev.event_type === 'SUBMITTED');
+                          if (!hasSubmitted && app.created_at) {
+                            timelineEvents.unshift({
+                              event_type: 'SUBMITTED',
+                              actor_role: 'applicant',
+                              comment: 'Application submitted successfully',
+                              created_at: app.created_at
+                            });
+                          }
+                          return timelineEvents.map((ev, i) => (
+                            <div key={i} className="relative">
+                              <span className="absolute -left-[22px] top-1 bg-emerald-600 rounded-full w-2 h-2 border border-white"></span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
+                                <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
+                                <span className="text-[9px] text-slate-400 ml-auto">{new Date(ev.created_at).toLocaleDateString("en-IN")}</span>
+                              </div>
+                              {ev.comment && <p className="text-[10px] text-slate-600 italic bg-white p-1.5 rounded border border-slate-100 mt-0.5">"{ev.comment}"</p>}
                             </div>
-                            {ev.comment && <p className="text-[10px] text-slate-600 italic bg-white p-1.5 rounded border border-slate-100 mt-0.5">"{ev.comment}"</p>}
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -269,25 +509,79 @@ function YogaTCIncentiveReview() {
               <h4 className="font-bold text-gray-800 text-base">
                 Submit Verification Report
               </h4>
-              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+              <button onClick={() => { setModal(null); setVerificationFiles([]); }} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
             </div>
             <p className="text-xs text-gray-500 mb-4">
               Please enter detailed remarks regarding physical site verification, assets check, and compliance.
             </p>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Verification Note <span className="text-red-500">*</span></label>
-            <textarea
-              required
-              rows={4}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-              placeholder="Detailed physical verification comments..."
-            />
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Verification Note <span className="text-red-500">*</span></label>
+                <textarea
+                  required
+                  rows={4}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  placeholder="Detailed physical verification comments..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                  Attach Verification Documents / Photos
+                </label>
+                
+                {/* Uploaded files list */}
+                {verificationFiles.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {verificationFiles.map((file) => (
+                      <div key={file.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between text-xs">
+                        <div className="truncate pr-2 max-w-[70%]">
+                          <span className="font-semibold text-gray-700 block truncate">{file.name}</span>
+                          {file.uploading ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-gray-400">Uploading ({file.progress}%)</span>
+                              <div className="w-20 bg-gray-200 h-1 rounded-full overflow-hidden">
+                                <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${file.progress}%` }}></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">✓ Uploaded successfully</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeVerificationFile(file.id)}
+                          className="text-red-500 hover:text-red-700 font-bold text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload trigger */}
+                <label className="border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center transition bg-slate-50/50">
+                  <span className="text-xs font-bold text-emerald-700">+ Add Verification Attachment</span>
+                  <span className="text-[9px] text-gray-400 mt-0.5">Upload photos, geo-tagged site images, or PDFs</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleVerificationFileSelect(e.target.files)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 mt-5 border-t pt-4">
-              <button onClick={() => setModal(null)} className="px-4 py-2 text-xs border border-gray-300 rounded-lg text-gray-600 font-semibold">Cancel</button>
+              <button onClick={() => { setModal(null); setVerificationFiles([]); }} className="px-4 py-2 text-xs border border-gray-300 rounded-lg text-gray-600 font-semibold">Cancel</button>
               <button
                 onClick={submitVerification}
-                disabled={saving || !remarks.trim()}
+                disabled={saving || !remarks.trim() || verificationFiles.some(f => f.uploading)}
                 className="px-5 py-2 text-xs text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 font-bold shadow-sm"
               >
                 {saving ? "Submitting…" : "Submit Report"}
@@ -306,6 +600,21 @@ const DistrictOfficer = ({ activeTab }) => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [filterStatus, setFilterStatus] = useState("pending");
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const r = await axiosInstance.get(`${API}/api/auth/profile`);
+        if (r.data?.data) {
+          setProfile(r.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching DO profile:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const fetchPendingUsers = async (statusVal = filterStatus) => {
     setLoadingUsers(true);
@@ -725,9 +1034,11 @@ const DistrictOfficer = ({ activeTab }) => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-800">
-          Welcome Back, District Officer!
+          Welcome Back, {profile?.full_name || "District Officer"}!
         </h1>
-        <p className="text-gray-500">District Officer Dashboard - {"North District"}</p>
+        <p className="text-gray-500 font-semibold mt-1">
+          District Officer Dashboard — District: <span className="text-emerald-700 font-bold">{profile?.district || "Uttarakhand"}</span>
+        </p>
       </div>
 
       {/* Yoga TC Incentive Review */}
