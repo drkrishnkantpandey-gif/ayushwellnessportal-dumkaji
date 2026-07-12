@@ -1133,7 +1133,7 @@ async function registerDistrictOfficer(req, res) {
 
     // Check for existing user with same email/role (case-insensitive)
     const existingUser = await client.query(
-      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      `SELECT id, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
       [email, 'district_officer']
     );
 
@@ -1142,12 +1142,13 @@ async function registerDistrictOfficer(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      if (userRecord.is_verified) {
+      // Block only if already fully approved — pending/rejected can re-register
+      if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
-          message: "Email already registered and verified. Please log in.",
+          message: "This email is already registered and approved. Please log in.",
         });
       }
 
@@ -1155,19 +1156,18 @@ async function registerDistrictOfficer(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending', is_verified = true
          WHERE id = $4`,
         [fullName, contactNumber, passwordHash, userId]
       );
 
       await client.query(`DELETE FROM district_officer_profile WHERE user_id = $1`, [userId]);
-      await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
+         VALUES ($1, LOWER($2), $3, $4, $5, true, 'pending')
          RETURNING id`,
-        [fullName, email, contactNumber, passwordHash, 'district_officer', true]
+        [fullName, email, contactNumber, passwordHash, 'district_officer']
       );
       userId = userResult.rows[0].id;
     }
@@ -1195,37 +1195,12 @@ async function registerDistrictOfficer(req, res) {
       ]
     );
 
-    // Generate OTP
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    await client.query(
-      `INSERT INTO user_otps (user_id, otp, expires_at) VALUES ($1, $2, $3)`,
-      [userId, otp, expiresAt]
-    );
-
-    // Send OTP Email
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject: "Verify your email for AYUSH Setu Registration",
-      text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
-    };
-
-    try {
-      const info = await sendMail(mailOptions);
-      console.log('[Email] OTP sent to', email, ':', info.response);
-    } catch (mailErr) {
-      console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
-      // Do not block registration — OTP is already stored in DB
-    }
-
     await client.query("COMMIT");
     client.release();
 
     return res.status(201).json({
       success: true,
-      message: "Registration successful. OTP sent to your email.",
+      message: "Registration submitted successfully. Please wait for Directorate approval.",
       userId
     });
 
@@ -1275,7 +1250,7 @@ async function registerDirectorate(req, res) {
 
     // Check for existing user with same email/role (case-insensitive)
     const existingUser = await client.query(
-      `SELECT id, is_verified FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
+      `SELECT id, is_verified, registration_status FROM users WHERE LOWER(email) = LOWER($1) AND role = $2`,
       [email, 'directorate']
     );
 
@@ -1284,12 +1259,13 @@ async function registerDirectorate(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      if (userRecord.is_verified) {
+      // Block only if already approved — pending/rejected can re-register
+      if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
-          message: "Email already registered and verified. Please log in.",
+          message: "This email is already registered and approved. Please log in.",
         });
       }
 
@@ -1297,19 +1273,18 @@ async function registerDirectorate(req, res) {
 
       await client.query(
         `UPDATE users 
-         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending'
+         SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending', is_verified = true
          WHERE id = $4`,
         [fullName, contactNumber, passwordHash, userId]
       );
 
       await client.query(`DELETE FROM directorate_profile WHERE user_id = $1`, [userId]);
-      await client.query(`DELETE FROM user_otps WHERE user_id = $1`, [userId]);
     } else {
       const userResult = await client.query(
         `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
-         VALUES ($1, LOWER($2), $3, $4, $5, $6, 'pending')
+         VALUES ($1, LOWER($2), $3, $4, $5, true, 'pending')
          RETURNING id`,
-        [fullName, email, contactNumber, passwordHash, 'directorate', true]
+        [fullName, email, contactNumber, passwordHash, 'directorate']
       );
       userId = userResult.rows[0].id;
     }
@@ -1335,37 +1310,12 @@ async function registerDirectorate(req, res) {
       ]
     );
 
-    // Generate OTP
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    await client.query(
-      `INSERT INTO user_otps (user_id, otp, expires_at) VALUES ($1, $2, $3)`,
-      [userId, otp, expiresAt]
-    );
-
-    // Send OTP Email
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Verify your email for AYUSH Setu Registration",
-      text: `Your OTP code for verification is: ${otp}. It is valid for 10 minutes.`,
-    };
-
-    try {
-      const info = await sendMail(mailOptions);
-      console.log('[Email] OTP sent to', email, ':', info.response);
-    } catch (mailErr) {
-      console.error('[Email] Failed to send OTP to', email, ':', mailErr.message);
-      // Do not block registration — OTP is already stored in DB
-    }
-
     await client.query("COMMIT");
     client.release();
 
     return res.status(201).json({
       success: true,
-      message: "Registration successful. OTP sent to your email.",
+      message: "Registration submitted successfully. Please wait for Admin approval.",
       userId
     });
 
