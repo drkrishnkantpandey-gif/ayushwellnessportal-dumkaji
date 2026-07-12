@@ -513,10 +513,14 @@ function YogaTCIncentiveReview() {
                             Submit Verification Report
                           </button>
                         </div>
-                      ) : (
+                      ) : app.district_verification_note || app.district_verified_at ? (
                         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-lg">
                           <p className="font-bold text-xs uppercase tracking-wide">✓ Verification Report Submitted</p>
-                          <p className="mt-1">Note: "{app.district_verification_note}"</p>
+                          {app.district_verification_note && <p className="mt-1">Note: "{app.district_verification_note}"</p>}
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 border border-slate-200 text-slate-500 p-3 rounded-lg italic">
+                          <p className="text-xs">Pending action from Directorate Nodal Officer (Application not forwarded for verification yet).</p>
                         </div>
                       )}
                     </div>

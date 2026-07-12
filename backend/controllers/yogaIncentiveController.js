@@ -279,8 +279,8 @@ async function getDistrictApplications(req, res) {
       `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
        FROM yoga_incentive_applications a
        JOIN users u ON u.id = a.user_id
-       WHERE a.district = $1 AND a.status IN ('FORWARDED_TO_DISTRICT', 'DISTRICT_VERIFIED')
-       ORDER BY a.forwarded_to_district_at ASC`,
+       WHERE a.district = $1
+       ORDER BY COALESCE(a.forwarded_to_district_at, a.created_at) DESC`,
       [district]
     );
 
