@@ -5,7 +5,7 @@ import axiosInstance from '../../../config/axiosInstance';
 import {
   PlusCircle, FileText, CheckCircle, Clock,
   XCircle, ChevronDown, ChevronUp, Upload, IndianRupee, Mountain, Leaf,
-  CheckCircle2, X, Building
+  CheckCircle2, X, Building, MapPin, Download, Calendar
 } from "lucide-react";
 
 const REGIONS = [
@@ -75,13 +75,14 @@ const DOCS = [
 ];
 
 const STATUS_META = {
-  SUBMITTED:                { label: "Submitted",             color: "bg-blue-100 text-blue-700",      icon: Clock        },
-  DISTRICT_UNDER_REVIEW:    { label: "District Under Review", color: "bg-yellow-100 text-yellow-700",  icon: Clock        },
-  DISTRICT_APPROVED:        { label: "District Approved",     color: "bg-green-100 text-green-700",    icon: CheckCircle  },
-  DISTRICT_DISAPPROVED:     { label: "District Disapproved",  color: "bg-red-100 text-red-700",        icon: XCircle      },
-  DIRECTORATE_UNDER_REVIEW: { label: "Directorate Review",    color: "bg-purple-100 text-purple-700",  icon: Clock        },
-  DIRECTORATE_APPROVED:     { label: "Finally Approved ✓",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
-  DIRECTORATE_REJECTED:     { label: "Rejected",              color: "bg-red-100 text-red-700",        icon: XCircle      },
+  SUBMITTED:                { label: "Submitted to Directorate", color: "bg-blue-100 text-blue-700",      icon: Clock        },
+  FORWARDED_TO_DISTRICT:    { label: "Forwarded to District Officer", color: "bg-yellow-100 text-yellow-700",  icon: Clock        },
+  DISTRICT_VERIFIED:        { label: "Verified by District Officer", color: "bg-orange-100 text-orange-700",    icon: CheckCircle  },
+  REVERTED_TO_APPLICANT:    { label: "Reverted (Compliance Required)", color: "bg-red-100 text-red-700",        icon: XCircle      },
+  RESUBMITTED:              { label: "Resubmitted to Directorate", color: "bg-cyan-100 text-cyan-700",      icon: Clock        },
+  FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700",  icon: Clock        },
+  SLRC_APPROVED:            { label: "SLRC Approved", color: "bg-indigo-100 text-indigo-700",    icon: CheckCircle  },
+  IN_PRINCIPLE_APPROVED:    { label: "In-Principle Approved ✓",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
 };
 
 const fmt = (n) =>
@@ -94,6 +95,193 @@ const docUrl = (path) => {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return `${API}${path}`;
 };
+
+// ── Application History & Status Timeline ──────────────────────────────────
+function ApplicationTimeline({ events }) {
+  if (!events || events.length === 0) return null;
+  return (
+    <div className="md:col-span-3 border-t pt-4 mt-2">
+      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Application History &amp; Status Timeline</h4>
+      <div className="relative border-l border-slate-200 ml-2 space-y-4">
+        {events.map((ev, index) => {
+          const dateStr = new Date(ev.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+          const timeStr = new Date(ev.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+          return (
+            <div key={index} className="relative pl-6">
+              <span className="absolute -left-1.5 top-1 bg-emerald-600 rounded-full w-3 h-3 border-2 border-white"></span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[11px] text-slate-800">{ev.event_type.replace(/_/g, ' ')}</span>
+                <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
+                <span className="text-[10px] text-slate-400 ml-auto">{dateStr} · {timeStr}</span>
+              </div>
+              {ev.comment && (
+                <p className="text-[11px] text-slate-600 mt-1 bg-white p-2 rounded border border-slate-100 italic">
+                  "{ev.comment}"
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── GPS Map using OpenStreetMap (no API key required) ─────────────────────────
+function GpsMap({ coords }) {
+  if (!coords) return null;
+  // Accept "lat,lng" or "lat, lng" format
+  const parts = coords.split(',').map(s => s.trim());
+  if (parts.length < 2) return null;
+  const [lat, lng] = parts;
+  if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) return null;
+
+  // OpenStreetMap embed via iframe — works on any network, no third-party account
+  const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(lng)-0.01},${parseFloat(lat)-0.01},${parseFloat(lng)+0.01},${parseFloat(lat)+0.01}&layer=mapnik&marker=${lat},${lng}`;
+  const linkUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=15/${lat}/${lng}`;
+
+  return (
+    <div className="md:col-span-3 bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <MapPin size={11} className="text-emerald-600" /> Proposed Site Location on Map
+        </p>
+        <a href={linkUrl} target="_blank" rel="noopener noreferrer"
+           className="text-[10px] text-blue-600 underline font-semibold">Open in Maps ↗</a>
+      </div>
+      <iframe
+        title="Proposed Site GPS Location"
+        src={osmUrl}
+        width="100%"
+        height="220"
+        style={{ border: 'none', display: 'block' }}
+        loading="lazy"
+        sandbox="allow-scripts allow-same-origin"
+      />
+      <p className="text-[10px] text-slate-400 px-3 py-1.5 bg-slate-50 border-t">
+        📍 GPS: {coords} &nbsp;·&nbsp; Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline">OpenStreetMap</a> contributors
+      </p>
+    </div>
+  );
+}
+
+// ── PDF generator using browser print ─────────────────────────────────────────
+function generatePDF(app, regions, docsArr, fmtFn, docUrlFn) {
+  const region = regions.find(r => r.value === app.region);
+  const submittedDate = app.created_at
+    ? new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '—';
+
+  const docLinks = docsArr
+    .filter(d => app[d.field])
+    .map(d => `<li style="margin:3px 0"><a href="${docUrlFn(app[d.field])}" style="color:#065f46">${d.label}</a></li>`)
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Incentive Application — ${app.upn || app.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1a202c; padding: 32px; }
+    .header { text-align: center; border-bottom: 3px solid #059669; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { font-size: 18px; color: #065f46; }
+    .header p { font-size: 11px; color: #64748b; margin-top: 4px; }
+    .badge { display: inline-block; background: #d1fae5; color: #065f46; font-weight: 700; font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-top: 8px; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .field label { display: block; font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+    .field span { font-weight: 600; color: #1a202c; }
+    .docs ul { padding-left: 16px; }
+    .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+    .footer .sig { margin-top: 40px; display: flex; justify-content: flex-end; }
+    .footer .sig-box { text-align: center; }
+    .footer .sig-box .line { border-top: 1px solid #1a202c; width: 200px; margin-bottom: 4px; }
+    .footer .sig-box p { font-size: 11px; font-weight: 700; }
+    .footer .sig-box small { font-size: 10px; color: #64748b; }
+    @media print { body { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p style="font-size:10px;color:#94a3b8;font-weight:600">GOVERNMENT OF UTTARAKHAND — AYUSH WELLNESS PORTAL</p>
+    <h1>Yoga Centre Incentive Scheme Application</h1>
+    <p>UPN: <strong>${app.upn || '—'}</strong> &nbsp;|&nbsp; Submitted on: <strong>${submittedDate}</strong></p>
+    <span class="badge">${app.status || 'SUBMITTED'}</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Applicant Details</div>
+    <div class="grid3">
+      <div class="field"><label>Applicant Name</label><span>${app.applicant_name || '—'}</span></div>
+      <div class="field"><label>Designation</label><span>${app.designation || '—'}</span></div>
+      <div class="field"><label>Entity Type</label><span>${app.entity_type || '—'}</span></div>
+      <div class="field"><label>Mobile</label><span>${app.mobile_number || '—'}</span></div>
+      <div class="field"><label>Email</label><span>${app.email_id || '—'}</span></div>
+      <div class="field"><label>District</label><span>${app.district || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Project Details</div>
+    <div class="grid3">
+      <div class="field"><label>Project Type</label><span>${app.project_type || '—'}</span></div>
+      <div class="field"><label>Region</label><span>${region?.label || app.region || '—'}</span></div>
+      <div class="field"><label>Subsidy Rate</label><span>${app.subsidy_percentage || '—'}%</span></div>
+      <div class="field"><label>Proposed Centre Name</label><span>${app.proposed_centre_name || app.centre_name || '—'}</span></div>
+      <div class="field"><label>Proposed Location</label><span>${app.proposed_location || '—'}</span></div>
+      <div class="field"><label>GPS Coordinates</label><span>${app.gps_coordinates || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Financial Details</div>
+    <div class="grid3">
+      <div class="field"><label>Total Investment</label><span>${fmtFn(app.investment_amount)}</span></div>
+      <div class="field"><label>Eligible Capital Assets (ECA)</label><span>${fmtFn(app.eligible_assets_amount)}</span></div>
+      <div class="field"><label>Claimed Subsidy (Tentative)</label><span>${fmtFn(app.subsidy_amount)}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Site & Operational Details</div>
+    <div class="grid3">
+      <div class="field"><label>Site Total Area</label><span>${app.site_total_area ? app.site_total_area + ' sq ft' : '—'}</span></div>
+      <div class="field"><label>Proposed Constructed Area</label><span>${app.proposed_constructed_area ? app.proposed_constructed_area + ' sq ft' : '—'}</span></div>
+      <div class="field"><label>Tentative Employees</label><span>${app.tentative_employees || '—'}</span></div>
+      <div class="field"><label>YCB Certified Instructors</label><span>${app.ycb_certified_instructors || '—'}</span></div>
+      <div class="field"><label>Clinical Services</label><span>${app.clinical_services_provided ? 'Yes (' + (app.certified_ayush_doctors || 0) + ' AYUSH Doctors)' : 'No'}</span></div>
+      <div class="field"><label>Services Offered</label><span>${Array.isArray(app.services_offered) ? app.services_offered.join(', ') : (app.services_offered || '—')}</span></div>
+    </div>
+  </div>
+
+  ${docLinks ? `<div class="section docs">
+    <div class="section-title">Submitted Documents</div>
+    <ul>${docLinks}</ul>
+  </div>` : ''}
+
+  <div class="footer">
+    <p style="font-size:10px;color:#64748b">This is a system-generated copy of the submitted application. The authenticity of this document is subject to verification by the concerned authority.</p>
+    <div class="sig">
+      <div class="sig-box">
+        <div class="line"></div>
+        <p>${app.applicant_name || 'Applicant'}</p>
+        <small>${app.designation || ''}</small><br/>
+        <small>Date: ${submittedDate}</small>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.print(); };
+}
 
 export default function IncentiveApplication() {
   const [applications, setApplications] = useState([]);
@@ -1066,6 +1254,11 @@ export default function IncentiveApplication() {
                         <p className="text-xs text-gray-500 mt-0.5">
                           UPN: <strong className="text-slate-700">{app.upn || "—"}</strong> · {region?.label || app.region} · {app.district}
                         </p>
+                        {app.created_at && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
+                            <Calendar size={10} /> Submitted: {new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1078,6 +1271,17 @@ export default function IncentiveApplication() {
 
                   {open && (
                     <div className="mt-5 ml-12 grid md:grid-cols-3 gap-4 text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200/60">
+                      
+                      {/* Download PDF button */}
+                      <div className="md:col-span-3 flex justify-end">
+                        <button
+                          onClick={() => generatePDF(app, REGIONS, DOCS, fmt, docUrl)}
+                          className="flex items-center gap-2 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg shadow-sm transition"
+                        >
+                          <Download size={13} /> Download PDF
+                        </button>
+                      </div>
+
                       <div className={`rounded-lg p-3 bg-white border border-slate-200/80`}>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Region & Scheme</p>
                         <p className="font-bold text-gray-800 text-sm mt-0.5">{region?.label || app.region}</p>
@@ -1093,6 +1297,24 @@ export default function IncentiveApplication() {
                         <p className="font-bold text-emerald-700 text-sm mt-0.5">{fmt(app.subsidy_amount)}</p>
                         <p className="text-xs text-emerald-500 mt-1">Capped claim limit applied</p>
                       </div>
+
+                      {/* Submission date */}
+                      {app.created_at && (
+                        <div className="bg-white rounded-lg p-3 border border-slate-200/80">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1">
+                            <Calendar size={10} /> Date of Submission
+                          </p>
+                          <p className="font-bold text-gray-800 text-sm mt-0.5">
+                            {new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {new Date(app.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* GPS Map */}
+                      <GpsMap coords={app.gps_coordinates} />
 
                       {/* Financial info */}
                       <div className="md:col-span-3 grid grid-cols-2 gap-4 bg-white p-3 rounded-lg border">

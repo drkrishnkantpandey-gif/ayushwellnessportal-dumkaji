@@ -10,6 +10,19 @@ async function getCentreId(userId) {
   return r.rows[0]?.id || null;
 }
 
+// Helper: log application workflow events
+async function logEvent(applicationId, eventType, actorRole, actorId, comment = null) {
+  try {
+    await db.query(
+      `INSERT INTO yoga_incentive_events (application_id, event_type, actor_role, actor_id, comment)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [applicationId, eventType, actorRole, actorId, comment]
+    );
+  } catch (err) {
+    console.error('Error logging event:', err);
+  }
+}
+
 // ── POST /api/training-centre/incentives ────────────────────────────────────
 // Applicant submits a new incentive application
 async function submitApplication(req, res) {
@@ -131,10 +144,13 @@ async function submitApplication(req, res) {
       ]
     );
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    const app = result.rows[0];
+    await logEvent(app.id, 'SUBMITTED', 'applicant', userId, 'Application submitted successfully');
+
+    res.status(201).json({ success: true, data: app });
   } catch (err) {
     console.error('submitApplication error:', err);
-    res.status(500).json({ message: `Server error during submission: ${err.message} (Host: ${process.env.DB_HOST}, DB: ${process.env.DB_NAME})` });
+    res.status(500).json({ message: `Server error during submission: ${err.message}` });
   }
 }
 
@@ -147,113 +163,353 @@ async function getMyApplications(req, res) {
       `SELECT * FROM yoga_incentive_applications WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );
-    res.json({ success: true, data: result.rows });
+    const apps = result.rows;
+    for (const app of apps) {
+      const eventsRes = await db.query(
+        `SELECT * FROM yoga_incentive_events WHERE application_id = $1 ORDER BY created_at ASC`,
+        [app.id]
+      );
+      app.events = eventsRes.rows;
+    }
+    res.json({ success: true, data: apps });
   } catch (err) {
     console.error('getMyApplications error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
 
+// ── PUT /api/training-centre/incentives/:id/resubmit ──────────────────────────
+// Applicant resubmits an application after it was reverted
+async function resubmitApplication(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const existing = await db.query('SELECT * FROM yoga_incentive_applications WHERE id = $1 AND user_id = $2', [id, userId]);
+    if (!existing.rows.length) {
+      return res.status(404).json({ message: 'Application not found or unauthorized.' });
+    }
+
+    const app = existing.rows[0];
+    if (app.status !== 'REVERTED_TO_APPLICANT') {
+      return res.status(400).json({ message: 'Only reverted applications can be resubmitted.' });
+    }
+
+    const {
+      investmentAmount,
+      eligibleAssetsAmount,
+      complianceNote
+    } = req.body;
+
+    const totalInv = investmentAmount ? parseFloat(investmentAmount) : parseFloat(app.investment_amount);
+    const eligibleEca = eligibleAssetsAmount ? parseFloat(eligibleAssetsAmount) : parseFloat(app.eligible_assets_amount);
+
+    if (eligibleEca > totalInv) {
+      return res.status(400).json({ message: 'Eligible Capital Assets Amount cannot be greater than Total Investment Amount.' });
+    }
+
+    let subsidyAmount = app.subsidy_amount;
+    if (eligibleAssetsAmount) {
+      if (app.region === 'HILLY') {
+        subsidyAmount = Math.min(eligibleEca * 0.50, 2000000);
+      } else {
+        subsidyAmount = Math.min(eligibleEca * 0.25, 1000000);
+      }
+    }
+
+    const files = req.files || {};
+    const filePath = (field) => files[field]?.[0]?.path || req.body[field] || app[field];
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = 'RESUBMITTED', resubmitted_at = NOW(),
+           investment_amount = $1, eligible_assets_amount = $2, subsidy_amount = $3,
+           doc_fire_safety = $4, doc_udyog_reg = $5, doc_gst_reg = $6, doc_pollution_cert = $7,
+           doc_dpr = $8, doc_ca_project_cost = $9, doc_ca_eca = $10, doc_land_document = $11,
+           doc_constitution = $12, doc_entity_registration = $13, doc_map_approval = $14,
+           doc_non_agri_land = $15, doc_land_possession = $16, doc_others = $17, doc_affidavit = $18,
+           updated_at = NOW()
+       WHERE id = $19
+       RETURNING *`,
+      [
+        totalInv, eligibleEca, subsidyAmount,
+        filePath('doc_fire_safety'), filePath('doc_udyog_reg'),
+        filePath('doc_gst_reg'),     filePath('doc_pollution_cert'),
+        filePath('doc_dpr'),         filePath('doc_ca_project_cost'), filePath('doc_ca_eca'),
+        filePath('doc_land_document'),filePath('doc_constitution'),
+        filePath('doc_entity_registration'), filePath('doc_map_approval'),
+        filePath('doc_non_agri_land'), filePath('doc_land_possession'),
+        filePath('doc_others'),
+        filePath('doc_affidavit'),
+        id
+      ]
+    );
+
+    await logEvent(id, 'RESUBMITTED', 'applicant', userId, complianceNote || 'Compliance resubmitted by applicant');
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('resubmitApplication error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 // ── GET /api/admin/incentives/district ──────────────────────────────────────
-// District Officer: see all SUBMITTED applications for their district
+// District Officer: see all applications forwarded to their district for verification
 async function getDistrictApplications(req, res) {
   try {
-    const { district, status } = req.query;
-    let query = `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
-                 FROM yoga_incentive_applications a
-                 JOIN users u ON u.id = a.user_id
-                 WHERE a.status IN ('SUBMITTED','DISTRICT_UNDER_REVIEW')`;
-    const params = [];
-    if (district) { params.push(district); query += ` AND a.district = $${params.length}`; }
-    query += ' ORDER BY a.created_at ASC';
-    const result = await db.query(query, params);
-    res.json({ success: true, data: result.rows });
+    const { district } = req.query;
+    if (!district) {
+      return res.status(400).json({ message: 'District query parameter is required.' });
+    }
+
+    const result = await db.query(
+      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
+       FROM yoga_incentive_applications a
+       JOIN users u ON u.id = a.user_id
+       WHERE a.district = $1 AND a.status IN ('FORWARDED_TO_DISTRICT', 'DISTRICT_VERIFIED')
+       ORDER BY a.forwarded_to_district_at ASC`,
+      [district]
+    );
+
+    const apps = result.rows;
+    for (const app of apps) {
+      const eventsRes = await db.query(
+        `SELECT * FROM yoga_incentive_events WHERE application_id = $1 ORDER BY created_at ASC`,
+        [app.id]
+      );
+      app.events = eventsRes.rows;
+    }
+
+    res.json({ success: true, data: apps });
   } catch (err) {
     console.error('getDistrictApplications error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
 
-// ── PUT /api/admin/incentives/district/:id ───────────────────────────────────
-// District Officer: approve or disapprove
-async function districtDecision(req, res) {
+// ── PUT /api/admin/incentives/district/:id/verify ───────────────────────────
+// District Officer: submit verification report
+async function districtSubmitVerification(req, res) {
   try {
     const { id } = req.params;
-    const { decision, remarks } = req.body;  // decision: APPROVED | DISAPPROVED
+    const { verificationNote } = req.body;
+    const actorId = req.user.userId;
 
-    if (!['APPROVED', 'DISAPPROVED'].includes(decision)) {
-      return res.status(400).json({ message: 'Decision must be APPROVED or DISAPPROVED.' });
+    if (!verificationNote || !verificationNote.trim()) {
+      return res.status(400).json({ message: 'Verification note is required.' });
     }
-
-    const newStatus = decision === 'APPROVED' ? 'DISTRICT_APPROVED' : 'DISTRICT_DISAPPROVED';
 
     const result = await db.query(
       `UPDATE yoga_incentive_applications
-       SET status = $1, district_decision = $2, district_remarks = $3,
-           district_reviewed_at = NOW(), updated_at = NOW()
-       WHERE id = $4
+       SET status = 'DISTRICT_VERIFIED', district_verified_at = NOW(),
+           district_verification_note = $1, updated_at = NOW()
+       WHERE id = $2 AND status = 'FORWARDED_TO_DISTRICT'
        RETURNING *`,
-      [newStatus, decision, remarks || null, id]
+      [verificationNote, id]
     );
 
-    if (!result.rows.length) return res.status(404).json({ message: 'Application not found.' });
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Forwarded application not found or already verified.' });
+    }
+
+    await logEvent(id, 'DISTRICT_VERIFIED', 'district', actorId, verificationNote);
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
-    console.error('districtDecision error:', err);
+    console.error('districtSubmitVerification error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
 
 // ── GET /api/admin/incentives/directorate ───────────────────────────────────
-// Directorate: see all district-approved applications
+// Directorate: see ALL incentive applications
 async function getDirectorateApplications(req, res) {
   try {
     const result = await db.query(
       `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
        FROM yoga_incentive_applications a
        JOIN users u ON u.id = a.user_id
-       WHERE a.status IN ('DISTRICT_APPROVED','DIRECTORATE_UNDER_REVIEW')
-       ORDER BY a.district_reviewed_at ASC`
+       ORDER BY a.created_at DESC`
     );
-    res.json({ success: true, data: result.rows });
+    
+    const apps = result.rows;
+    for (const app of apps) {
+      const eventsRes = await db.query(
+        `SELECT * FROM yoga_incentive_events WHERE application_id = $1 ORDER BY created_at ASC`,
+        [app.id]
+      );
+      app.events = eventsRes.rows;
+    }
+    
+    res.json({ success: true, data: apps });
   } catch (err) {
     console.error('getDirectorateApplications error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
 
-// ── PUT /api/admin/incentives/directorate/:id ────────────────────────────────
-// Directorate: final approve or reject
-async function directorateDecision(req, res) {
+// ── PUT /api/admin/incentives/directorate/:id/forward-district ────────────────
+// Directorate: forward to district officer for verification
+async function directorateForwardToDistrict(req, res) {
   try {
     const { id } = req.params;
-    const { decision, remarks } = req.body;  // decision: APPROVED | REJECTED
-
-    if (!['APPROVED', 'REJECTED'].includes(decision)) {
-      return res.status(400).json({ message: 'Decision must be APPROVED or REJECTED.' });
-    }
-
-    const newStatus = decision === 'APPROVED' ? 'DIRECTORATE_APPROVED' : 'DIRECTORATE_REJECTED';
+    const { remarks } = req.body;
+    const actorId = req.user.userId;
 
     const result = await db.query(
       `UPDATE yoga_incentive_applications
-       SET status = $1, directorate_decision = $2, directorate_remarks = $3,
-           directorate_reviewed_at = NOW(), updated_at = NOW()
-       WHERE id = $4
+       SET status = 'FORWARDED_TO_DISTRICT', forwarded_to_district_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND status IN ('SUBMITTED', 'RESUBMITTED')
        RETURNING *`,
-      [newStatus, decision, remarks || null, id]
+      [id]
     );
 
-    if (!result.rows.length) return res.status(404).json({ message: 'Application not found.' });
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not in correct state for district forwarding.' });
+    }
+
+    await logEvent(id, 'FORWARDED_TO_DISTRICT', 'directorate', actorId, remarks || 'Forwarded to District Officer for site verification');
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
-    console.error('directorateDecision error:', err);
+    console.error('directorateForwardToDistrict error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── PUT /api/admin/incentives/directorate/:id/revert ─────────────────────────
+// Directorate: revert back to applicant for additional documents / compliance
+async function directorateRevertToApplicant(req, res) {
+  try {
+    const { id } = req.params;
+    const { remarks } = req.body;
+    const actorId = req.user.userId;
+
+    if (!remarks || !remarks.trim()) {
+      return res.status(400).json({ message: 'Compliance comment / remarks is required.' });
+    }
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = 'REVERTED_TO_APPLICANT', reverted_at = NOW(), revert_comment = $1, updated_at = NOW()
+       WHERE id = $2 AND status IN ('SUBMITTED', 'DISTRICT_VERIFIED', 'RESUBMITTED')
+       RETURNING *`,
+      [remarks, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not found or not in correct state for revert.' });
+    }
+
+    await logEvent(id, 'REVERTED_TO_APPLICANT', 'directorate', actorId, remarks);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('directorateRevertToApplicant error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── PUT /api/admin/incentives/directorate/:id/forward-slrc ───────────────────
+// Directorate: forward to State Level Rule Committee (SLRC)
+async function directorateForwardToSlrc(req, res) {
+  try {
+    const { id } = req.params;
+    const { remarks } = req.body;
+    const actorId = req.user.userId;
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = 'FORWARDED_TO_SLRC', forwarded_to_slrc_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND status IN ('SUBMITTED', 'DISTRICT_VERIFIED', 'RESUBMITTED')
+       RETURNING *`,
+      [id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not found or not verified for SLRC.' });
+    }
+
+    await logEvent(id, 'FORWARDED_TO_SLRC', 'directorate', actorId, remarks || 'Application forwarded to SLRC');
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('directorateForwardToSlrc error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── PUT /api/admin/incentives/directorate/:id/slrc-approved ──────────────────
+// Directorate: mark SLRC approved with details
+async function directorateMarkSlrcApproved(req, res) {
+  try {
+    const { id } = req.params;
+    const { slrcApprovalDate, slrcReferenceNumber, remarks } = req.body;
+    const actorId = req.user.userId;
+
+    if (!slrcApprovalDate || !slrcReferenceNumber) {
+      return res.status(400).json({ message: 'SLRC Approval Date and Reference Number are required.' });
+    }
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = 'SLRC_APPROVED', slrc_approval_date = $1, slrc_reference_number = $2, updated_at = NOW()
+       WHERE id = $3 AND status = 'FORWARDED_TO_SLRC'
+       RETURNING *`,
+      [slrcApprovalDate, slrcReferenceNumber, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not in FORWARDED_TO_SLRC state.' });
+    }
+
+    const note = `SLRC Approved on ${slrcApprovalDate}. Ref: ${slrcReferenceNumber}. Note: ${remarks || 'None'}`;
+    await logEvent(id, 'SLRC_APPROVED', 'directorate', actorId, note);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('directorateMarkSlrcApproved error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── PUT /api/admin/incentives/directorate/:id/grant-approval ──────────────────
+// Directorate: final In-Principle Approval
+async function directorateGrantInPrinciple(req, res) {
+  try {
+    const { id } = req.params;
+    const { inPrincipleOrderNumber, remarks } = req.body;
+    const actorId = req.user.userId;
+
+    if (!inPrincipleOrderNumber) {
+      return res.status(400).json({ message: 'In-Principle Order Number is required.' });
+    }
+
+    const result = await db.query(
+      `UPDATE yoga_incentive_applications
+       SET status = 'IN_PRINCIPLE_APPROVED', in_principle_approved_at = NOW(), in_principle_order_number = $1, updated_at = NOW()
+       WHERE id = $2 AND status = 'SLRC_APPROVED'
+       RETURNING *`,
+      [inPrincipleOrderNumber, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Application not SLRC approved.' });
+    }
+
+    const note = `In-Principle Approval granted. Order: ${inPrincipleOrderNumber}. Note: ${remarks || 'None'}`;
+    await logEvent(id, 'IN_PRINCIPLE_APPROVED', 'directorate', actorId, note);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('directorateGrantInPrinciple error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
 
 // ── GET /api/admin/incentives/all ─────────────────────────────────────────
-// Admin: all applications with full details
+// Admin: all applications with timeline details
 async function getAllApplications(req, res) {
   try {
     const result = await db.query(
@@ -262,7 +518,15 @@ async function getAllApplications(req, res) {
        JOIN users u ON u.id = a.user_id
        ORDER BY a.created_at DESC`
     );
-    res.json({ success: true, data: result.rows });
+    const apps = result.rows;
+    for (const app of apps) {
+      const eventsRes = await db.query(
+        `SELECT * FROM yoga_incentive_events WHERE application_id = $1 ORDER BY created_at ASC`,
+        [app.id]
+      );
+      app.events = eventsRes.rows;
+    }
+    res.json({ success: true, data: apps });
   } catch (err) {
     console.error('getAllApplications error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -272,9 +536,14 @@ async function getAllApplications(req, res) {
 module.exports = {
   submitApplication,
   getMyApplications,
+  resubmitApplication,
   getDistrictApplications,
-  districtDecision,
+  districtSubmitVerification,
   getDirectorateApplications,
-  directorateDecision,
+  directorateForwardToDistrict,
+  directorateRevertToApplicant,
+  directorateForwardToSlrc,
+  directorateMarkSlrcApproved,
+  directorateGrantInPrinciple,
   getAllApplications,
 };

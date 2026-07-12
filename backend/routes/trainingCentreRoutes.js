@@ -24,6 +24,7 @@ const {
 const {
   submitApplication,
   getMyApplications,
+  resubmitApplication,
 } = require('../controllers/yogaIncentiveController');
 
 // Protected routes (require authentication)
@@ -82,6 +83,25 @@ router.post('/incentives', upload.fields([
   { name: 'proposed_site_photo',             maxCount: 1 },
   { name: 'doc_others',                      maxCount: 5 },
 ]), submitApplication);
+
+router.put('/incentives/:id/resubmit', upload.fields([
+  { name: 'doc_fire_safety',                 maxCount: 1 },
+  { name: 'doc_udyog_reg',                   maxCount: 1 },
+  { name: 'doc_gst_reg',                     maxCount: 1 },
+  { name: 'doc_pollution_cert',              maxCount: 1 },
+  { name: 'doc_dpr',                         maxCount: 1 },
+  { name: 'doc_ca_project_cost',             maxCount: 1 },
+  { name: 'doc_ca_eca',                      maxCount: 1 },
+  { name: 'doc_land_document',               maxCount: 1 },
+  { name: 'doc_constitution',                maxCount: 1 },
+  { name: 'doc_entity_registration',         maxCount: 1 },
+  { name: 'doc_map_approval',                maxCount: 1 },
+  { name: 'doc_non_agri_land',               maxCount: 1 },
+  { name: 'doc_land_possession',             maxCount: 1 },
+  { name: 'doc_affidavit',                   maxCount: 1 },
+  { name: 'proposed_site_photo',             maxCount: 1 },
+  { name: 'doc_others',                      maxCount: 5 },
+]), resubmitApplication);
 
 // Infrastructure management routes
 router.get('/infrastructure', getInfrastructure);

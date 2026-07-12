@@ -8,9 +8,13 @@ const requireRole  = require('../middleware/roleAuth');
 
 const {
   getDistrictApplications,
-  districtDecision,
+  districtSubmitVerification,
   getDirectorateApplications,
-  directorateDecision,
+  directorateForwardToDistrict,
+  directorateRevertToApplicant,
+  directorateForwardToSlrc,
+  directorateMarkSlrcApproved,
+  directorateGrantInPrinciple,
   getAllApplications,
 } = require('../controllers/yogaIncentiveController');
 
@@ -48,12 +52,16 @@ router.put('/approve-user-registration/:targetUserId', protect, requireRole('dir
 router.post('/fix-null-statuses', protect, isAdmin, adminController.fixNullRegistrationStatuses);
 
 // ── District Officer — Yoga TC Incentive ─────────────────────────────────────
-router.get('/incentives/district',      protect, districtOnly,    getDistrictApplications);
-router.put('/incentives/district/:id',  protect, districtOnly,    districtDecision);
+router.get('/incentives/district',              protect, districtOnly, getDistrictApplications);
+router.put('/incentives/district/:id/verify',   protect, districtOnly, districtSubmitVerification);
 
 // ── Directorate — Yoga TC Incentive ──────────────────────────────────────────
-router.get('/incentives/directorate',     protect, directorateOnly, getDirectorateApplications);
-router.put('/incentives/directorate/:id', protect, directorateOnly, directorateDecision);
+router.get('/incentives/directorate',                       protect, directorateOnly, getDirectorateApplications);
+router.put('/incentives/directorate/:id/forward-district',   protect, directorateOnly, directorateForwardToDistrict);
+router.put('/incentives/directorate/:id/revert',             protect, directorateOnly, directorateRevertToApplicant);
+router.put('/incentives/directorate/:id/forward-slrc',       protect, directorateOnly, directorateForwardToSlrc);
+router.put('/incentives/directorate/:id/slrc-approved',      protect, directorateOnly, directorateMarkSlrcApproved);
+router.put('/incentives/directorate/:id/grant-approval',     protect, directorateOnly, directorateGrantInPrinciple);
 
 // ── Admin — all incentive applications ───────────────────────────────────────
 router.get('/incentives/all', protect, isAdmin, getAllApplications);

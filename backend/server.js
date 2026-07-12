@@ -295,11 +295,32 @@ async function runIncentiveApplicationsMigration() {
       ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(50),
       ADD COLUMN IF NOT EXISTS email_id VARCHAR(255),
       ADD COLUMN IF NOT EXISTS upn VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS incentive_type VARCHAR(20);
+      ADD COLUMN IF NOT EXISTS incentive_type VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS forwarded_to_district_at  TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS district_verified_at       TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS district_verification_note TEXT,
+      ADD COLUMN IF NOT EXISTS reverted_at                TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS revert_comment             TEXT,
+      ADD COLUMN IF NOT EXISTS resubmitted_at             TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS forwarded_to_slrc_at       TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS slrc_approval_date         DATE,
+      ADD COLUMN IF NOT EXISTS slrc_reference_number      VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS in_principle_approved_at   TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS in_principle_order_number  VARCHAR(100);
+
+      CREATE TABLE IF NOT EXISTS yoga_incentive_events (
+        id             SERIAL PRIMARY KEY,
+        application_id INTEGER NOT NULL REFERENCES yoga_incentive_applications(id) ON DELETE CASCADE,
+        event_type     VARCHAR(60) NOT NULL,
+        actor_role     VARCHAR(40),
+        actor_id       INTEGER,
+        comment        TEXT,
+        created_at     TIMESTAMP DEFAULT NOW()
+      );
     `);
-    console.log("Database Migration: yoga_incentive_applications table updated successfully");
+    console.log("Database Migration: yoga_incentive_applications table and events tracker updated successfully");
   } catch (err) {
-    console.error("Database Migration: Failed to update yoga_incentive_applications table:", err);
+    console.error("Database Migration: Failed to update yoga_incentive_applications / events table:", err);
   }
 }
 
