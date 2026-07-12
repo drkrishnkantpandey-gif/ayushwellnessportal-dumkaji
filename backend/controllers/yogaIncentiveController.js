@@ -70,6 +70,8 @@ async function submitApplication(req, res) {
       subsidyAmount = Math.min(eligibleEca * 0.25, 1000000); // 25% max 10 Lakh
     }
 
+    const incentiveType = projectType === 'Expansion' ? 'EXPANSION' : 'NEW_SETUP';
+
     // Generate UPN in format: UK-YMC-26-27-Serial Number
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -97,11 +99,11 @@ async function submitApplication(req, res) {
          doc_fire_safety, doc_udyog_reg, doc_gst_reg, doc_pollution_cert,
          doc_dpr, doc_ca_project_cost, doc_ca_eca, doc_land_document, doc_constitution,
          doc_entity_registration, doc_map_approval, doc_non_agri_land, doc_land_possession,
-         doc_others, status)
+         doc_others, doc_affidavit, status, incentive_type)
        VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
          $22, $23, $24, $25, $26, $27, $28, $29,
-         $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, 'SUBMITTED'
+         $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, 'SUBMITTED', $45
        )
        RETURNING *`,
       [
@@ -120,7 +122,9 @@ async function submitApplication(req, res) {
         filePath('doc_land_document'),filePath('doc_constitution'),
         filePath('doc_entity_registration'), filePath('doc_map_approval'),
         filePath('doc_non_agri_land'), filePath('doc_land_possession'),
-        filePath('doc_others')
+        filePath('doc_others'),
+        filePath('doc_affidavit'),
+        incentiveType
       ]
     );
 
