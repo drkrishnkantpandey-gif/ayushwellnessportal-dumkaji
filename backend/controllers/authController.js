@@ -607,7 +607,10 @@ const getUserProfile = async (req, res) => {
   const client = await pool.connect();
   try {
     const userRes = await client.query(
-      'SELECT id, email, full_name, phone, role FROM users WHERE id = $1',
+      `SELECT u.id, u.email, u.full_name, u.phone, u.role, dop.district 
+       FROM users u
+       LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
+       WHERE u.id = $1`,
       [userId]
     );
     if (userRes.rows.length === 0) {
