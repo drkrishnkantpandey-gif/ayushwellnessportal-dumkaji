@@ -1,12 +1,198 @@
 import API from '../../config/api';
 import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
-import { Building, Users, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Award, BarChart3, XCircle, ChevronDown, ChevronUp, Clock, BookOpen, IndianRupee, Paperclip, X } from "lucide-react";
+import { Building, Users, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Award, BarChart3, XCircle, ChevronDown, ChevronUp, Clock, BookOpen, IndianRupee, Paperclip, X, Calendar, Download } from "lucide-react";
 import { toast } from "react-toastify";
 
 
 const fmt = (n) =>
   n != null ? `₹${parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
+
+// If path is already a full URL (Cloudinary), use it directly.
+// Otherwise prefix with the backend API base (local dev).
+const docUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API}/${path.replace(/^\//, '')}`;
+};
+
+// ── GPS Map using OpenStreetMap (no API key required) ─────────────────────────
+function GpsMap({ coords }) {
+  if (!coords) return null;
+  // Accept "lat,lng" or "lat, lng" format
+  const parts = coords.split(',').map(s => s.trim());
+  if (parts.length < 2) return null;
+  const [lat, lng] = parts;
+  if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) return null;
+
+  const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(lng)-0.01},${parseFloat(lat)-0.01},${parseFloat(lng)+0.01},${parseFloat(lat)+0.01}&layer=mapnik&marker=${lat},${lng}`;
+  const linkUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=15/${lat}/${lng}`;
+
+  return (
+    <div className="md:col-span-3 bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50">
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <MapPin size={11} className="text-emerald-600" /> Proposed Site Location on Map
+        </p>
+        <a href={linkUrl} target="_blank" rel="noopener noreferrer"
+           className="text-[10px] text-blue-600 underline font-semibold">Open in Maps ↗</a>
+      </div>
+      <iframe
+        title="Proposed Site GPS Location"
+        src={osmUrl}
+        width="100%"
+        height="220"
+        style={{ border: 'none', display: 'block' }}
+        loading="lazy"
+        sandbox="allow-scripts allow-same-origin"
+      />
+      <p className="text-[10px] text-slate-400 px-3 py-1.5 bg-slate-50 border-t">
+        📍 GPS: {coords} &nbsp;·&nbsp; Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline">OpenStreetMap</a> contributors
+      </p>
+    </div>
+  );
+}
+
+// ── PDF generator using browser print ─────────────────────────────────────────
+function generatePDF(app, regions, docsArr, fmtFn, docUrlFn) {
+  const region = regions.find(r => r.value === app.region);
+  const submittedDate = app.created_at
+    ? new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '—';
+
+  const docLinks = docsArr
+    .filter(d => app[d.field])
+    .map(d => `<li style="margin:3px 0"><a href="${docUrlFn(app[d.field])}" style="color:#065f46">${d.label}</a></li>`)
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Incentive Application — ${app.upn || app.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1a202c; padding: 32px; }
+    .header { text-align: center; border-bottom: 3px solid #059669; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { font-size: 18px; color: #065f46; }
+    .header p { font-size: 11px; color: #64748b; margin-top: 4px; }
+    .badge { display: inline-block; background: #d1fae5; color: #065f46; font-weight: 700; font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-top: 8px; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .field label { display: block; font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+    .field span { font-weight: 600; color: #1a202c; }
+    .docs ul { padding-left: 16px; }
+    .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+    .footer .sig { margin-top: 40px; display: flex; justify-content: flex-end; }
+    .footer .sig-box { text-align: center; }
+    .footer .sig-box .line { border-top: 1px solid #1a202c; width: 200px; margin-bottom: 4px; }
+    .footer .sig-box p { font-size: 11px; font-weight: 700; }
+    .footer .sig-box small { font-size: 10px; color: #64748b; }
+    @media print { body { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p style="font-size:10px;color:#94a3b8;font-weight:600">GOVERNMENT OF UTTARAKHAND — AYUSH WELLNESS PORTAL</p>
+    <h1>Yoga Centre Incentive Scheme Application</h1>
+    <p>UPN: <strong>${app.upn || '—'}</strong> &nbsp;|&nbsp; Submitted on: <strong>${submittedDate}</strong></p>
+    <span class="badge">${app.status || 'SUBMITTED'}</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Applicant Details</div>
+    <div class="grid3">
+      <div class="field"><label>Applicant Name</label><span>${app.applicant_name || '—'}</span></div>
+      <div class="field"><label>Designation</label><span>${app.designation || '—'}</span></div>
+      <div class="field"><label>Entity Type</label><span>${app.entity_type || '—'}</span></div>
+      <div class="field"><label>Mobile</label><span>${app.mobile_number || '—'}</span></div>
+      <div class="field"><label>Email</label><span>${app.email_id || '—'}</span></div>
+      <div class="field"><label>District</label><span>${app.district || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Project Details</div>
+    <div class="grid3">
+      <div class="field"><label>Project Type</label><span>${app.project_type || '—'}</span></div>
+      <div class="field"><label>Region</label><span>${region?.label || app.region || '—'}</span></div>
+      <div class="field"><label>Subsidy Rate</label><span>${app.subsidy_percentage || '—'}%</span></div>
+      <div class="field"><label>Proposed Centre Name</label><span>${app.proposed_centre_name || app.centre_name || '—'}</span></div>
+      <div class="field"><label>Proposed Location</label><span>${app.proposed_location || '—'}</span></div>
+      <div class="field"><label>GPS Coordinates</label><span>${app.gps_coordinates || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Financial Details</div>
+    <div class="grid3">
+      <div class="field"><label>Total Investment</label><span>${fmtFn(app.investment_amount)}</span></div>
+      <div class="field"><label>Eligible Capital Assets (ECA)</label><span>${fmtFn(app.eligible_assets_amount)}</span></div>
+      <div class="field"><label>Claimed Subsidy (Tentative)</label><span>${fmtFn(app.subsidy_amount)}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Site &amp; Operational Details</div>
+    <div class="grid3">
+      <div class="field"><label>Site Total Area</label><span>${app.site_total_area ? app.site_total_area + ' sq ft' : '—'}</span></div>
+      <div class="field"><label>Proposed Constructed Area</label><span>${app.proposed_constructed_area ? app.proposed_constructed_area + ' sq ft' : '—'}</span></div>
+      <div class="field"><label>Tentative Employees</label><span>${app.tentative_employees || '—'}</span></div>
+      <div class="field"><label>YCB Certified Instructors</label><span>${app.ycb_certified_instructors || '—'}</span></div>
+      <div class="field"><label>Clinical Services</label><span>${app.clinical_services_provided ? 'Yes (' + (app.certified_ayush_doctors || 0) + ' AYUSH Doctors)' : 'No'}</span></div>
+      <div class="field"><label>Services Offered</label><span>${Array.isArray(app.services_offered) ? app.services_offered.join(', ') : (app.services_offered || '—')}</span></div>
+    </div>
+  </div>
+
+  ${docLinks ? `<div class="section docs">
+    <div class="section-title">Submitted Documents</div>
+    <ul>${docLinks}</ul>
+  </div>` : ''}
+
+  <div class="footer">
+    <p style="font-size:10px;color:#64748b">This is a system-generated copy of the submitted application. The authenticity of this document is subject to verification by the concerned authority.</p>
+    <div class="sig">
+      <div class="sig-box">
+        <div class="line"></div>
+        <p>${app.applicant_name || 'Applicant'}</p>
+        <small>${app.designation || ''}</small><br/>
+        <small>Date: ${submittedDate}</small>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.print(); };
+}
+
+const REGIONS = [
+  { value: "PLAIN", label: "Plain Region" },
+  { value: "HILLY", label: "Hilly Region" }
+];
+
+const DOCS = [
+  { field: "doc_fire_safety",                 label: "Fire & Safety NOC" },
+  { field: "doc_udyog_reg",                   label: "Udyog / MSME Registration" },
+  { field: "doc_gst_reg",                     label: "GST Registration Certificate" },
+  { field: "doc_pollution_cert",              label: "Pollution Control Board NOC" },
+  { field: "doc_dpr",                         label: "DPR — Certified by Planner / Architect" },
+  { field: "doc_ca_project_cost",             label: "CA Certified Project Cost Statement" },
+  { field: "doc_ca_eca",                      label: "CA Certified Eligible Capital Assets (ECA)" },
+  { field: "doc_land_document",               label: "Copy of Land Document" },
+  { field: "doc_constitution",                label: "Constitution of Firm / Society Deed/ MOA etc" },
+  { field: "doc_entity_registration",         label: "Registration certificate of Entity" },
+  { field: "doc_map_approval",                label: "MAP Approved by Development Authority" },
+  { field: "doc_non_agri_land",               label: "Non-Agriculture Land Certificate" },
+  { field: "doc_land_possession",             label: "Document of Land Possession / Lease of atleast 5 Years" },
+  { field: "doc_affidavit",                   label: "Affidavit (No construction started & no other subsidy claimed)" },
+  { field: "doc_others",                      label: "Any Other Supporting Document" },
+];
 
 // Handle both Cloudinary full URLs and local /uploads paths
 const docUrl = (path) => {
@@ -425,70 +611,146 @@ function YogaTCDirectorateReview() {
                 </button>
 
                 {open && (
-                  <div className="mt-4 ml-11 space-y-4 text-xs">
-                    <div className="grid grid-cols-4 gap-3 bg-white p-3 rounded-lg border">
-                      <div className="bg-gray-50 rounded-lg p-2.5">
-                        <p className="text-[10px] text-gray-400 uppercase font-bold">Total Investment</p>
-                        <p className="font-semibold text-gray-800">{fmt(app.investment_amount)}</p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2.5">
-                        <p className="text-[10px] text-gray-400 uppercase font-bold">Eligible Assets Amount</p>
-                        <p className="font-semibold text-gray-800">{fmt(app.eligible_assets_amount || app.claim_amount)}</p>
-                      </div>
-                      <div className="bg-emerald-50 rounded-lg p-2.5">
-                        <p className="text-[10px] text-emerald-600 uppercase font-bold">Subsidy ({app.subsidy_percentage}%)</p>
-                        <p className="font-bold text-emerald-700">{fmt(app.subsidy_amount)}</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-lg p-2.5">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold">Proposed Location</p>
-                        <p className="font-semibold text-slate-800">{app.proposed_location || "—"}</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-50 p-3 rounded-lg border grid grid-cols-2 gap-4">
+                  <div className="mt-4 ml-11 space-y-4 text-xs bg-slate-50 p-5 rounded-2xl border">
+                    
+                    {/* Header bar with PDF download */}
+                    <div className="flex justify-between items-center bg-white p-3 rounded-lg border">
                       <div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Complete Site Address</span>
-                        <span className="text-gray-700 font-medium">{app.address || "—"}</span>
+                        <p className="font-bold text-gray-800 text-sm">Application Details</p>
+                        <p className="text-[10px] text-gray-500">UPN: {app.upn || "—"}</p>
                       </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase block">GPS Coordinates</span>
-                        <span className="text-gray-700 font-medium">{app.gps_coordinates || "—"}</span>
+                      <button
+                        onClick={() => generatePDF(app, REGIONS, DOCS, fmt, docUrl)}
+                        className="flex items-center gap-2 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg shadow-sm transition"
+                      >
+                        <Download size={13} /> Download Form PDF
+                      </button>
+                    </div>
+
+                    {/* Applicant & Organisation Details */}
+                    <div className="bg-white p-3 rounded-lg border space-y-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1">Applicant &amp; Organisation Info</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Applicant Name</span>
+                          <span className="font-semibold text-gray-800">{app.applicant_name || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Designation</span>
+                          <span className="font-semibold text-gray-800">{app.designation || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Entity Name</span>
+                          <span className="font-semibold text-gray-800">{app.centre_name || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Institution Type</span>
+                          <span className="font-semibold text-gray-800">{app.entity_type || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Mobile Number</span>
+                          <span className="font-semibold text-gray-800">{app.mobile_number || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Email Address</span>
+                          <span className="font-semibold text-gray-800">{app.email_id || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Date of Submission</span>
+                          <span className="font-semibold text-gray-800">
+                            {app.created_at ? new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : "—"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs">
-                      <p className="font-semibold text-blue-700">District Officer Decision</p>
-                      <p className="text-blue-600 mt-1">
-                        {app.district_decision} on {app.district_reviewed_at ? new Date(app.district_reviewed_at).toLocaleDateString("en-IN") : "—"}
-                        {app.district_remarks && ` — "${app.district_remarks}"`}
-                      </p>
+                    {/* Financial details & claimed subsidy */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="bg-white p-3 rounded-lg border">
+                        <span className="text-[10px] text-gray-400 font-bold block uppercase">Total Investment</span>
+                        <span className="font-bold text-gray-800 text-sm">{fmt(app.investment_amount)}</span>
+                      </div>
+                      <div className="bg-white p-3 rounded-lg border">
+                        <span className="text-[10px] text-gray-400 font-bold block uppercase">Eligible Capital Assets (ECA)</span>
+                        <span className="font-bold text-gray-800 text-sm">{fmt(app.eligible_assets_amount || app.claim_amount)}</span>
+                      </div>
+                      <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                        <span className="text-[10px] text-emerald-600 font-bold block uppercase">Claimed Subsidy (Tentative)</span>
+                        <span className="font-bold text-emerald-700 text-sm">{fmt(app.subsidy_amount)}</span>
+                      </div>
                     </div>
 
-                    {/* Documents submitted by applicant */}
-                    <DocList docs={[
-                      { label: "Fire & Safety NOC",         path: app.doc_fire_safety },
-                      { label: "Udyog Registration",        path: app.doc_udyog_reg },
-                      { label: "GST Registration Certificate", path: app.doc_gst_reg },
-                      { label: "Pollution Control Board NOC", path: app.doc_pollution_cert },
-                      { label: "Detailed Project Report",   path: app.doc_dpr },
-                      { label: "CA Project Cost Cert.",     path: app.doc_ca_project_cost },
-                      { label: "CA Certified ECA",          path: app.doc_ca_eca },
-                      { label: "Land Document",             path: app.doc_land_document },
-                      { label: "Constitution of Firm/Society/MOA", path: app.doc_constitution },
-                      { label: "Registration certificate of Entity", path: app.doc_entity_registration },
-                      { label: "MAP Approved by Dev Authority", path: app.doc_map_approval },
-                      { label: "Non-Agriculture Land Cert", path: app.doc_non_agri_land },
-                      { label: "Land Possession / Lease Proof", path: app.doc_land_possession },
-                      { label: "Affidavit (No construction started & no other state subsidy claimed)", path: app.doc_affidavit },
-                      { label: "Others",                    path: app.doc_others },
-                    ]} />
+                    {/* Project location & land details */}
+                    <div className="bg-white p-3 rounded-lg border space-y-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1">Project &amp; Land Details</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Project Type</span>
+                          <span className="font-semibold text-gray-800">{app.project_type || "Greenfield"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Region</span>
+                          <span className="font-semibold text-gray-800">{app.region}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">District</span>
+                          <span className="font-semibold text-gray-800">{app.district || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Proposed Location</span>
+                          <span className="font-semibold text-gray-800">{app.proposed_location || "—"}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Complete Site Address</span>
+                          <span className="font-semibold text-gray-800">{app.address || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Site Total Area</span>
+                          <span className="font-semibold text-gray-800">{app.site_total_area ? `${app.site_total_area} sq ft` : "—"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Constructed Area</span>
+                          <span className="font-semibold text-gray-800">{app.proposed_constructed_area ? `${app.proposed_constructed_area} sq ft` : "—"}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                     {/* Status history log / Verification report details if verified */}
+                    {/* Operational Details */}
+                    <div className="bg-white p-3 rounded-lg border space-y-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1">Operational details</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Tentative Employees</span>
+                          <span className="font-semibold text-gray-800">{app.tentative_employees || "0"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">YCB Certified Instructors</span>
+                          <span className="font-semibold text-gray-800">{app.ycb_certified_instructors || "0"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Clinical Services?</span>
+                          <span className="font-semibold text-gray-800">{app.clinical_services_provided ? `Yes` : "No"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">AYUSH Doctors</span>
+                          <span className="font-semibold text-gray-800">{app.certified_ayush_doctors || "0"}</span>
+                        </div>
+                        <div className="col-span-4">
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Services Offered</span>
+                          <span className="font-semibold text-gray-800">{Array.isArray(app.services_offered) ? app.services_offered.join(", ") : (app.services_offered || "—")}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* GPS Map block */}
+                    <GpsMap coords={app.gps_coordinates} />
+
+                    {/* District Officer Verification Remarks */}
                     {app.district_verified_at && (
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs">
-                        <p className="font-semibold text-orange-700">District verification report</p>
-                        <p className="text-orange-800 mt-1">"{app.district_verification_note}"</p>
-                        <p className="text-[10px] text-orange-500 mt-1">Verified Date: {new Date(app.district_verified_at).toLocaleDateString("en-IN")}</p>
+                        <p className="font-bold text-orange-700 text-xs uppercase tracking-wide">✓ District Verification Note</p>
+                        <p className="text-orange-800 mt-1 italic">"{app.district_verification_note}"</p>
+                        <p className="text-[10px] text-orange-500 mt-1">Verified on: {new Date(app.district_verified_at).toLocaleDateString("en-IN")}</p>
                       </div>
                     )}
 
@@ -515,32 +777,35 @@ function YogaTCDirectorateReview() {
                       </div>
                     )}
 
-                    {/* Documents submitted by applicant */}
-                    <DocList docs={[
-                      { label: "Fire & Safety NOC",         path: app.doc_fire_safety },
-                      { label: "Udyog Registration",        path: app.doc_udyog_reg },
-                      { label: "GST Registration Certificate", path: app.doc_gst_reg },
-                      { label: "Pollution Control Board NOC", path: app.doc_pollution_cert },
-                      { label: "Detailed Project Report",   path: app.doc_dpr },
-                      { label: "CA Project Cost Cert.",     path: app.doc_ca_project_cost },
-                      { label: "CA Certified ECA",          path: app.doc_ca_eca },
-                      { label: "Land Document",             path: app.doc_land_document },
-                      { label: "Constitution of Firm/Society/MOA", path: app.doc_constitution },
-                      { label: "Registration certificate of Entity", path: app.doc_entity_registration },
-                      { label: "MAP Approved by Dev Authority", path: app.doc_map_approval },
-                      { label: "Non-Agriculture Land Cert", path: app.doc_non_agri_land },
-                      { label: "Land Possession / Lease Proof", path: app.doc_land_possession },
-                      { label: "Affidavit (No construction started & no other state subsidy claimed)", path: app.doc_affidavit },
-                      { label: "Others",                    path: app.doc_others },
-                    ]} />
+                    {/* Submitted Documents list */}
+                    <div className="space-y-2 border-t pt-3">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase block tracking-wider">Submitted Scheme Documents</span>
+                      <DocList docs={[
+                        { label: "Fire & Safety NOC",         path: app.doc_fire_safety },
+                        { label: "Udyog Registration",        path: app.doc_udyog_reg },
+                        { label: "GST Registration Certificate", path: app.doc_gst_reg },
+                        { label: "Pollution Control Board NOC", path: app.doc_pollution_cert },
+                        { label: "Detailed Project Report",   path: app.doc_dpr },
+                        { label: "CA Project Cost Cert.",     path: app.doc_ca_project_cost },
+                        { label: "CA Certified ECA",          path: app.doc_ca_eca },
+                        { label: "Land Document",             path: app.doc_land_document },
+                        { label: "Constitution of Firm/Society/MOA", path: app.doc_constitution },
+                        { label: "Registration certificate of Entity", path: app.doc_entity_registration },
+                        { label: "MAP Approved by Dev Authority", path: app.doc_map_approval },
+                        { label: "Non-Agriculture Land Cert", path: app.doc_non_agri_land },
+                        { label: "Land Possession / Lease Proof", path: app.doc_land_possession },
+                        { label: "Affidavit (No construction started & no other state subsidy claimed)", path: app.doc_affidavit },
+                        { label: "Others",                    path: app.doc_others },
+                      ]} />
+                    </div>
 
-                    {/* Audit Trail Timeline */}
+                    {/* Workflow Events Timeline */}
                     <div className="border-t pt-4">
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Workflow Timeline</p>
                       <div className="relative border-l border-slate-200 ml-2 space-y-3 pl-4">
                         {(app.events || []).map((ev, i) => (
                           <div key={i} className="relative">
-                            <span className="absolute -left-[22px] top-1 bg-purple-600 rounded-full w-2.5 h-2.5 border border-white"></span>
+                            <span className="absolute -left-[22px] top-1 bg-purple-600 rounded-full w-2 h-2 border border-white"></span>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-slate-800 text-[10px]">{ev.event_type.replace(/_/g, ' ')}</span>
                               <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.5 rounded font-bold capitalize">{ev.actor_role}</span>
@@ -552,62 +817,52 @@ function YogaTCDirectorateReview() {
                       </div>
                     </div>
 
-                    {/* Directorate Action Panel */}
+                    {/* Action panel footer */}
                     <div className="border-t pt-4">
                       <p className="text-sm font-semibold text-gray-700 mb-3">
                         Directorate Action Panel — Current Status: <strong className="text-purple-700">{app.status.replace(/_/g, ' ')}</strong>
                       </p>
                       <div className="flex gap-2 flex-wrap">
-                        {/* Action 1: Forward to District */}
                         {["SUBMITTED", "RESUBMITTED"].includes(app.status) && (
                           <button
                             onClick={() => openActionModal(app, "forward_district")}
-                            className="bg-yellow-600 text-white px-3 py-1.5 rounded text-xs hover:bg-yellow-700 font-bold transition shadow-sm"
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
                             Forward to District for Verification
                           </button>
                         )}
-
-                        {/* Action 2: Revert to Applicant */}
                         {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
                           <button
                             onClick={() => openActionModal(app, "revert")}
-                            className="bg-red-600 text-white px-3 py-1.5 rounded text-xs hover:bg-red-700 font-bold transition shadow-sm"
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
                             Revert to Yoga Centre (Need Info/Docs)
                           </button>
                         )}
-
-                        {/* Action 3: Forward to SLRC */}
                         {["SUBMITTED", "DISTRICT_VERIFIED", "RESUBMITTED"].includes(app.status) && (
                           <button
                             onClick={() => openActionModal(app, "forward_slrc")}
-                            className="bg-purple-600 text-white px-3 py-1.5 rounded text-xs hover:bg-purple-700 font-bold transition shadow-sm"
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
                             Forward to SLRC
                           </button>
                         )}
-
-                        {/* Action 4: SLRC Approved */}
                         {app.status === "FORWARDED_TO_SLRC" && (
                           <button
                             onClick={() => openActionModal(app, "slrc_approved")}
-                            className="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs hover:bg-indigo-700 font-bold transition shadow-sm"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
                             Mark SLRC Approved
                           </button>
                         )}
-
-                        {/* Action 5: Grant In-Principle Approval */}
                         {app.status === "SLRC_APPROVED" && (
                           <button
                             onClick={() => openActionModal(app, "grant_approval")}
-                            className="bg-emerald-600 text-white px-3 py-1.5 rounded text-xs hover:bg-emerald-700 font-bold transition shadow-sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow-sm"
                           >
                             Grant In-Principle Approval
                           </button>
                         )}
-
                         {app.status === "IN_PRINCIPLE_APPROVED" && (
                           <span className="text-emerald-700 font-bold bg-emerald-100 px-3 py-1.5 rounded text-xs">
                             ✓ In-Principle Approval Granted
@@ -615,6 +870,7 @@ function YogaTCDirectorateReview() {
                         )}
                       </div>
                     </div>
+
                   </div>
                 )}
               </div>

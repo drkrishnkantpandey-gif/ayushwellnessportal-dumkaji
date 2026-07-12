@@ -232,8 +232,9 @@ function generatePDF(app, regions, docsArr, fmtFn, docUrlFn) {
       <div class="field"><label>Region</label><span>${region?.label || app.region || '—'}</span></div>
       <div class="field"><label>Subsidy Rate</label><span>${app.subsidy_percentage || '—'}%</span></div>
       <div class="field"><label>Proposed Centre Name</label><span>${app.proposed_centre_name || app.centre_name || '—'}</span></div>
-      <div class="field"><label>Proposed Location</label><span>${app.proposed_location || '—'}</span></div>
+      <div class="field"><label>Proposed Location</label><span>${app.proposed_location || '—'}${app.other_location_name ? ' (' + app.other_location_name + ')' : ''}</span></div>
       <div class="field"><label>GPS Coordinates</label><span>${app.gps_coordinates || '—'}</span></div>
+      <div class="field" style="grid-column: span 3"><label>Complete Address</label><span>${app.address || '—'}</span></div>
     </div>
   </div>
 
@@ -1403,23 +1404,38 @@ export default function IncentiveApplication() {
                         </div>
                       </div>
 
-                      {/* Proposed Site details */}
-                      <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-3 rounded-lg border">
-                        <div>
-                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Site Total Area</span>
-                          <span className="font-bold text-gray-700">{app.site_total_area ? `${app.site_total_area} sq ft` : "—"}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Constructed Area</span>
-                          <span className="font-bold text-gray-700">{app.proposed_constructed_area ? `${app.proposed_constructed_area} sq ft` : "—"}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Tentative Employees</span>
-                          <span className="font-bold text-gray-700">{app.tentative_employees || "—"}</span>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-gray-400 font-bold block uppercase">YCB Certified Instructors</span>
-                          <span className="font-bold text-gray-700">{app.ycb_certified_instructors || "—"}</span>
+                      {/* Proposed Site & Location Details */}
+                      <div className="md:col-span-3 bg-white p-3 rounded-lg border space-y-3">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b pb-1">Proposed Project Site Info</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Proposed Location</span>
+                            <span className="font-bold text-gray-700">{app.proposed_location || "—"}{app.other_location_name ? ` (${app.other_location_name})` : ""}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">District</span>
+                            <span className="font-bold text-gray-700">{app.district || "—"}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Complete Site Address</span>
+                            <span className="font-bold text-gray-700">{app.address || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Site Total Area</span>
+                            <span className="font-bold text-gray-700">{app.site_total_area ? `${app.site_total_area} sq ft` : "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Constructed Area</span>
+                            <span className="font-bold text-gray-700">{app.proposed_constructed_area ? `${app.proposed_constructed_area} sq ft` : "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">Tentative Employees</span>
+                            <span className="font-bold text-gray-700">{app.tentative_employees || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-400 font-bold block uppercase">YCB Certified Instructors</span>
+                            <span className="font-bold text-gray-700">{app.ycb_certified_instructors || "—"}</span>
+                          </div>
                         </div>
                       </div>
 
