@@ -31,6 +31,7 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function LocationAnalytics() {
+  const token = localStorage.getItem("token");
   const [address, setAddress] = useState("123 Yoga Street, Wellness City");
   const [mapPin, setMapPin] = useState({ lat: 28.6139, lng: 77.209 });
   const [publicVisible, setPublicVisible] = useState(true);

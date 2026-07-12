@@ -19,6 +19,7 @@ import axiosInstance from '../../../config/axiosInstance';
 
 
 export default function TrainerManagement() {
+  const token = localStorage.getItem("token");
   const [trainers, setTrainers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);

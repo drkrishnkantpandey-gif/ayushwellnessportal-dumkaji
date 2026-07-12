@@ -24,6 +24,7 @@ const categories = [
 ];
 
 export default function Infrastructure() {
+  const token = localStorage.getItem("token");
   const [gallery, setGallery] = useState({});
   const fileRef = useRef(null);
   const [activeCategory, setActiveCategory] = useState("");

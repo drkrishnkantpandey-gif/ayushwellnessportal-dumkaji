@@ -19,6 +19,7 @@ import { motion } from "framer-motion";
 
 
 const YogaTrainingCentre = () => {
+  const token = localStorage.getItem("token");
   const [centre, setCentre] = useState({
     name: "",
     type: "",
