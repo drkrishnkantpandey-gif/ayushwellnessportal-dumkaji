@@ -46,30 +46,4 @@ router.post('/logout', authController.logoutUser);
 router.get('/profile', protect, authController.getUserProfile);
 router.post('/update-profile', protect, upload.none(), authController.updateUserProfile);
 
-const db = require('../db');
-router.get('/debug-users', async (req, res) => {
-  try {
-    const statuses = "(u.registration_status IN ('pending', 'PENDING', 'under_review', 'UNDER_REVIEW') OR u.registration_status IS NULL)";
-    const query = `
-      SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
-             COALESCE(w.district, t.district, y.district, r.district, c.city, h.district, dop.district) as district,
-             dop.employee_id, dop.designation, dop.id_type, dop.id_number, dop.id_upload_path, dop.authority_order_path
-      FROM users u
-      LEFT JOIN wellness_centres w ON w.user_id = u.id
-      LEFT JOIN training_centres t ON t.user_id = u.id
-      LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
-      LEFT JOIN research_org_profile r ON r.user_id = u.id
-      LEFT JOIN ayush_colleges c ON c.id = u.id
-      LEFT JOIN ayush_hospitals h ON h.user_id = u.id
-      LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
-      WHERE u.role NOT IN ('admin', 'directorate') AND ${statuses}
-      ORDER BY u.created_at DESC
-    `;
-    const result = await db.query(query);
-    return res.status(200).json({ results: result.rows });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
 module.exports = router;
