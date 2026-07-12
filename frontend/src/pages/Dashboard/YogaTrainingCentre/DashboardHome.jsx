@@ -28,8 +28,10 @@ const YogaTrainingCentre = () => {
     address: "",
     city: "",
     state: "",
+    district: "",
     pincode: "",
     category: "",
+    alreadyOperating: "",
     verified: false,
     trainers: 0,
     courses: 0,
@@ -91,11 +93,13 @@ const YogaTrainingCentre = () => {
         name: profile.centre_name || prev.name,
         type: profile.institution_type || prev.type,
         category: profile.category || prev.category,
+        alreadyOperating: profile.already_operating || prev.alreadyOperating,
         phone: profile.phone || prev.phone,
         email: profile.email || prev.email,
         address: profile.address || prev.address,
         city: profile.city || prev.city,
         state: profile.state || prev.state,
+        district: profile.district || prev.district,
         pincode: profile.pincode || prev.pincode,
         about: profile.description || prev.about,
         ownerName: profile.owner_name || prev.ownerName,
@@ -201,6 +205,22 @@ const YogaTrainingCentre = () => {
       ownerEmail: centre.ownerEmail,
     });
     setEditing(true);
+  };
+
+  const toggleOperationalStatus = async () => {
+    try {
+      const newStatus = !centre.is_operational;
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+      await axiosInstance.put(`${API}/api/training-centre/profile`, { is_operational: newStatus }, config);
+      setCentre(prev => ({ ...prev, is_operational: newStatus }));
+    } catch (err) {
+      console.error("Failed to update operational status", err);
+      alert("Failed to update operational status. Please try again.");
+    }
   };
 
   const updateBackend = async (updatedData) => {
