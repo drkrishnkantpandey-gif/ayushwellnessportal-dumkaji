@@ -93,14 +93,6 @@ const categories = [
         description: "For state level administrators",
         color: "from-cyan-500 to-cyan-700",
         bg: "bg-cyan-50 hover:border-cyan-400",
-      },
-      {
-        id: "admin",
-        name: "Admin",
-        icon: Crown,
-        description: "For system administrators",
-        color: "from-gray-600 to-gray-800",
-        bg: "bg-gray-50 hover:border-gray-400",
       }
     ]
   }

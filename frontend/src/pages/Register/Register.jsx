@@ -14,7 +14,7 @@ import AyushHospitalForm from "./forms/AyushHospitalForm";
 import AyushCollegeForm from "./forms/AyushCollegeForm";
 import DistrictOfficerForm from "./forms/DistrictOfficerForm";
 import DirectorateForm from "./forms/DirectorateForm";
-import AdminForm from "./forms/AdminForm";
+
 import ResearchInstitutionForm from "./forms/ResearchInstitutionForm";
 
 const Register = ({ setCurrentPage, language }) => {
