@@ -5,7 +5,7 @@ import axiosInstance from '../../../config/axiosInstance';
 import {
   PlusCircle, FileText, CheckCircle, Clock,
   XCircle, ChevronDown, ChevronUp, Upload, IndianRupee, Mountain, Leaf,
-  CheckCircle2, X, Building, MapPin, Download, Calendar
+  CheckCircle2, X, Building, MapPin, Download, Calendar, Paperclip
 } from "lucide-react";
 
 const REGIONS = [
@@ -93,7 +93,7 @@ const fmt = (n) =>
 const docUrl = (path) => {
   if (!path) return null;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return `${API}${path}`;
+  return `${API}/${path.replace(/^\//, '')}`;
 };
 
 // ── Additional Attachments (Resubmissions & Verification Reports) ─────────────
