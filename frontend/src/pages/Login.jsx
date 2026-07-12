@@ -22,12 +22,11 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
 
   const roles = [
     { id: 'yoga_professional', en: 'Yoga Professional', hi: 'योग प्रोफेशनल', icon: User, desc: 'For certified yoga practitioners' },
-    { id: 'yoga_centre', en: 'Yoga Centre', hi: 'योग केंद्र', icon: Building, desc: 'For yoga institutions' },
+    { id: 'yoga_centre', en: 'Yoga Centres', hi: 'योग केंद्र / संस्थान', icon: Building, desc: 'Yoga Centre or Institution (Home Stay, Resort, Hotel, School, College, Yoga Institute)' },
     { id: 'wellness_centre', en: 'Wellness Centre', hi: 'वेलनेस केंद्र', icon: Heart, desc: 'For wellness therapy centers' },
     { id: 'ayush_hospital', en: 'AYUSH Hospital', hi: 'आयुष अस्पताल', icon: Shield, desc: 'For NABH accredited hospitals' },
     { id: 'ayush_college', en: 'AYUSH College', hi: 'आयुष कॉलेज', icon: GraduationCap, desc: 'For NAAC accredited colleges' },
     { id: 'research_org', en: 'Research Grant', hi: 'अनुसंधान अनुदान', icon: GraduationCap, desc: 'NGO, Research Institute, Medical Org, University or College' },
-    { id: 'institution', en: 'Institution', hi: 'संस्थान', icon: Building, desc: 'Institution, Home Stay, Resort, Hotel, School, College, Yoga Centre or Yoga Institute' },
     { id: 'district_officer', en: 'District Officer', hi: 'जिला अधिकारी', icon: Map, desc: 'For district administrators' },
     { id: 'directorate', en: 'Directorate', hi: 'निदेशालय', icon: Shield, desc: 'For state administrators' },
     { id: 'admin', en: 'Admin', hi: 'प्रशासक', icon: Crown, desc: 'For system administrators' }
@@ -132,7 +131,7 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                 </p>
               </div>
               {/* Sections */}
-              {[{ title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री", roleIds: ["yoga_professional", "wellness_centre"] }, { title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान", roleIds: ["yoga_centre", "institution", "ayush_hospital", "ayush_college", "research_org"] }, { title: language === "EN" ? "Officials" : "अधिकारी", roleIds: ["district_officer", "directorate", "admin"] }].map(section => (
+              {[{ title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री", roleIds: ["yoga_professional", "wellness_centre"] }, { title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान", roleIds: ["yoga_centre", "ayush_hospital", "ayush_college", "research_org"] }, { title: language === "EN" ? "Officials" : "अधिकारी", roleIds: ["district_officer", "directorate", "admin"] }].map(section => (
                 <div key={section.title} className="mb-4">
                   <button
                     className="w-full flex justify-between items-center bg-teal-600 text-white p-4 rounded-lg hover:bg-teal-700 transition"
