@@ -46,6 +46,16 @@ const PROPOSED_LOCATIONS = [
   "Other"
 ];
 
+const SERVICES = [
+  "Yoga Training",
+  "Yoga Therapy",
+  "Yoga Clinical Services",
+  "Meditation Centres",
+  "Meditation Huts",
+  "Stay Facilty for residents",
+  "In- House Kitchen"
+];
+
 const DOCS = [
   { field: "doc_fire_safety",                 label: "Fire & Safety Audit Certificate",                    required: true  },
   { field: "doc_udyog_reg",                   label: "Udyog / MSME Registration",                          required: true  },
@@ -98,11 +108,22 @@ export default function IncentiveApplication() {
     address: "",
 
     // Auto-filled from registration profile
+    entityName: "",
     applicantName: "",
     designation: "",
     entityType: "",
     mobileNumber: "",
     emailId: "",
+
+    // Questionnaire details
+    siteTotalArea: "",
+    proposedConstructedArea: "",
+    servicesOffered: [],
+    tentativeEmployees: "",
+    ycbCertifiedInstructors: "",
+    clinicalServicesProvided: false,
+    certifiedAyushDoctors: "",
+    proposedSitePhoto: "",
   });
 
   // Track status of uploads: { fieldName: { name, progress, uploading, path } }
@@ -123,6 +144,7 @@ export default function IncentiveApplication() {
 
       setForm((prev) => ({
         ...prev,
+        entityName: profile.centre_name || "",
         applicantName: profile.applicant_name || "",
         designation: profile.designation || "",
         entityType: profile.entity_type || profile.institution_type || "",
@@ -218,6 +240,19 @@ export default function IncentiveApplication() {
     });
   };
 
+  const handleServiceCheckboxChange = (service, checked) => {
+    setForm(prev => {
+      const services = [...(prev.servicesOffered || [])];
+      if (checked) {
+        if (!services.includes(service)) services.push(service);
+      } else {
+        const idx = services.indexOf(service);
+        if (idx > -1) services.splice(idx, 1);
+      }
+      return { ...prev, servicesOffered: services };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -234,6 +269,10 @@ export default function IncentiveApplication() {
     const missingDocs = DOCS.filter(d => d.required && (!uploadStatus[d.field] || !uploadStatus[d.field].path));
     if (missingDocs.length > 0) {
       return alert(`Please upload all mandatory documents: ${missingDocs.map(d => d.label).join(", ")}`);
+    }
+
+    if (!uploadStatus.proposedSitePhoto || !uploadStatus.proposedSitePhoto.path) {
+      return alert("Please upload a photograph of the proposed site.");
     }
 
     setSubmitting(true);
@@ -258,6 +297,15 @@ export default function IncentiveApplication() {
         entityType: form.entityType,
         mobileNumber: form.mobileNumber,
         emailId: form.emailId,
+
+        siteTotalArea: form.siteTotalArea,
+        proposedConstructedArea: form.proposedConstructedArea,
+        servicesOffered: form.servicesOffered,
+        tentativeEmployees: form.tentativeEmployees,
+        ycbCertifiedInstructors: form.ycbCertifiedInstructors,
+        clinicalServicesProvided: form.clinicalServicesProvided,
+        certifiedAyushDoctors: form.clinicalServicesProvided ? form.certifiedAyushDoctors : 0,
+        proposedSitePhoto: uploadStatus.proposedSitePhoto.path
       };
 
       // Append upload paths to payload
@@ -280,6 +328,13 @@ export default function IncentiveApplication() {
         otherLocationName: "",
         investmentAmount: "",
         eligibleAssetsAmount: "",
+        siteTotalArea: "",
+        proposedConstructedArea: "",
+        servicesOffered: [],
+        tentativeEmployees: "",
+        ycbCertifiedInstructors: "",
+        clinicalServicesProvided: false,
+        certifiedAyushDoctors: "",
       }));
       setUploadStatus({});
       fetchProfileAndApplications();
@@ -477,6 +532,10 @@ export default function IncentiveApplication() {
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border text-xs">
               <div>
+                <span className="text-gray-400 block font-semibold">Entity Name</span>
+                <span className="text-gray-700 font-bold">{form.entityName || "—"}</span>
+              </div>
+              <div>
                 <span className="text-gray-400 block font-semibold">Applicant Name</span>
                 <span className="text-gray-700 font-bold">{form.applicantName || "—"}</span>
               </div>
@@ -551,6 +610,11 @@ export default function IncentiveApplication() {
                   required
                 />
               </div>
+              {parseFloat(form.eligibleAssetsAmount) > parseFloat(form.investmentAmount) && (
+                <p className="text-red-500 text-xs font-semibold mt-1.5 flex items-center gap-1">
+                  ⚠️ Eligible Capital Assets amount cannot exceed Total Investment amount.
+                </p>
+              )}
             </div>
           </div>
 
@@ -578,6 +642,229 @@ export default function IncentiveApplication() {
               </div>
             </div>
           )}
+
+          {/* Proposed Site Questionnaire Details */}
+          <div className="border-t pt-5 space-y-4">
+            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+              📋 Proposed Site Questionnaire & Project Details
+            </h3>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Proposed Site Total Area (sq feet) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.siteTotalArea}
+                  onChange={(e) => setForm(p => ({ ...p, siteTotalArea: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  placeholder="e.g. 5000"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Proposed Constructed Area (sq feet) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.proposedConstructedArea}
+                  onChange={(e) => setForm(p => ({ ...p, proposedConstructedArea: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  placeholder="e.g. 2500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Tentative Number of Employees <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.tentativeEmployees}
+                  onChange={(e) => setForm(p => ({ ...p, tentativeEmployees: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  placeholder="e.g. 10"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  No. of YCB Certified Yoga Instructors <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.ycbCertifiedInstructors}
+                  onChange={(e) => setForm(p => ({ ...p, ycbCertifiedInstructors: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                  placeholder="e.g. 2"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Checkboxes: Services Offered */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                Services Offered <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                {SERVICES.map((srv) => {
+                  const checked = form.servicesOffered.includes(srv);
+                  return (
+                    <label key={srv} className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => handleServiceCheckboxChange(srv, e.target.checked)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 w-4 h-4"
+                      />
+                      {srv}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Clinical Services Provided Toggle */}
+            <div className="grid md:grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-xl border">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Will Clinical Services be provided? <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
+                    <input
+                      type="radio"
+                      name="clinical_services"
+                      checked={form.clinicalServicesProvided === true}
+                      onChange={() => setForm(p => ({ ...p, clinicalServicesProvided: true }))}
+                      className="text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Yes
+                  </label>
+                  <label className="flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
+                    <input
+                      type="radio"
+                      name="clinical_services"
+                      checked={form.clinicalServicesProvided === false}
+                      onChange={() => setForm(p => ({ ...p, clinicalServicesProvided: false, certifiedAyushDoctors: "" }))}
+                      className="text-emerald-600 focus:ring-emerald-500"
+                    />
+                    No
+                  </label>
+                </div>
+              </div>
+
+              {form.clinicalServicesProvided && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                    No. of Certified AYUSH Doctors to be appointed <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.certifiedAyushDoctors}
+                    onChange={(e) => setForm(p => ({ ...p, certifiedAyushDoctors: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    placeholder="e.g. 2"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Photograph of Proposed Site Upload */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                Photograph of the proposed Site (JPG / PNG) <span className="text-red-500">*</span>
+              </label>
+              {(() => {
+                const fileVal = uploadStatus.proposedSitePhoto;
+                return !fileVal ? (
+                  <label className="flex items-center gap-2.5 cursor-pointer border border-dashed border-gray-300 rounded-xl px-4 py-3.5 hover:border-emerald-500 hover:bg-slate-50 transition text-xs text-gray-500 bg-white shadow-sm w-full md:w-1/2">
+                    <Upload size={14} className="text-gray-400" />
+                    <span className="font-semibold text-gray-600">Select proposed site photo</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".jpg,.jpeg,.png"
+                      onChange={(e) => handleFileSelect("proposedSitePhoto", e.target.files)}
+                    />
+                  </label>
+                ) : (
+                  <div className="flex items-center justify-between p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-xl w-full md:w-1/2">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      {fileVal.uploading ? (
+                        <div className="relative flex items-center justify-center h-8 w-8 shrink-0">
+                          {(() => {
+                            const radius = 10;
+                            const circumference = 2 * Math.PI * radius;
+                            const strokeDashoffset = circumference - ((fileVal.progress || 0) / 100) * circumference;
+                            return (
+                              <>
+                                <svg className="w-8 h-8 transform -rotate-90">
+                                  <circle
+                                    cx="16"
+                                    cy="16"
+                                    r={radius}
+                                    className="text-gray-200"
+                                    strokeWidth="2"
+                                    stroke="currentColor"
+                                    fill="transparent"
+                                  />
+                                  <circle
+                                    cx="16"
+                                    cy="16"
+                                    r={radius}
+                                    className="text-emerald-600 transition-all duration-300"
+                                    strokeWidth="2"
+                                    strokeDasharray={circumference}
+                                    strokeDashoffset={strokeDashoffset}
+                                    strokeLinecap="round"
+                                    stroke="currentColor"
+                                    fill="transparent"
+                                  />
+                                </svg>
+                                <span className="absolute text-[8px] font-bold text-emerald-800">{fileVal.progress || 0}%</span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <FileText className="h-5 w-5 text-emerald-600 shrink-0" />
+                      )}
+                      <div className="truncate">
+                        <p className="text-xs font-bold text-gray-800 truncate">{fileVal.name}</p>
+                        {fileVal.uploading ? (
+                          <p className="text-[10px] text-emerald-700 font-medium">Uploading...</p>
+                        ) : (
+                          <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                            <CheckCircle2 size={10} /> Uploaded successfully
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeUploadedFile("proposedSitePhoto")}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
 
           {/* 6. Documents Section */}
           <div className="border-t pt-5 space-y-4">

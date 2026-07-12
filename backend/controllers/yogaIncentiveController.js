@@ -36,7 +36,15 @@ async function submitApplication(req, res) {
       designation,
       entityType,
       mobileNumber,
-      emailId
+      emailId,
+      siteTotalArea,
+      proposedConstructedArea,
+      servicesOffered,
+      tentativeEmployees,
+      ycbCertifiedInstructors,
+      clinicalServicesProvided,
+      certifiedAyushDoctors,
+      proposedSitePhoto
     } = req.body;
 
     if (!SUBSIDY_RATES[region]) {
@@ -84,13 +92,16 @@ async function submitApplication(req, res) {
          project_type, upn, proposed_location, other_location_name, gps_coordinates,
          proposed_centre_name, eligible_assets_amount,
          applicant_name, designation, entity_type, mobile_number, email_id,
+         site_total_area, proposed_constructed_area, services_offered, tentative_employees,
+         ycb_certified_instructors, clinical_services_provided, certified_ayush_doctors, proposed_site_photo,
          doc_fire_safety, doc_udyog_reg, doc_gst_reg, doc_pollution_cert,
          doc_dpr, doc_ca_project_cost, doc_ca_eca, doc_land_document, doc_constitution,
          doc_entity_registration, doc_map_approval, doc_non_agri_land, doc_land_possession,
          doc_others, status)
        VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
-         $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, 'SUBMITTED'
+         $22, $23, $24, $25, $26, $27, $28, $29,
+         $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, 'SUBMITTED'
        )
        RETURNING *`,
       [
@@ -99,6 +110,10 @@ async function submitApplication(req, res) {
         projectType, upn, proposedLocation || null, otherLocationName || null, gpsCoordinates || null,
         proposedCentreName, eligibleEca,
         applicantName || null, designation || null, entityType || null, mobileNumber || null, emailId || null,
+        parseFloat(siteTotalArea) || null, parseFloat(proposedConstructedArea) || null,
+        servicesOffered || null, parseInt(tentativeEmployees, 10) || null,
+        parseInt(ycbCertifiedInstructors, 10) || null, clinicalServicesProvided === 'true' || clinicalServicesProvided === true,
+        parseInt(certifiedAyushDoctors, 10) || null, proposedSitePhoto || null,
         filePath('doc_fire_safety'), filePath('doc_udyog_reg'),
         filePath('doc_gst_reg'),     filePath('doc_pollution_cert'),
         filePath('doc_dpr'),         filePath('doc_ca_project_cost'), filePath('doc_ca_eca'),
