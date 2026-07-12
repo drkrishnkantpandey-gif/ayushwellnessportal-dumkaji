@@ -43,6 +43,12 @@ const YogaTrainingCentre = () => {
     avatarUrl: "",
     coverUrl: "",
     is_operational: false,
+    applicantName: "",
+    designation: "",
+    entityType: "",
+    operationalBusinessName: "",
+    operationalBusinessRegNumber: "",
+    gpsCoordinates: "",
   });
 
   const avatarRef = useRef(null);
@@ -114,6 +120,12 @@ const YogaTrainingCentre = () => {
               ? false
               : prev.verified,
         is_operational: !!profile.is_operational,
+        applicantName: profile.applicant_name || prev.applicantName,
+        designation: profile.designation || prev.designation,
+        entityType: profile.entity_type || prev.entityType,
+        operationalBusinessName: profile.operational_business_name || prev.operationalBusinessName,
+        operationalBusinessRegNumber: profile.operational_business_reg_number || prev.operationalBusinessRegNumber,
+        gpsCoordinates: profile.gps_coordinates || prev.gpsCoordinates,
         trainers: typeof stats.trainers === "number" ? stats.trainers : prev.trainers,
         courses: typeof stats.courses === "number" ? stats.courses : prev.courses,
         students: typeof stats.students === "number" ? stats.students : prev.students,
@@ -411,34 +423,65 @@ const YogaTrainingCentre = () => {
             {/* KEY DATA POINTS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <div>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Entity Name</span>
-                  <span className="text-base font-bold text-gray-800">{centre.name || "N/A"}</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Entity Name</span>
+                    <span className="text-sm font-bold text-gray-800">{centre.name || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Entity Type</span>
+                    <span className="text-sm font-semibold text-gray-700">{centre.entityType || centre.type || "N/A"}</span>
+                  </div>
                 </div>
 
-                <div>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Entity Type</span>
-                  <span className="text-base font-semibold text-gray-700">{centre.type || "N/A"}</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Applicant Name</span>
+                    <span className="text-sm font-semibold text-gray-800">{centre.applicantName || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Designation</span>
+                    <span className="text-sm font-semibold text-gray-700">{centre.designation || "N/A"}</span>
+                  </div>
                 </div>
 
-                <div>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">District</span>
-                  <span className="text-base font-semibold text-gray-700">{centre.district || "N/A"}</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">District</span>
+                    <span className="text-sm font-semibold text-gray-700">{centre.district || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">GPS Coordinates</span>
+                    <span className="text-sm font-semibold text-gray-700">{centre.gpsCoordinates || "N/A"}</span>
+                  </div>
                 </div>
 
                 <div>
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Business Address</span>
-                  <span className="text-base font-medium text-gray-600 block leading-relaxed">{centre.address || "N/A"}</span>
+                  <span className="text-sm font-medium text-gray-600 block leading-relaxed">{centre.address || "N/A"}</span>
                 </div>
               </div>
 
-              <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+              <div className="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
                 <div>
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Existing Operational Business Category</span>
-                  <span className="text-base font-bold text-teal-800 block mt-1">
+                  <span className="text-sm font-bold text-teal-800 block mt-0.5">
                     {centre.alreadyOperating || "None"}
                   </span>
                 </div>
+
+                {centre.alreadyOperating && centre.alreadyOperating !== "None" && (
+                  <div className="grid grid-cols-2 gap-4 bg-white p-3.5 rounded-xl border border-slate-200/60">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Operational Business Name</span>
+                      <span className="text-xs font-semibold text-gray-700">{centre.operationalBusinessName || "N/A"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Reg Number</span>
+                      <span className="text-xs font-semibold text-gray-700">{centre.operationalBusinessRegNumber || "N/A"}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* OPERATIONAL STATUS TOGGLE */}
                 <div className="border-t border-slate-200/60 pt-4">

@@ -58,8 +58,6 @@ const updateTrainingCentre = asyncHandler(async (req, res) => {
     is_operational
   } = req.body;
 
-  if (is_operational !== undefined) { fields.push(`is_operational = $${paramIndex++}`); values.push(is_operational === 'true' || is_operational === true); }
-
   const avatarFile = req.files?.avatar?.[0];
   const coverFile = req.files?.cover?.[0];
 
@@ -87,6 +85,7 @@ const updateTrainingCentre = asyncHandler(async (req, res) => {
   if (owner_phone !== undefined) { fields.push(`owner_phone = $${paramIndex++}`); values.push(owner_phone); }
   if (latitude !== undefined) { fields.push(`latitude = $${paramIndex++}`); values.push(latitude); }
   if (longitude !== undefined) { fields.push(`longitude = $${paramIndex++}`); values.push(longitude); }
+  if (is_operational !== undefined) { fields.push(`is_operational = $${paramIndex++}`); values.push(is_operational === 'true' || is_operational === true); }
   if (avatarFile) { fields.push(`avatar_url = $${paramIndex++}`); values.push(`/uploads/${avatarFile.filename}`); }
   if (coverFile) { fields.push(`cover_url = $${paramIndex++}`); values.push(`/uploads/${coverFile.filename}`); }
 
