@@ -8,6 +8,13 @@ import { toast } from "react-toastify";
 const fmt = (n) =>
   n != null ? `₹${parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
 
+// Handle both Cloudinary full URLs and local /uploads paths
+const docUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API}/${path.replace(/^\//, '')}`;
+};
+
 function DocList({ docs }) {
   const hasAny = docs.some(d => d.path);
   return (
@@ -23,7 +30,7 @@ function DocList({ docs }) {
             <div key={label} className="flex items-center gap-1.5 min-w-0">
               {path ? (
                 <a
-                  href={`${API}/${path}`}
+                  href={docUrl(path)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-1 truncate"

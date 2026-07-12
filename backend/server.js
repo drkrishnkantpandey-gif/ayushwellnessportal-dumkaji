@@ -81,6 +81,16 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// ── Static uploads served BEFORE host-header check so documents are accessible
+// on any server (NIC Cloud, Render, localhost) without needing to whitelist the
+// server's own hostname.
+app.use('/uploads', (req, res, next) => {
+  if (req.path === '/' || req.path.endsWith('/')) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  next();
+}, express.static(require('path').join(__dirname, 'uploads'), { index: false }));
+
 // ── Fix #3: Host header injection — whitelist allowed hostnames ──────────────
 const ALLOWED_HOSTS = (process.env.ALLOWED_HOSTS || 'localhost:4000,localhost')
   .split(',').map(h => h.trim().toLowerCase());
@@ -167,14 +177,6 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login',    authLimiter);
 app.use('/api/auth/register', authLimiter);
-
-// ── Static uploads — no directory listing ─────────────────────────────────────
-app.use('/uploads', (req, res, next) => {
-  if (req.path === '/' || req.path.endsWith('/')) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-  next();
-}, express.static(require('path').join(__dirname, 'uploads'), { index: false }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',              authRoutes);

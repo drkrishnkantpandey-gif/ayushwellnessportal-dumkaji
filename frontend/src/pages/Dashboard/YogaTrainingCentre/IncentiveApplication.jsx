@@ -87,6 +87,14 @@ const STATUS_META = {
 const fmt = (n) =>
   n != null ? `₹${parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
 
+// If path is already a full URL (Cloudinary), use it directly.
+// Otherwise prefix with the backend API base (local dev).
+const docUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API}${path}`;
+};
+
 export default function IncentiveApplication() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -1081,7 +1089,7 @@ export default function IncentiveApplication() {
                         {app.gps_coordinates && <p className="text-xs text-slate-500 mt-1">GPS: {app.gps_coordinates}</p>}
                       </div>
                       <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Approved Subsidy</p>
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Claimed Subsidy (Tentative)</p>
                         <p className="font-bold text-emerald-700 text-sm mt-0.5">{fmt(app.subsidy_amount)}</p>
                         <p className="text-xs text-emerald-500 mt-1">Capped claim limit applied</p>
                       </div>
@@ -1137,7 +1145,7 @@ export default function IncentiveApplication() {
                         <div className="grid md:grid-cols-2 gap-2 text-[11px]">
                           {app.proposed_site_photo && (
                             <a
-                              href={`${API}${app.proposed_site_photo}`}
+                              href={docUrl(app.proposed_site_photo)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 transition truncate text-slate-600 font-bold"
@@ -1152,7 +1160,7 @@ export default function IncentiveApplication() {
                             return (
                               <a
                                 key={doc.field}
-                                href={`${API}${val}`}
+                                href={docUrl(val)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 transition truncate text-slate-600 font-semibold"
