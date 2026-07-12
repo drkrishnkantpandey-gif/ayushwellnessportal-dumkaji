@@ -372,7 +372,7 @@ const getPendingRegistrations = async (req, res) => {
       // Directorate sees pending/processed District Officers, Colleges, Research Orgs, plus other entities
       const query = `
         SELECT u.id, u.full_name, u.email, u.phone, u.role, u.registration_status, u.created_at,
-               COALESCE(w.district, t.district, y.district, r.district, c.district, h.district, dop.district) as district,
+               COALESCE(w.district, t.district, y.district, r.district, c.city, h.district, dop.district) as district,
                dop.employee_id, dop.designation, dop.id_type, dop.id_number, dop.id_upload_path, dop.authority_order_path
         FROM users u
         LEFT JOIN wellness_centres w ON w.user_id = u.id
