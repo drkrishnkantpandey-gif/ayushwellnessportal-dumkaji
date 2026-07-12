@@ -291,7 +291,9 @@ async function runIncentiveApplicationsMigration() {
       ADD COLUMN IF NOT EXISTS designation VARCHAR(255),
       ADD COLUMN IF NOT EXISTS entity_type VARCHAR(100),
       ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(50),
-      ADD COLUMN IF NOT EXISTS email_id VARCHAR(255);
+      ADD COLUMN IF NOT EXISTS email_id VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS upn VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS incentive_type VARCHAR(20);
     `);
     console.log("Database Migration: yoga_incentive_applications table updated successfully");
   } catch (err) {
