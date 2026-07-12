@@ -1142,13 +1142,21 @@ async function registerDistrictOfficer(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      // Block only if already fully approved — pending/rejected can re-register
+      // Block if already approved or pending — only rejected can re-register
       if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
           message: "This email is already registered and approved. Please log in.",
+        });
+      }
+      if (userRecord.registration_status === 'pending' || userRecord.registration_status === null) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Your registration is already under review. Please wait for approval.",
         });
       }
 
@@ -1259,13 +1267,21 @@ async function registerDirectorate(req, res) {
     if (existingUser.rows.length > 0) {
       const userRecord = existingUser.rows[0];
 
-      // Block only if already approved — pending/rejected can re-register
+      // Block if already approved or pending — only rejected can re-register
       if (userRecord.registration_status === 'approved') {
         await client.query("ROLLBACK");
         client.release();
         return res.status(400).json({
           success: false,
           message: "This email is already registered and approved. Please log in.",
+        });
+      }
+      if (userRecord.registration_status === 'pending' || userRecord.registration_status === null) {
+        await client.query("ROLLBACK");
+        client.release();
+        return res.status(400).json({
+          success: false,
+          message: "Your registration is already under review. Please wait for approval.",
         });
       }
 

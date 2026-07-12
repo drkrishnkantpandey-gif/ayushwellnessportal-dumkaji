@@ -521,4 +521,26 @@ const approveUserRegistration = async (req, res) => {
   }
 };
 
-module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational, getDashboardStats, getPendingRegistrations, approveUserRegistration };
+module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational, getDashboardStats, getPendingRegistrations, approveUserRegistration, fixNullRegistrationStatuses };
+
+// One-time data fix: set all users with NULL registration_status to 'pending'
+// so they appear in the approval dashboards. Call via POST /api/admin/fix-null-statuses (admin only)
+const fixNullRegistrationStatuses = async (req, res) => {
+  try {
+    const result = await db.query(`
+      UPDATE users
+      SET registration_status = 'pending'
+      WHERE registration_status IS NULL
+        AND role NOT IN ('admin')
+      RETURNING id, email, role, registration_status
+    `);
+    return res.status(200).json({
+      success: true,
+      message: `Fixed ${result.rows.length} users with NULL registration_status → 'pending'`,
+      fixed: result.rows
+    });
+  } catch (error) {
+    console.error('Error in fixNullRegistrationStatuses:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};

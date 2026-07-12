@@ -45,6 +45,7 @@ router.put('/centre/:userId/operational', protect, requireRole('directorate', 'a
 router.get('/dashboard-stats', protect, requireRole('directorate', 'admin', 'district_officer'), adminController.getDashboardStats);
 router.get('/pending-registrations', protect, requireRole('directorate', 'admin', 'district_officer'), adminController.getPendingRegistrations);
 router.put('/approve-user-registration/:targetUserId', protect, requireRole('directorate', 'admin', 'district_officer'), adminController.approveUserRegistration);
+router.post('/fix-null-statuses', protect, isAdmin, adminController.fixNullRegistrationStatuses);
 
 // ── District Officer — Yoga TC Incentive ─────────────────────────────────────
 router.get('/incentives/district',      protect, districtOnly,    getDistrictApplications);
