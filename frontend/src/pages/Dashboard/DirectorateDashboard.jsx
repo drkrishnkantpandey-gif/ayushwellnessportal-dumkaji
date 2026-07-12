@@ -350,9 +350,12 @@ function YogaTCDirectorateReview() {
                       <FileText size={16} className="text-purple-700" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{app.centre_name}</p>
-                      <p className="text-xs text-gray-500">
-                        {app.district} · {typeLabel} · {app.applicant_name || app.applicant_email}
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-gray-800">{app.centre_name}</p>
+                        <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">{app.project_type || "Greenfield"}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        UPN: <strong className="text-slate-700">{app.upn || "—"}</strong> · {app.district} · {typeLabel} · {app.applicant_name || app.applicant_email}
                       </p>
                       {app.district_remarks && (
                         <p className="text-xs text-blue-600 mt-0.5">District note: {app.district_remarks}</p>
@@ -369,21 +372,37 @@ function YogaTCDirectorateReview() {
                 </button>
 
                 {open && (
-                  <div className="mt-4 ml-11 space-y-4">
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-400">Investment</p>
-                        <p className="font-semibold">{fmt(app.investment_amount)}</p>
+                  <div className="mt-4 ml-11 space-y-4 text-xs">
+                    <div className="grid grid-cols-4 gap-3 bg-white p-3 rounded-lg border">
+                      <div className="bg-gray-50 rounded-lg p-2.5">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold">Total Investment</p>
+                        <p className="font-semibold text-gray-800">{fmt(app.investment_amount)}</p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-400">Claim Amount</p>
-                        <p className="font-semibold">{fmt(app.claim_amount)}</p>
+                      <div className="bg-gray-50 rounded-lg p-2.5">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold">Eligible Assets Amount</p>
+                        <p className="font-semibold text-gray-800">{fmt(app.eligible_assets_amount || app.claim_amount)}</p>
                       </div>
-                      <div className="bg-emerald-50 rounded-lg p-3">
-                        <p className="text-xs text-emerald-500">Subsidy ({app.subsidy_percentage}%)</p>
+                      <div className="bg-emerald-50 rounded-lg p-2.5">
+                        <p className="text-[10px] text-emerald-600 uppercase font-bold">Subsidy ({app.subsidy_percentage}%)</p>
                         <p className="font-bold text-emerald-700">{fmt(app.subsidy_amount)}</p>
                       </div>
+                      <div className="bg-slate-50 rounded-lg p-2.5">
+                        <p className="text-[10px] text-slate-500 uppercase font-bold">Proposed Location</p>
+                        <p className="font-semibold text-slate-800">{app.proposed_location || "—"}</p>
+                      </div>
                     </div>
+
+                    <div className="bg-slate-50 p-3 rounded-lg border grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase block">Complete Site Address</span>
+                        <span className="text-gray-700 font-medium">{app.address || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase block">GPS Coordinates</span>
+                        <span className="text-gray-700 font-medium">{app.gps_coordinates || "—"}</span>
+                      </div>
+                    </div>
+
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs">
                       <p className="font-semibold text-blue-700">District Officer Decision</p>
                       <p className="text-blue-600 mt-1">
@@ -400,8 +419,13 @@ function YogaTCDirectorateReview() {
                       { label: "Pollution Certificate",     path: app.doc_pollution_cert },
                       { label: "Detailed Project Report",   path: app.doc_dpr },
                       { label: "CA Project Cost Cert.",     path: app.doc_ca_project_cost },
+                      { label: "CA Certified ECA",          path: app.doc_ca_eca },
                       { label: "Land Document",             path: app.doc_land_document },
-                      { label: "Constitution Document",     path: app.doc_constitution },
+                      { label: "Constitution of Firm/Society/MOA", path: app.doc_constitution },
+                      { label: "Registration certificate of Entity", path: app.doc_entity_registration },
+                      { label: "MAP Approved by Dev Authority", path: app.doc_map_approval },
+                      { label: "Non-Agriculture Land Cert", path: app.doc_non_agri_land },
+                      { label: "Land Possession / Lease Proof", path: app.doc_land_possession },
                       { label: "Others",                    path: app.doc_others },
                     ]} />
 

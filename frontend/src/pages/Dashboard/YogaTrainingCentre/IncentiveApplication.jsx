@@ -5,9 +5,8 @@ import axiosInstance from '../../../config/axiosInstance';
 import {
   PlusCircle, FileText, CheckCircle, Clock,
   XCircle, ChevronDown, ChevronUp, Upload, IndianRupee, Mountain, Leaf,
+  CheckCircle2, X, Building
 } from "lucide-react";
-
-
 
 const REGIONS = [
   {
@@ -16,8 +15,8 @@ const REGIONS = [
     subsidy: 25,
     icon: Leaf,
     description:
-      "Applicant's centre is located in a plain / non-hilly area. Subsidy is 25% of the approved claim amount.",
-    bg: "bg-amber-50",
+      "Area lying under 800m from mean sea level in District Dehradun and Nainital. Entire area under Haridwar and US Nagar",
+    bg: "bg-amber-50/70",
     border: "border-amber-400",
     badge: "bg-amber-100 text-amber-700",
     iconColor: "text-amber-600",
@@ -28,24 +27,40 @@ const REGIONS = [
     subsidy: 50,
     icon: Mountain,
     description:
-      "Applicant's centre is located in a hilly / mountainous area. Subsidy is 50% of the approved claim amount.",
-    bg: "bg-blue-50",
+      "Entire Area under District Pithoragarh, Uttarkashi, Chamoli, Champawat, Rudraprayag, Bageshwar, Almora, Pauri Garhwal, Tehri Garhwal. Areas lying above 800m form mean sea level in district Dehradun and Nainital",
+    bg: "bg-blue-50/70",
     border: "border-blue-400",
     badge: "bg-blue-100 text-blue-700",
     iconColor: "text-blue-600",
   },
 ];
 
+const PROPOSED_LOCATIONS = [
+  "Kolidhek Lake Area",
+  "Jageshar",
+  "Mukteshwar",
+  "Vyass Valley",
+  "Darma Valley",
+  "Chaudans Valley",
+  "Tehri Lake Area",
+  "Other"
+];
+
 const DOCS = [
-  { field: "doc_fire_safety",     label: "Fire & Safety Audit Certificate",        required: true  },
-  { field: "doc_udyog_reg",       label: "Udyog / MSME Registration",              required: true  },
-  { field: "doc_gst_reg",         label: "GST Registration Certificate",            required: true  },
-  { field: "doc_pollution_cert",  label: "Pollution Clearance Certificate",         required: true  },
-  { field: "doc_dpr",             label: "DPR — Certified by Planner / Architect", required: true  },
-  { field: "doc_ca_project_cost", label: "CA Certified Project Cost Statement",     required: true  },
-  { field: "doc_land_document",   label: "Copy of Land Document",                  required: true  },
-  { field: "doc_constitution",    label: "Constitution of Firm / Society Deed",     required: true  },
-  { field: "doc_others",          label: "Any Other Supporting Document",           required: false },
+  { field: "doc_fire_safety",                 label: "Fire & Safety Audit Certificate",                    required: true  },
+  { field: "doc_udyog_reg",                   label: "Udyog / MSME Registration",                          required: true  },
+  { field: "doc_gst_reg",                     label: "GST Registration Certificate",                        required: true  },
+  { field: "doc_pollution_cert",              label: "Pollution Clearance Certificate",                     required: true  },
+  { field: "doc_dpr",                         label: "DPR — Certified by Planner / Architect",             required: true  },
+  { field: "doc_ca_project_cost",             label: "CA Certified Project Cost Statement",                 required: true  },
+  { field: "doc_ca_eca",                      label: "CA Certified Eligible Capital Assets (ECA)",          required: true  },
+  { field: "doc_land_document",               label: "Copy of Land Document",                              required: true  },
+  { field: "doc_constitution",                label: "Constitution of Firm / Society Deed/ MOA etc",       required: true  },
+  { field: "doc_entity_registration",         label: "Registration certificate of Entity",                 required: true  },
+  { field: "doc_map_approval",                label: "MAP Approved by Development Authority",              required: true  },
+  { field: "doc_non_agri_land",               label: "Non-Agriculture Land Certificate",                   required: true  },
+  { field: "doc_land_possession",             label: "Document of Land Possession / Lease of atleast 5 Years", required: true },
+  { field: "doc_others",                      label: "Any Other Supporting Document",                       required: false },
 ];
 
 const STATUS_META = {
@@ -68,21 +83,56 @@ export default function IncentiveApplication() {
   const [expandedId, setExpandedId]     = useState(null);
   const [submitting, setSubmitting]     = useState(false);
   const [successMsg, setSuccessMsg]     = useState("");
+  const [errorMsg, setErrorMsg]         = useState("");
 
   const [form, setForm] = useState({
     region: "",
-    centreName: "",
-    district: "",
+    projectType: "Greenfield", // Greenfield or Expansion
+    proposedLocation: "",
+    otherLocationName: "",
+    gpsCoordinates: "",
+    proposedCentreName: "",
     investmentAmount: "",
-    claimAmount: "",
+    eligibleAssetsAmount: "",
+    district: "",
+    address: "",
+
+    // Auto-filled from registration profile
+    applicantName: "",
+    designation: "",
+    entityType: "",
+    mobileNumber: "",
+    emailId: "",
   });
-  const [files, setFiles] = useState({});
 
+  // Track status of uploads: { fieldName: { name, progress, uploading, path } }
+  const [uploadStatus, setUploadStatus] = useState({});
 
-  const fetchApplications = async () => {
+  const fetchProfileAndApplications = async () => {
     try {
-      const r = await axiosInstance.get(`${API}/api/training-centre/incentives`);
-      setApplications(r.data.data || []);
+      setLoading(true);
+      setErrorMsg("");
+
+      // 1. Fetch submitted applications
+      const appsRes = await axiosInstance.get(`${API}/api/training-centre/incentives`);
+      setApplications(appsRes.data.data || []);
+
+      // 2. Fetch profile details for auto-fill
+      const profileRes = await axiosInstance.get(`${API}/api/training-centre/profile`);
+      const profile = profileRes.data?.data || {};
+
+      setForm((prev) => ({
+        ...prev,
+        applicantName: profile.applicant_name || "",
+        designation: profile.designation || "",
+        entityType: profile.entity_type || profile.institution_type || "",
+        mobileNumber: profile.phone || "",
+        emailId: profile.email || "",
+        proposedCentreName: profile.centre_name || "",
+        district: profile.district || "",
+        address: profile.address || "",
+        gpsCoordinates: profile.gps_coordinates || "",
+      }));
     } catch (e) {
       console.error(e);
     } finally {
@@ -90,47 +140,151 @@ export default function IncentiveApplication() {
     }
   };
 
-  useEffect(() => { fetchApplications(); }, []);
+  useEffect(() => {
+    fetchProfileAndApplications();
+  }, []);
 
   const selectedRegion = REGIONS.find((r) => r.value === form.region);
-  const subsidyPct     = selectedRegion?.subsidy || 0;
-  const claimNum       = parseFloat(form.claimAmount) || 0;
-  const subsidyAmount  = (claimNum * subsidyPct) / 100;
+  const eligibleEca = parseFloat(form.eligibleAssetsAmount) || 0;
 
-  const handleFile = (field, fileList) =>
-    setFiles((prev) => ({ ...prev, [field]: fileList[0] }));
+  // Auto calculate subsidy capped at 20L for Hill and 10L for Plains
+  let calculatedSubsidy = 0;
+  if (form.region === "HILLY") {
+    calculatedSubsidy = Math.min(eligibleEca * 0.50, 2000000);
+  } else if (form.region === "PLAIN") {
+    calculatedSubsidy = Math.min(eligibleEca * 0.25, 1000000);
+  }
+
+  // Instant upload handler with progress bar
+  const handleFileSelect = async (field, fileList) => {
+    const file = fileList[0];
+    if (!file) return;
+
+    setUploadStatus(prev => ({
+      ...prev,
+      [field]: {
+        name: file.name,
+        uploading: true,
+        progress: 0,
+        path: null
+      }
+    }));
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await axios.post(`${API}/api/register/upload-temp-file`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadStatus(prev => ({
+              ...prev,
+              [field]: {
+                ...prev[field],
+                progress: percentCompleted
+              }
+            }));
+          }
+        }
+      });
+
+      setUploadStatus(prev => ({
+        ...prev,
+        [field]: {
+          ...prev[field],
+          uploading: false,
+          progress: 100,
+          path: res.data.path
+        }
+      }));
+    } catch (err) {
+      console.error("Instant upload failed:", err);
+      alert(`Failed to upload ${file.name}`);
+      setUploadStatus(prev => {
+        const copy = { ...prev };
+        delete copy[field];
+        return copy;
+      });
+    }
+  };
+
+  const removeUploadedFile = (field) => {
+    setUploadStatus(prev => {
+      const copy = { ...prev };
+      delete copy[field];
+      return copy;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.region) return alert("Please select your region (Plain or Hilly).");
-    if (!form.centreName || !form.district || !form.investmentAmount || !form.claimAmount)
-      return alert("Please fill all required fields.");
 
-    const missingDocs = DOCS.filter((d) => d.required && !files[d.field]);
-    if (missingDocs.length)
-      return alert(`Please upload: ${missingDocs.map((d) => d.label).join(", ")}`);
+    if (applications.length > 0) {
+      return alert("You can submit only one application at most under Incentive Applications.");
+    }
+    if (!form.region) {
+      return alert("Please select Plain or Hilly region.");
+    }
+    if (parseFloat(form.eligibleAssetsAmount) > parseFloat(form.investmentAmount)) {
+      return alert("Eligible Capital Assets Amount for Subsidy must not be more than Total Investment Amount.");
+    }
+
+    const missingDocs = DOCS.filter(d => d.required && (!uploadStatus[d.field] || !uploadStatus[d.field].path));
+    if (missingDocs.length > 0) {
+      return alert(`Please upload all mandatory documents: ${missingDocs.map(d => d.label).join(", ")}`);
+    }
 
     setSubmitting(true);
-    try {
-      const fd = new FormData();
-      fd.append("region",           form.region);
-      fd.append("centreName",       form.centreName);
-      fd.append("district",         form.district);
-      fd.append("investmentAmount", form.investmentAmount);
-      fd.append("claimAmount",      form.claimAmount);
-      Object.entries(files).forEach(([k, v]) => { if (v) fd.append(k, v); });
+    setErrorMsg("");
+    setSuccessMsg("");
 
-      await axiosInstance.post(`${API}/api/training-centre/incentives`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
+    try {
+      const payload = {
+        region: form.region,
+        projectType: form.projectType,
+        proposedLocation: form.proposedLocation,
+        otherLocationName: form.proposedLocation === "Other" ? form.otherLocationName : "",
+        gpsCoordinates: form.gpsCoordinates,
+        proposedCentreName: form.proposedCentreName,
+        investmentAmount: form.investmentAmount,
+        eligibleAssetsAmount: form.eligibleAssetsAmount,
+        district: form.district,
+        address: form.address,
+
+        applicantName: form.applicantName,
+        designation: form.designation,
+        entityType: form.entityType,
+        mobileNumber: form.mobileNumber,
+        emailId: form.emailId,
+      };
+
+      // Append upload paths to payload
+      DOCS.forEach(doc => {
+        if (uploadStatus[doc.field] && uploadStatus[doc.field].path) {
+          payload[doc.field] = uploadStatus[doc.field].path;
+        }
       });
 
-      setSuccessMsg("Application submitted successfully! It will be reviewed by the District Officer.");
+      await axiosInstance.post(`${API}/api/training-centre/incentives`, payload);
+
+      setSuccessMsg("Incentive Application submitted successfully! UPN will be generated dynamically.");
       setShowForm(false);
-      setForm({ region: "", centreName: "", district: "", investmentAmount: "", claimAmount: "" });
-      setFiles({});
-      fetchApplications();
+      // reset form
+      setForm((prev) => ({
+        ...prev,
+        region: "",
+        projectType: "Greenfield",
+        proposedLocation: "",
+        otherLocationName: "",
+        investmentAmount: "",
+        eligibleAssetsAmount: "",
+      }));
+      setUploadStatus({});
+      fetchProfileAndApplications();
     } catch (err) {
-      alert(err.response?.data?.message || "Submission failed. Please try again.");
+      setErrorMsg(err.response?.data?.message || "Submission failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -143,36 +297,70 @@ export default function IncentiveApplication() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Incentive Applications</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Apply for government subsidy for your Yoga Centre
+            Apply for Greenfield or Expansion scheme subsidies for your Yoga Centre
           </p>
         </div>
-        <button
-          onClick={() => { setShowForm(!showForm); setSuccessMsg(""); }}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
-        >
-          <PlusCircle size={16} /> New Application
-        </button>
+        {applications.length === 0 && (
+          <button
+            onClick={() => { setShowForm(!showForm); setSuccessMsg(""); setErrorMsg(""); }}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl hover:bg-emerald-700 transition font-semibold text-sm shadow-sm"
+          >
+            <PlusCircle size={16} /> New Application
+          </button>
+        )}
       </div>
 
       {successMsg && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl flex items-center gap-2">
           <CheckCircle size={18} /> {successMsg}
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+          <XCircle size={18} /> {errorMsg}
         </div>
       )}
 
       {/* ── Application Form ─────────────────────────────────────────────── */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-          <h2 className="text-lg font-semibold text-gray-800">New Incentive Application</h2>
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-6 space-y-6">
+          <div className="border-b pb-4 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">New Incentive Scheme Application</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Please provide proposed site plans and financial details.</p>
+            </div>
+            <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-semibold">Capped Subsidy Claim</span>
+          </div>
 
-          {/* Step 1: Region Selection */}
+          {/* 1. Project Type */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Select Your Region <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Project Type <span className="text-red-500">*</span>
             </label>
-            <p className="text-xs text-gray-400 mb-3">
-              The subsidy percentage is determined by the geographical region of your centre.
-            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {["Greenfield", "Expansion"].map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => setForm(p => ({ ...p, projectType: t }))}
+                  className={`py-3.5 px-4 rounded-xl border text-center font-bold text-sm transition-all ${
+                    form.projectType === t
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  {t} Project
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2. Region Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Proposed Site Region <span className="text-red-500">*</span>
+            </label>
             <div className="grid md:grid-cols-2 gap-4">
               {REGIONS.map((r) => {
                 const Icon = r.icon;
@@ -182,151 +370,311 @@ export default function IncentiveApplication() {
                     type="button"
                     key={r.value}
                     onClick={() => setForm((p) => ({ ...p, region: r.value }))}
-                    className={`text-left p-5 rounded-xl border-2 transition-all ${
-                      selected ? `${r.border} ${r.bg}` : "border-gray-200 hover:border-gray-300"
+                    className={`text-left p-5 rounded-xl border-2 transition-all flex flex-col justify-between ${
+                      selected ? `${r.border} ${r.bg}` : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3 w-full">
                       <div className="flex items-center gap-2">
                         <Icon size={20} className={selected ? r.iconColor : "text-gray-400"} />
-                        <span className="font-semibold text-gray-800">{r.label}</span>
+                        <span className="font-bold text-gray-800">{r.label}</span>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${r.badge}`}>
-                        {r.subsidy}% Subsidy
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${r.badge}`}>
+                        {r.subsidy}% Subsidy Rate
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 leading-snug">{r.description}</p>
+                    <p className="text-xs text-gray-600 leading-relaxed font-medium bg-white/60 p-2.5 rounded-lg border border-slate-100">{r.description}</p>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Step 2: Centre & Investment Details */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
+          {/* 3. Proposed Location */}
+          {form.region && (
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Proposed Location <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={form.proposedLocation}
+                  onChange={(e) => setForm(p => ({ ...p, proposedLocation: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  required
+                >
+                  <option value="">-- Select Site Location --</option>
+                  {PROPOSED_LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {form.proposedLocation === "Other" && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                    Specify Location Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.otherLocationName}
+                    onChange={(e) => setForm(p => ({ ...p, otherLocationName: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Enter location name"
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  GPS Coordinates (Lat, Long) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.gpsCoordinates}
+                  onChange={(e) => setForm(p => ({ ...p, gpsCoordinates: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="e.g. 30.3165, 78.0322"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  District <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.district}
+                  onChange={(e) => setForm(p => ({ ...p, district: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Proposed Site District"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  Complete Address of Proposed Location <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={form.address}
+                  onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 h-20"
+                  placeholder="Enter complete plot address details"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 4. Autofilled Applicant Profile Info */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-1.5">
+              <Building size={16} className="text-gray-500" />
+              Auto-fetched Registration Credentials
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border text-xs">
+              <div>
+                <span className="text-gray-400 block font-semibold">Applicant Name</span>
+                <span className="text-gray-700 font-bold">{form.applicantName || "—"}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block font-semibold">Designation</span>
+                <span className="text-gray-700 font-bold">{form.designation || "—"}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block font-semibold">Entity Type</span>
+                <span className="text-gray-700 font-bold">{form.entityType || "—"}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block font-semibold">Registered Email</span>
+                <span className="text-gray-700 font-bold">{form.emailId || "—"}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block font-semibold">Registered Phone</span>
+                <span className="text-gray-700 font-bold">{form.mobileNumber || "—"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Center and Financial Assets Details */}
+          <div className="grid md:grid-cols-3 gap-4 border-t pt-5">
+            <div className="md:col-span-3">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Name of Centre <span className="text-red-500">*</span>
+                Proposed Name of Centre <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={form.centreName}
-                onChange={(e) => setForm((p) => ({ ...p, centreName: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="Sunrise Yoga Centre"
+                value={form.proposedCentreName}
+                onChange={(e) => setForm((p) => ({ ...p, proposedCentreName: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                placeholder="Proposed name of the center"
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                District <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.district}
-                onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="e.g. Jaipur"
-                required
-              />
-            </div>
-
-            <div>
+            <div className="md:col-span-1">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Total Investment Amount (₹) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <IndianRupee size={15} className="absolute left-3 top-3 text-gray-400" />
+                <IndianRupee size={14} className="absolute left-3 top-3 text-gray-400" />
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.investmentAmount}
                   onChange={(e) => setForm((p) => ({ ...p, investmentAmount: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                   placeholder="0.00"
                   required
                 />
               </div>
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Claim Amount (₹) <span className="text-red-500">*</span>
+                Eligible Capital Assets (ECA) Amount for Subsidy (₹) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <IndianRupee size={15} className="absolute left-3 top-3 text-gray-400" />
+                <IndianRupee size={14} className="absolute left-3 top-3 text-gray-400" />
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={form.claimAmount}
-                  onChange={(e) => setForm((p) => ({ ...p, claimAmount: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="0.00"
+                  value={form.eligibleAssetsAmount}
+                  onChange={(e) => setForm((p) => ({ ...p, eligibleAssetsAmount: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                  placeholder="ECA amount for subsidy claim"
                   required
                 />
               </div>
             </div>
           </div>
 
-          {/* Auto-calculated subsidy */}
-          {form.region && claimNum > 0 && (
-            <div className={`border rounded-xl p-4 flex items-center gap-4 ${selectedRegion?.bg} border-${selectedRegion?.value === "PLAIN" ? "amber" : "blue"}-200`}>
-              <div className={`rounded-full p-2 ${selectedRegion?.value === "PLAIN" ? "bg-amber-100" : "bg-blue-100"}`}>
+          {/* Auto-calculated subsidy block */}
+          {form.region && eligibleEca > 0 && (
+            <div className={`border rounded-xl p-4 flex items-center gap-4 ${selectedRegion?.bg} border-slate-200/80`}>
+              <div className={`rounded-full p-2 bg-white border border-slate-200`}>
                 <IndianRupee size={20} className={selectedRegion?.iconColor} />
               </div>
-              <div>
-                <p className={`text-xs font-medium ${selectedRegion?.value === "PLAIN" ? "text-amber-600" : "text-blue-600"}`}>
-                  Auto-calculated Subsidy — {selectedRegion?.label}
+              <div className="flex-1">
+                <p className={`text-xs font-semibold uppercase tracking-wide text-slate-500`}>
+                  Auto-Calculated Scheme Subsidy Capping Details
                 </p>
-                <p className={`text-2xl font-bold ${selectedRegion?.value === "PLAIN" ? "text-amber-700" : "text-blue-700"}`}>
-                  {fmt(subsidyAmount)}
-                </p>
-                <p className={`text-xs mt-0.5 ${selectedRegion?.value === "PLAIN" ? "text-amber-600" : "text-blue-600"}`}>
-                  {subsidyPct}% of claim amount {fmt(claimNum)}
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-2xl font-bold text-gray-800">
+                    {fmt(calculatedSubsidy)}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({form.region === "HILLY" ? "50% capped at 20 Lakhs max" : "25% capped at 10 Lakhs max"})
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Claim generated on Eligible Capital Assets amount of {fmt(eligibleEca)}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Step 3: Documents */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              Mandatory Documents <span className="text-red-500">*</span>
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              {DOCS.map((doc) => (
-                <div key={doc.field}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    {doc.label}
-                    {doc.required && <span className="text-red-500 ml-1">*</span>}
-                    {files[doc.field] && (
-                      <span className="ml-2 text-emerald-600">✓ Selected</span>
-                    )}
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer border border-dashed border-gray-300 rounded-lg px-3 py-2 hover:border-emerald-400 hover:bg-emerald-50 transition text-sm text-gray-500">
-                    <Upload size={14} />
-                    <span className="truncate">
-                      {files[doc.field] ? files[doc.field].name : "Click to upload"}
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFile(doc.field, e.target.files)}
-                    />
-                  </label>
-                </div>
-              ))}
+          {/* 6. Documents Section */}
+          <div className="border-t pt-5 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-800">Mandatory Scheme Documents</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Please upload certified copies. Files will upload instantly on selection.</p>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
-              Accepted formats: PDF, JPG, PNG. Max 10MB per file.
-            </p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {DOCS.map((doc) => {
+                const fileVal = uploadStatus[doc.field];
+                return (
+                  <div key={doc.field} className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-600">
+                      {doc.label} {doc.required && <span className="text-red-500">*</span>}
+                    </label>
+
+                    {!fileVal ? (
+                      <label className="flex items-center gap-2.5 cursor-pointer border border-dashed border-gray-300 rounded-xl px-4 py-3 hover:border-emerald-500 hover:bg-slate-50 transition text-xs text-gray-500 bg-white shadow-sm">
+                        <Upload size={14} className="text-gray-400" />
+                        <span className="font-semibold text-gray-600">Click to upload document</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleFileSelect(doc.field, e.target.files)}
+                        />
+                      </label>
+                    ) : (
+                      <div className="flex items-center justify-between p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-xl">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          {fileVal.uploading ? (
+                            <div className="relative flex items-center justify-center h-8 w-8 shrink-0">
+                              {(() => {
+                                const radius = 10;
+                                const circumference = 2 * Math.PI * radius;
+                                const strokeDashoffset = circumference - ((fileVal.progress || 0) / 100) * circumference;
+                                return (
+                                  <>
+                                    <svg className="w-8 h-8 transform -rotate-90">
+                                      <circle
+                                        cx="16"
+                                        cy="16"
+                                        r={radius}
+                                        className="text-gray-200"
+                                        strokeWidth="2"
+                                        stroke="currentColor"
+                                        fill="transparent"
+                                      />
+                                      <circle
+                                        cx="16"
+                                        cy="16"
+                                        r={radius}
+                                        className="text-emerald-600 transition-all duration-300"
+                                        strokeWidth="2"
+                                        strokeDasharray={circumference}
+                                        strokeDashoffset={strokeDashoffset}
+                                        strokeLinecap="round"
+                                        stroke="currentColor"
+                                        fill="transparent"
+                                      />
+                                    </svg>
+                                    <span className="absolute text-[8px] font-bold text-emerald-800">{fileVal.progress || 0}%</span>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <FileText className="h-5 w-5 text-emerald-600 shrink-0" />
+                          )}
+                          <div className="truncate">
+                            <p className="text-xs font-bold text-gray-800 truncate">{fileVal.name}</p>
+                            {fileVal.uploading ? (
+                              <p className="text-[10px] text-emerald-700 font-medium">Uploading...</p>
+                            ) : (
+                              <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                                <CheckCircle2 size={10} /> Uploaded successfully
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeUploadedFile(doc.field)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2 border-t">
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <button
               type="button"
               onClick={() => setShowForm(false)}
@@ -337,26 +685,27 @@ export default function IncentiveApplication() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-2"
+              className="px-6 py-2.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 flex items-center gap-2 font-bold shadow-sm"
             >
-              {submitting ? "Submitting..." : <><FileText size={15} /> Submit Application</>}
+              {submitting ? "Submitting Application..." : <><FileText size={15} /> Submit Application</>}
             </button>
           </div>
         </form>
       )}
 
       {/* ── My Applications ──────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
         <div className="p-5 border-b">
-          <h2 className="font-semibold text-gray-800">My Applications</h2>
+          <h2 className="font-bold text-gray-800">Submitted Applications Overview</h2>
         </div>
 
         {loading ? (
           <div className="p-8 text-center text-gray-400">Loading…</div>
         ) : applications.length === 0 ? (
           <div className="p-10 text-center text-gray-400">
-            <FileText size={40} className="mx-auto mb-3 opacity-40" />
-            <p>No applications yet. Click <strong>New Application</strong> to get started.</p>
+            <FileText size={40} className="mx-auto mb-3 opacity-40 text-emerald-600" />
+            <p className="text-sm font-semibold">No applications found.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Click <strong>New Application</strong> to apply under the incentive scheme.</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -366,25 +715,27 @@ export default function IncentiveApplication() {
               const open   = expandedId === app.id;
               const region = REGIONS.find((r) => r.value === app.region);
               return (
-                <div key={app.id} className="p-4">
+                <div key={app.id} className="p-4 hover:bg-slate-50/50 transition">
                   <button
                     className="w-full flex items-center justify-between text-left"
                     onClick={() => setExpandedId(open ? null : app.id)}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="bg-emerald-100 rounded-full p-2">
+                      <div className="bg-emerald-100 rounded-full p-2.5">
                         <FileText size={18} className="text-emerald-700" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{app.centre_name}</p>
-                        <p className="text-xs text-gray-500">
-                          {region?.label || app.region} · {app.district} ·{" "}
-                          {new Date(app.created_at).toLocaleDateString("en-IN")}
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-gray-800 text-sm">{app.centre_name}</p>
+                          <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">{app.project_type || "Greenfield"}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          UPN: <strong className="text-slate-700">{app.upn || "—"}</strong> · {region?.label || app.region} · {app.district}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full ${meta.color}`}>
+                      <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ${meta.color}`}>
                         <Icon size={12} /> {meta.label}
                       </span>
                       {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -392,29 +743,67 @@ export default function IncentiveApplication() {
                   </button>
 
                   {open && (
-                    <div className="mt-4 ml-12 grid md:grid-cols-3 gap-4 text-sm">
-                      <div className={`rounded-lg p-3 ${region?.bg || "bg-gray-50"}`}>
-                        <p className="text-xs text-gray-500">Region</p>
-                        <p className="font-bold text-gray-800">{region?.label || app.region}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{app.subsidy_percentage}% subsidy rate</p>
+                    <div className="mt-5 ml-12 grid md:grid-cols-3 gap-4 text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200/60">
+                      <div className={`rounded-lg p-3 bg-white border border-slate-200/80`}>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Region & Scheme</p>
+                        <p className="font-bold text-gray-800 text-sm mt-0.5">{region?.label || app.region}</p>
+                        <p className="text-xs text-slate-500 mt-1">{app.subsidy_percentage}% subsidy rate</p>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500">Claim Amount</p>
-                        <p className="font-bold text-gray-800">{fmt(app.claim_amount)}</p>
+                      <div className="bg-white rounded-lg p-3 border border-slate-200/80">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Proposed Site Location</p>
+                        <p className="font-bold text-gray-800 text-sm mt-0.5">{app.proposed_location || "—"}</p>
+                        {app.gps_coordinates && <p className="text-xs text-slate-500 mt-1">GPS: {app.gps_coordinates}</p>}
                       </div>
-                      <div className="bg-emerald-50 rounded-lg p-3">
-                        <p className="text-xs text-emerald-600">Subsidy Amount</p>
-                        <p className="font-bold text-emerald-700">{fmt(app.subsidy_amount)}</p>
+                      <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Approved Subsidy</p>
+                        <p className="font-bold text-emerald-700 text-sm mt-0.5">{fmt(app.subsidy_amount)}</p>
+                        <p className="text-xs text-emerald-500 mt-1">Capped claim limit applied</p>
                       </div>
+
+                      {/* Financial info */}
+                      <div className="md:col-span-3 grid grid-cols-2 gap-4 bg-white p-3 rounded-lg border">
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Total Investment</span>
+                          <span className="font-bold text-gray-700">{fmt(app.investment_amount)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-400 font-bold block uppercase">Eligible Capital Assets (ECA)</span>
+                          <span className="font-bold text-gray-700">{fmt(app.eligible_assets_amount)}</span>
+                        </div>
+                      </div>
+
+                      {/* Documents List */}
+                      <div className="md:col-span-3 space-y-2 border-t pt-3">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase block tracking-wider">Submitted Scheme Documents</span>
+                        <div className="grid md:grid-cols-2 gap-2 text-[11px]">
+                          {DOCS.map(doc => {
+                            const val = app[doc.field];
+                            if (!val) return null;
+                            return (
+                              <a
+                                key={doc.field}
+                                href={`${API}${val}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 transition truncate text-slate-600 font-semibold"
+                              >
+                                <FileText size={13} className="text-slate-400 shrink-0" />
+                                <span className="truncate">{doc.label}</span>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       {app.district_remarks && (
                         <div className="md:col-span-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-yellow-700">District Officer Remarks</p>
+                          <p className="text-[10px] font-semibold text-yellow-700 uppercase tracking-wide">District Officer Remarks</p>
                           <p className="text-xs text-yellow-800 mt-1">{app.district_remarks}</p>
                         </div>
                       )}
                       {app.directorate_remarks && (
                         <div className="md:col-span-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-purple-700">Directorate Remarks</p>
+                          <p className="text-[10px] font-semibold text-purple-700 uppercase tracking-wide">Directorate Remarks</p>
                           <p className="text-xs text-purple-800 mt-1">{app.directorate_remarks}</p>
                         </div>
                       )}

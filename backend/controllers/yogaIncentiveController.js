@@ -17,45 +17,102 @@ async function submitApplication(req, res) {
     const userId = req.user.userId;
     const centreId = await getCentreId(userId);
 
-    const { region, centreName, district, investmentAmount, claimAmount } = req.body;
+    // Limit check: A logged-in user can submit only one application at most.
+    const existing = await db.query('SELECT id FROM yoga_incentive_applications WHERE user_id = $1', [userId]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'You have already submitted an incentive application. Only one application is allowed.' });
+    }
+
+    const {
+      region,
+      projectType, // Greenfield or Expansion
+      proposedLocation,
+      otherLocationName,
+      gpsCoordinates,
+      proposedCentreName,
+      investmentAmount,
+      eligibleAssetsAmount,
+      applicantName,
+      designation,
+      entityType,
+      mobileNumber,
+      emailId
+    } = req.body;
 
     if (!SUBSIDY_RATES[region]) {
       return res.status(400).json({ message: 'Invalid region. Use PLAIN or HILLY.' });
     }
-    if (!centreName || !district || !investmentAmount || !claimAmount) {
+    if (!projectType || !proposedCentreName || !investmentAmount || !eligibleAssetsAmount) {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
 
-    const subsidyPct    = SUBSIDY_RATES[region];
-    const subsidyAmount = (parseFloat(claimAmount) * subsidyPct) / 100;
+    const totalInv = parseFloat(investmentAmount) || 0;
+    const eligibleEca = parseFloat(eligibleAssetsAmount) || 0;
+
+    if (eligibleEca > totalInv) {
+      return res.status(400).json({ message: 'Eligible Capital Assets Amount cannot be greater than Total Investment Amount.' });
+    }
+
+    // Auto calculate subsidy with capping
+    let subsidyPct = SUBSIDY_RATES[region];
+    let subsidyAmount = 0;
+    if (region === 'HILLY') {
+      subsidyAmount = Math.min(eligibleEca * 0.50, 2000000); // 50% max 20 Lakh
+    } else {
+      subsidyAmount = Math.min(eligibleEca * 0.25, 1000000); // 25% max 10 Lakh
+    }
+
+    // Generate UPN in format: UK-YMC-26-27-Serial Number
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const fyStart = currentMonth >= 3 ? currentYear : currentYear - 1;
+    const fyEnd = fyStart + 1;
+    const fyStr = `${fyStart.toString().slice(-2)}-${fyEnd.toString().slice(-2)}`;
+
+    const seqResult = await db.query('SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM yoga_incentive_applications');
+    const nextId = seqResult.rows[0].next_id;
+    const upn = `UK-YMC-${fyStr}-${nextId.toString().padStart(4, '0')}`;
 
     const files = req.files || {};
-    const filePath = (field) => files[field]?.[0]?.path || null;
+    const filePath = (field) => files[field]?.[0]?.path || req.body[field] || null;
 
     const result = await db.query(
       `INSERT INTO yoga_incentive_applications
         (user_id, centre_id, region, subsidy_percentage,
          centre_name, district, investment_amount, claim_amount, subsidy_amount,
+         project_type, upn, proposed_location, other_location_name, gps_coordinates,
+         proposed_centre_name, eligible_assets_amount,
+         applicant_name, designation, entity_type, mobile_number, email_id,
          doc_fire_safety, doc_udyog_reg, doc_gst_reg, doc_pollution_cert,
-         doc_dpr, doc_ca_project_cost, doc_land_document, doc_constitution, doc_others,
-         status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'SUBMITTED')
+         doc_dpr, doc_ca_project_cost, doc_ca_eca, doc_land_document, doc_constitution,
+         doc_entity_registration, doc_map_approval, doc_non_agri_land, doc_land_possession,
+         doc_others, status)
+       VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
+         $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, 'SUBMITTED'
+       )
        RETURNING *`,
       [
         userId, centreId, region, subsidyPct,
-        centreName, district, investmentAmount, claimAmount, subsidyAmount,
+        proposedCentreName, district || null, totalInv, eligibleEca, subsidyAmount,
+        projectType, upn, proposedLocation || null, otherLocationName || null, gpsCoordinates || null,
+        proposedCentreName, eligibleEca,
+        applicantName || null, designation || null, entityType || null, mobileNumber || null, emailId || null,
         filePath('doc_fire_safety'), filePath('doc_udyog_reg'),
         filePath('doc_gst_reg'),     filePath('doc_pollution_cert'),
-        filePath('doc_dpr'),         filePath('doc_ca_project_cost'),
+        filePath('doc_dpr'),         filePath('doc_ca_project_cost'), filePath('doc_ca_eca'),
         filePath('doc_land_document'),filePath('doc_constitution'),
-        filePath('doc_others'),
+        filePath('doc_entity_registration'), filePath('doc_map_approval'),
+        filePath('doc_non_agri_land'), filePath('doc_land_possession'),
+        filePath('doc_others')
       ]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('submitApplication error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error during submission.' });
   }
 }
 
