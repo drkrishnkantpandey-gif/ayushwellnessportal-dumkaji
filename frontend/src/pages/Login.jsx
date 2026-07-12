@@ -74,7 +74,10 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
       }, { withCredentials: true });
 
       if (response.data.success) {
-        // JWT is stored in httpOnly cookie by the server — do NOT put it in localStorage
+        // JWT stored in httpOnly cookie AND localStorage for cross-domain Render deployment
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+        }
         localStorage.setItem('userRole', selectedRole);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         // Set default tab to sessions (Yoga Activity Tracker) for yoga_professional
