@@ -29,7 +29,7 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
             aria-label="Go to Home"
           >
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-teal-100 p-0.5">
-              <img src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
+              <img src="/images/uk_ayush_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <span className="text-white font-bold text-xl">
