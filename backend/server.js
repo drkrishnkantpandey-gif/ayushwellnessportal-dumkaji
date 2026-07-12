@@ -261,6 +261,44 @@ async function runTrainingCentresMigration() {
   }
 }
 
+async function runIncentiveApplicationsMigration() {
+  try {
+    await pool.query(`
+      ALTER TABLE yoga_incentive_applications 
+      ADD COLUMN IF NOT EXISTS region VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS project_type VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS proposed_location VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS other_location_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS gps_coordinates VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS proposed_centre_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS eligible_assets_amount NUMERIC,
+      ADD COLUMN IF NOT EXISTS site_total_area NUMERIC,
+      ADD COLUMN IF NOT EXISTS proposed_constructed_area NUMERIC,
+      ADD COLUMN IF NOT EXISTS services_offered TEXT[],
+      ADD COLUMN IF NOT EXISTS tentative_employees INTEGER,
+      ADD COLUMN IF NOT EXISTS ycb_certified_instructors INTEGER,
+      ADD COLUMN IF NOT EXISTS clinical_services_provided BOOLEAN,
+      ADD COLUMN IF NOT EXISTS certified_ayush_doctors INTEGER,
+      ADD COLUMN IF NOT EXISTS proposed_site_photo TEXT,
+      ADD COLUMN IF NOT EXISTS doc_ca_eca TEXT,
+      ADD COLUMN IF NOT EXISTS doc_entity_registration TEXT,
+      ADD COLUMN IF NOT EXISTS doc_map_approval TEXT,
+      ADD COLUMN IF NOT EXISTS doc_non_agri_land TEXT,
+      ADD COLUMN IF NOT EXISTS doc_land_possession TEXT,
+      ADD COLUMN IF NOT EXISTS doc_affidavit TEXT,
+      ADD COLUMN IF NOT EXISTS address TEXT,
+      ADD COLUMN IF NOT EXISTS applicant_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS designation VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS entity_type VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS email_id VARCHAR(255);
+    `);
+    console.log("Database Migration: yoga_incentive_applications table updated successfully");
+  } catch (err) {
+    console.error("Database Migration: Failed to update yoga_incentive_applications table:", err);
+  }
+}
+
 pool.query('SELECT NOW()', (err) => {
   if (err) {
     console.error('Error connecting to the database:', err);
@@ -268,6 +306,7 @@ pool.query('SELECT NOW()', (err) => {
     console.log('Successfully connected to the database');
     bootstrapAdmin();
     runTrainingCentresMigration();
+    runIncentiveApplicationsMigration();
   }
 });
 
