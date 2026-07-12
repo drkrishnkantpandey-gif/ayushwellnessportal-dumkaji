@@ -375,7 +375,7 @@ async function directorateForwardToDistrict(req, res) {
     const result = await db.query(
       `UPDATE yoga_incentive_applications
        SET status = 'FORWARDED_TO_DISTRICT', forwarded_to_district_at = NOW(), updated_at = NOW()
-       WHERE id = $1 AND status IN ('SUBMITTED', 'RESUBMITTED')
+       WHERE id = $1 AND status IN ('SUBMITTED', 'RESUBMITTED', 'DISTRICT_VERIFIED')
        RETURNING *`,
       [id]
     );

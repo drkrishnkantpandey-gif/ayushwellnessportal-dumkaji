@@ -96,6 +96,61 @@ const docUrl = (path) => {
   return `${API}${path}`;
 };
 
+// ── Additional Attachments (Resubmissions & Verification Reports) ─────────────
+function AdditionalAttachments({ events }) {
+  const eventsWithAttachments = (events || []).filter(
+    (ev) => ev.attachment_paths && ev.attachment_paths.length > 0
+  );
+
+  if (eventsWithAttachments.length === 0) return null;
+
+  return (
+    <div className="md:col-span-3 bg-slate-50 border border-slate-200 rounded-lg p-3 mt-3">
+      <p className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1 uppercase tracking-wide">
+        <Paperclip size={12} className="text-emerald-600" /> Additional Attachments (Resubmissions &amp; Reports)
+      </p>
+      <div className="space-y-2">
+        {eventsWithAttachments.map((ev, eventIdx) => {
+          const dateStr = new Date(ev.created_at).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          });
+          const roleLabel =
+            ev.actor_role === 'applicant'
+              ? 'Yoga Centre (Compliance)'
+              : ev.actor_role === 'district'
+              ? 'District Officer (Verification)'
+              : 'Directorate Nodal Officer';
+
+          return (
+            <div key={eventIdx} className="p-2 bg-white rounded border border-slate-100 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                <span>Uploaded by: <span className="text-slate-700">{ev.actor_name || roleLabel}</span></span>
+                <span>Date: {dateStr}</span>
+              </div>
+              {ev.comment && <p className="text-[10px] text-slate-500 italic">Comment/Notes: "{ev.comment}"</p>}
+              <div className="flex gap-2 flex-wrap">
+                {ev.attachment_paths.map((path, fileIdx) => (
+                  <a
+                    key={fileIdx}
+                    href={docUrl(path)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 transition"
+                  >
+                    <FileText size={10} /> View Attachment #{fileIdx + 1}
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Application History & Status Timeline ──────────────────────────────────
 function ApplicationTimeline({ events, createdAt }) {
   const allEvents = [...(events || [])];
@@ -1537,6 +1592,9 @@ export default function IncentiveApplication() {
                           </button>
                         </div>
                       )}
+
+                      {/* Additional compliance & report attachments */}
+                      <AdditionalAttachments events={app.events} />
 
                       {/* Application History & Timeline */}
                       <ApplicationTimeline events={app.events} createdAt={app.created_at} />
