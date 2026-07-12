@@ -277,6 +277,7 @@ function ResearchGrantReview() {
 function YogaTCDirectorateReview() {
   const [apps, setApps]         = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [expanded, setExpanded] = useState(null);
   const [modal, setModal]       = useState(null);
   const [actionType, setActionType] = useState("");
   const [remarks, setRemarks]   = useState("");
