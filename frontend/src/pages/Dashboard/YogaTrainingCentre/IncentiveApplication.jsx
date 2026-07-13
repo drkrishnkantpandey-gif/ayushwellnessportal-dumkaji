@@ -2037,6 +2037,47 @@ export default function IncentiveApplication() {
                             ].map((stage, sIdx) => {
                               const claim = (disbursalClaims[app.id] || []).find(c => c.claim_type === stage.type);
 
+                              const claimsForThisApp = disbursalClaims[app.id] || [];
+                              const firstClaim = claimsForThisApp.find(c => c.claim_type === 'FIRST_50');
+                              const secondClaim = claimsForThisApp.find(c => c.claim_type === 'SECOND_25');
+
+                              let isDisabled = false;
+                              let disabledReason = "";
+
+                              if (stage.type === 'SECOND_25') {
+                                if (!firstClaim || !['APPROVED_DISBURSAL', 'RELEASED'].includes(firstClaim.status)) {
+                                  isDisabled = true;
+                                  disabledReason = "1st claim must be approved by Directorate/SLRC first.";
+                                } else {
+                                  const submissionDate = new Date(firstClaim.created_at);
+                                  const currentDate = new Date();
+                                  const subYear = submissionDate.getFullYear();
+                                  const subMonth = submissionDate.getMonth();
+                                  const nextFYStartYear = subMonth >= 3 ? subYear + 1 : subYear;
+                                  const nextFYStartDate = new Date(nextFYStartYear, 3, 1);
+                                  if (currentDate < nextFYStartDate) {
+                                    isDisabled = true;
+                                    disabledReason = `Can only claim in next Financial Year (starts 01-April-${nextFYStartYear}).`;
+                                  }
+                                }
+                              } else if (stage.type === 'THIRD_25') {
+                                if (!secondClaim || !['APPROVED_DISBURSAL', 'RELEASED'].includes(secondClaim.status)) {
+                                  isDisabled = true;
+                                  disabledReason = "2nd claim must be approved by Directorate/SLRC first.";
+                                } else {
+                                  const submissionDate = new Date(secondClaim.created_at);
+                                  const currentDate = new Date();
+                                  const subYear = submissionDate.getFullYear();
+                                  const subMonth = submissionDate.getMonth();
+                                  const nextFYStartYear = subMonth >= 3 ? subYear + 1 : subYear;
+                                  const nextFYStartDate = new Date(nextFYStartYear, 3, 1);
+                                  if (currentDate < nextFYStartDate) {
+                                    isDisabled = true;
+                                    disabledReason = `Can only claim in next Financial Year (starts 01-April-${nextFYStartYear}).`;
+                                  }
+                                }
+                              }
+
                               return (
                                 <div key={stage.type} className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between space-y-4 transition ${claim ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-200'}`}>
                                   <div>
@@ -2112,6 +2153,17 @@ export default function IncentiveApplication() {
                                             Update &amp; Resubmit Claim
                                           </button>
                                         )}
+                                      </div>
+                                    ) : isDisabled ? (
+                                      <div className="space-y-1">
+                                        <button
+                                          type="button"
+                                          disabled
+                                          className="w-full text-center bg-slate-100 text-slate-400 font-bold py-1.5 rounded text-xs cursor-not-allowed border border-slate-200"
+                                        >
+                                          Submit claim details
+                                        </button>
+                                        <p className="text-[10px] text-amber-600 font-semibold leading-tight">{disabledReason}</p>
                                       </div>
                                     ) : (
                                       <button

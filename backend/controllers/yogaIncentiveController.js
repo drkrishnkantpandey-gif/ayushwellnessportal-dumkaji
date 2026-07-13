@@ -675,6 +675,46 @@ async function submitDisbursalClaim(req, res) {
       return res.status(400).json({ message: 'Workshop and Session details document is mandatory for 2nd and 3rd subsidy claims.' });
     }
 
+    // Fetch all claims for this application to validate sequence and financial year constraints
+    const allClaimsRes = await db.query(
+      `SELECT * FROM yoga_incentive_disbursal_claims WHERE application_id = $1`,
+      [applicationId]
+    );
+    const claims = allClaimsRes.rows;
+
+    const firstClaim = claims.find(c => c.claim_type === 'FIRST_50');
+    const secondClaim = claims.find(c => c.claim_type === 'SECOND_25');
+
+    if (claimType === 'SECOND_25') {
+      if (!firstClaim || !['APPROVED_DISBURSAL', 'RELEASED'].includes(firstClaim.status)) {
+        return res.status(400).json({ message: 'The 1st claim must be approved by Directorate/SLRC first.' });
+      }
+      // Check next financial year (starting 1st April of the next FY after 1st claim's submission)
+      const submissionDate = new Date(firstClaim.created_at);
+      const currentDate = new Date();
+      const subYear = submissionDate.getFullYear();
+      const subMonth = submissionDate.getMonth(); // 0-indexed: 0=Jan, 2=Mar, 3=Apr
+      const nextFYStartYear = subMonth >= 3 ? subYear + 1 : subYear;
+      const nextFYStartDate = new Date(nextFYStartYear, 3, 1); // 3=April (0-indexed)
+      if (currentDate < nextFYStartDate) {
+        return res.status(400).json({ message: `The 2nd claim can only be submitted in the next financial year (starting April 1st, ${nextFYStartYear}).` });
+      }
+    } else if (claimType === 'THIRD_25') {
+      if (!secondClaim || !['APPROVED_DISBURSAL', 'RELEASED'].includes(secondClaim.status)) {
+        return res.status(400).json({ message: 'The 2nd claim must be approved by Directorate/SLRC first.' });
+      }
+      // Check next financial year (starting 1st April of the next FY after 2nd claim's submission)
+      const submissionDate = new Date(secondClaim.created_at);
+      const currentDate = new Date();
+      const subYear = submissionDate.getFullYear();
+      const subMonth = submissionDate.getMonth();
+      const nextFYStartYear = subMonth >= 3 ? subYear + 1 : subYear;
+      const nextFYStartDate = new Date(nextFYStartYear, 3, 1);
+      if (currentDate < nextFYStartDate) {
+        return res.status(400).json({ message: `The 3rd claim can only be submitted in the next financial year (starting April 1st, ${nextFYStartYear}).` });
+      }
+    }
+
     // Check if a claim of this type already exists for this application
     const claimCheck = await db.query(
       `SELECT id, status FROM yoga_incentive_disbursal_claims 
