@@ -608,7 +608,7 @@ function generateCertificatePDF(app, fmtFn) {
     };
   </script>
 </body>
-</html>\`;
+</html>`;
 
   const win = window.open('', '_blank');
   win.document.write(html);
