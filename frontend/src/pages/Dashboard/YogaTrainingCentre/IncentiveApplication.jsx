@@ -82,7 +82,7 @@ const STATUS_META = {
   RESUBMITTED:              { label: "Resubmitted to Directorate", color: "bg-cyan-100 text-cyan-700",      icon: Clock        },
   FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700",  icon: Clock        },
   SLRC_APPROVED:            { label: "SLRC Approved", color: "bg-indigo-100 text-indigo-700",    icon: CheckCircle  },
-  IN_PRINCIPLE_APPROVED:    { label: "In-principle Application Given",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
+  IN_PRINCIPLE_APPROVED:    { label: "In-principle Approval Given",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
   DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700",        icon: XCircle      },
   SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700",        icon: XCircle      },
 };
