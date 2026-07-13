@@ -202,7 +202,7 @@ function generateCertificatePDF(app) {
         <img class="logo-img" src="${window.location.origin}/images/ayush_setu_logo.png" alt="AYUSH Logo" onerror="this.style.display='none'" />
       </div>
       <p class="gov-title">Government of Uttarakhand</p>
-      <p class="dept-title">Directorate of AYUSH, Dehradun</p>
+      <p class="dept-title">AYUSH & AYUSH Education, Uttarakhand</p>
       <h2 class="cert-heading">Certificate of In-Principle Approval</h2>
       <p class="cert-subheading">Yoga Centre Incentive Scheme</p>
     </div>
@@ -225,6 +225,14 @@ function generateCertificatePDF(app) {
         <td>${approvedDate}</td>
       </tr>
       <tr>
+        <th>Total Area Claimed</th>
+        <td>${app.site_total_area ? app.site_total_area + ' sq ft' : '—'}</td>
+      </tr>
+      <tr>
+        <th>Constructed Area Claimed</th>
+        <td>${app.proposed_constructed_area ? app.proposed_constructed_area + ' sq ft' : '—'}</td>
+      </tr>
+      <tr>
         <th>Total Project Cost</th>
         <td>${fmt(app.investment_amount)}</td>
       </tr>
@@ -237,21 +245,25 @@ function generateCertificatePDF(app) {
         <td>${app.subsidy_percentage || '—'}% (${app.region || '—'} Region)</td>
       </tr>
       <tr>
-        <th>Estimated Subsidy Amount</th>
+        <th>Tentative Subsidy Amount*</th>
         <td style="color: #065f46; font-size: 13px;">${fmt(app.subsidy_amount)}</td>
       </tr>
     </table>
 
+    <p style="font-size: 10px; color: #475569; margin-top: -25px; margin-bottom: 25px; font-weight: 500; font-style: italic;">
+      * This amount will be subjected to actual capital assets verification post commencement of Operation.
+    </p>
+
     <div class="footer-section">
       <div class="verification-info">
         <p><strong>Verification Details:</strong></p>
-        <p>This is a system-generated certificate issued by the Ayush Wellness Portal. The authenticity can be verified using the URN above.</p>
+        <p>This is a system-generated certificate issued by the AYUSH Setu Portal. The authenticity can be verified using the URN above.</p>
         <p style="margin-top: 4px; font-style: italic;">Note: This approval is subject to physical verification and compliance with terms & conditions of the scheme guidelines.</p>
       </div>
       <div class="signature-box">
         <div class="signature-line"></div>
         <p class="signature-title">Director</p>
-        <p class="signature-dept">Department of AYUSH, Uttarakhand</p>
+        <p class="signature-dept">Ayurvedic & Unani Services</p>
       </div>
     </div>
   </div>
