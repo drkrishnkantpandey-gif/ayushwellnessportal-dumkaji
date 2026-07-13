@@ -1803,7 +1803,7 @@ export default function IncentiveApplication() {
                     onClick={() => {
                       const newOpen = !open;
                       setExpandedId(newOpen ? app.id : null);
-                      if (newOpen && app.status === 'SLRC_APPROVED') {
+                      if (newOpen && ['SLRC_APPROVED', 'IN_PRINCIPLE_APPROVED'].includes(app.status)) {
                         fetchClaimsForApp(app.id);
                       }
                     }}
@@ -2014,7 +2014,7 @@ export default function IncentiveApplication() {
                       )}
 
                       {/* Incentive Disbursal Workflow */}
-                      {app.status === 'SLRC_APPROVED' && (
+                      {['SLRC_APPROVED', 'IN_PRINCIPLE_APPROVED'].includes(app.status) && (
                         <div className="md:col-span-3 bg-indigo-50/40 border border-indigo-100 rounded-2xl p-6 mt-4 space-y-6">
                           <div className="flex flex-col md:flex-row justify-between md:items-center border-b border-indigo-100/60 pb-4">
                             <div>

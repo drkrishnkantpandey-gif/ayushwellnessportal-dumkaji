@@ -642,8 +642,8 @@ async function submitDisbursalClaim(req, res) {
     }
 
     const app = appRes.rows[0];
-    if (app.status !== 'SLRC_APPROVED') {
-      return res.status(400).json({ message: 'Application must be SLRC Approved before submitting disbursal claims.' });
+    if (app.status !== 'SLRC_APPROVED' && app.status !== 'IN_PRINCIPLE_APPROVED') {
+      return res.status(400).json({ message: 'Application must be SLRC Approved or In-Principle Approved before submitting disbursal claims.' });
     }
 
     const {
