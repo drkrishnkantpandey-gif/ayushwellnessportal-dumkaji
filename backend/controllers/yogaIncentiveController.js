@@ -171,7 +171,10 @@ async function getMyApplications(req, res) {
   try {
     const userId = req.user.userId;
     const result = await db.query(
-      `SELECT * FROM yoga_incentive_applications WHERE user_id = $1 ORDER BY created_at DESC`,
+      `SELECT a.*, tc.centre_name AS entity_name
+       FROM yoga_incentive_applications a
+       LEFT JOIN training_centres tc ON tc.id = a.centre_id
+       WHERE a.user_id = $1 ORDER BY a.created_at DESC`,
       [userId]
     );
     const apps = result.rows;
@@ -280,9 +283,10 @@ async function getDistrictApplications(req, res) {
     }
 
     const result = await db.query(
-      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
+      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name, tc.centre_name AS entity_name
        FROM yoga_incentive_applications a
        JOIN users u ON u.id = a.user_id
+       LEFT JOIN training_centres tc ON tc.id = a.centre_id
        WHERE a.district = $1
        ORDER BY COALESCE(a.forwarded_to_district_at, a.created_at) DESC`,
       [district]
@@ -346,9 +350,10 @@ async function districtSubmitVerification(req, res) {
 async function getDirectorateApplications(req, res) {
   try {
     const result = await db.query(
-      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
+      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name, tc.centre_name AS entity_name
        FROM yoga_incentive_applications a
        JOIN users u ON u.id = a.user_id
+       LEFT JOIN training_centres tc ON tc.id = a.centre_id
        ORDER BY a.created_at DESC`
     );
     
@@ -537,9 +542,10 @@ async function directorateGrantInPrinciple(req, res) {
 async function getAllApplications(req, res) {
   try {
     const result = await db.query(
-      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name
+      `SELECT a.*, u.email as applicant_email, u.full_name as applicant_name, tc.centre_name AS entity_name
        FROM yoga_incentive_applications a
        JOIN users u ON u.id = a.user_id
+       LEFT JOIN training_centres tc ON tc.id = a.centre_id
        ORDER BY a.created_at DESC`
     );
     const apps = result.rows;

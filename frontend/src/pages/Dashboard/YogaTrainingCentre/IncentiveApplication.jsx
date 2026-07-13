@@ -5,7 +5,7 @@ import axiosInstance from '../../../config/axiosInstance';
 import {
   PlusCircle, FileText, CheckCircle, Clock,
   XCircle, ChevronDown, ChevronUp, Upload, IndianRupee, Mountain, Leaf,
-  CheckCircle2, X, Building, MapPin, Download, Calendar, Paperclip
+  CheckCircle2, X, Building, MapPin, Download, Calendar, Paperclip, Award
 } from "lucide-react";
 
 const REGIONS = [
@@ -82,7 +82,7 @@ const STATUS_META = {
   RESUBMITTED:              { label: "Resubmitted to Directorate", color: "bg-cyan-100 text-cyan-700",      icon: Clock        },
   FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700",  icon: Clock        },
   SLRC_APPROVED:            { label: "SLRC Approved", color: "bg-indigo-100 text-indigo-700",    icon: CheckCircle  },
-  IN_PRINCIPLE_APPROVED:    { label: "In-Principle Approved ✓",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
+  IN_PRINCIPLE_APPROVED:    { label: "In-principle Application Given",   color: "bg-emerald-100 text-emerald-700", icon: CheckCircle  },
   DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700",        icon: XCircle      },
   SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700",        icon: XCircle      },
 };
@@ -372,6 +372,247 @@ function generatePDF(app, regions, docsArr, fmtFn, docUrlFn) {
   win.document.write(html);
   win.document.close();
   win.onload = () => { win.print(); };
+}
+
+function generateCertificatePDF(app, fmtFn) {
+  const approvedDate = app.in_principle_approved_at
+    ? new Date(app.in_principle_approved_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+    : '—';
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>In-Principle Approval Certificate — ${app.upn || app.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fcfbf7;
+      color: #1e293b;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .certificate-container {
+      width: 100%;
+      max-width: 900px;
+      border: 12px double #b45309;
+      padding: 40px;
+      background-color: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+      position: relative;
+    }
+    .certificate-container::before {
+      content: "";
+      position: absolute;
+      top: 5px; left: 5px; right: 5px; bottom: 5px;
+      border: 2px solid #b45309;
+      pointer-events: none;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .gov-title {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .dept-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .logo-img {
+      height: 60px;
+      object-fit: contain;
+    }
+    .cert-heading {
+      font-family: 'Georgia', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #065f46;
+      margin: 15px 0 5px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .cert-subheading {
+      font-size: 11px;
+      color: #b45309;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+    .intro-text {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 0 20px;
+      color: #334155;
+    }
+    .highlight {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 35px;
+      font-size: 12px;
+    }
+    .details-table th, .details-table td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .details-table th {
+      background-color: #f8fafc;
+      font-weight: 700;
+      color: #475569;
+      width: 35%;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+    .details-table td {
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .footer-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 40px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 20px;
+    }
+    .verification-info {
+      font-size: 10px;
+      color: #64748b;
+      max-width: 60%;
+      line-height: 1.4;
+    }
+    .signature-box {
+      text-align: center;
+    }
+    .signature-line {
+      border-top: 1px solid #475569;
+      width: 160px;
+      margin: 0 auto 4px auto;
+    }
+    .signature-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .signature-dept {
+      font-size: 9px;
+      color: #64748b;
+    }
+    @media print {
+      body {
+        padding: 0;
+        background-color: #ffffff;
+      }
+      .certificate-container {
+        border-color: #b45309 !important;
+        box-shadow: none;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate-container">
+    <div class="header">
+      <div class="logo-container">
+        <img class="logo-img" src="${window.location.origin}/images/uk_ayush_logo.png" alt="Uttarakhand Logo" onerror="this.style.display='none'" />
+        <img class="logo-img" src="${window.location.origin}/images/ayush_setu_logo.png" alt="AYUSH Logo" onerror="this.style.display='none'" />
+      </div>
+      <p class="gov-title">Government of Uttarakhand</p>
+      <p class="dept-title">Directorate of AYUSH, Dehradun</p>
+      <h2 class="cert-heading">Certificate of In-Principle Approval</h2>
+      <p class="cert-subheading">Yoga Centre Incentive Scheme</p>
+    </div>
+
+    <p class="intro-text">
+      This is to certify that the application submitted by <span class="highlight">${app.applicant_name || '—'}</span> on behalf of entity <span class="highlight">${app.entity_name || app.centre_name || '—'}</span> (Type of Entity: <span class="highlight">${app.entity_type || '—'}</span>) for establishing a Yoga Centre under the project name <span class="highlight">${app.proposed_centre_name || app.centre_name || '—'}</span> located at <span class="highlight">${app.address || '—'}, District: ${app.district || '—'}</span> has been duly reviewed by the State Level Rule Committee (SLRC) and is hereby granted <span class="highlight" style="color: #065f46">In-Principle Approval</span> for financial incentives.
+    </p>
+
+    <table class="details-table">
+      <tr>
+        <th>Unique Registration Number (URN)</th>
+        <td>${app.upn || '—'}</td>
+      </tr>
+      <tr>
+        <th>In-Principle Order Number</th>
+        <td>${app.in_principle_order_number || '—'}</td>
+      </tr>
+      <tr>
+        <th>Approval Date</th>
+        <td>${approvedDate}</td>
+      </tr>
+      <tr>
+        <th>Total Project Cost</th>
+        <td>${fmtFn(app.investment_amount)}</td>
+      </tr>
+      <tr>
+        <th>Capital Assets for Subsidy (ECA)</th>
+        <td>${fmtFn(app.eligible_assets_amount || app.claim_amount)}</td>
+      </tr>
+      <tr>
+        <th>Approved Subsidy Percentage</th>
+        <td>${app.subsidy_percentage || '—'}% (${app.region || '—'} Region)</td>
+      </tr>
+      <tr>
+        <th>Estimated Subsidy Amount</th>
+        <td style="color: #065f46; font-size: 13px;">${fmtFn(app.subsidy_amount)}</td>
+      </tr>
+    </table>
+
+    <div class="footer-section">
+      <div class="verification-info">
+        <p><strong>Verification Details:</strong></p>
+        <p>This is a system-generated certificate issued by the Ayush Wellness Portal. The authenticity can be verified using the URN above.</p>
+        <p style="margin-top: 4px; font-style: italic;">Note: This approval is subject to physical verification and compliance with terms & conditions of the scheme guidelines.</p>
+      </div>
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <p class="signature-title">Director</p>
+        <p class="signature-dept">Department of AYUSH, Uttarakhand</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = () => {
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    };
+  </script>
+</body>
+</html>\`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 }
 
 export default function IncentiveApplication() {
@@ -1586,13 +1827,21 @@ export default function IncentiveApplication() {
                     <div className="mt-5 ml-12 grid md:grid-cols-3 gap-4 text-xs bg-slate-50 p-5 rounded-2xl border border-slate-200/60">
                       
                       {/* Download PDF button */}
-                      <div className="md:col-span-3 flex justify-end">
+                      <div className="md:col-span-3 flex justify-end gap-2">
                         <button
                           onClick={() => generatePDF(app, REGIONS, DOCS, fmt, docUrl)}
                           className="flex items-center gap-2 text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg shadow-sm transition"
                         >
                           <Download size={13} /> Download PDF
                         </button>
+                        {app.status === 'IN_PRINCIPLE_APPROVED' && (
+                          <button
+                            onClick={() => generateCertificatePDF(app, fmt)}
+                            className="flex items-center gap-2 text-xs bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-4 py-2 rounded-lg shadow-sm transition"
+                          >
+                            <Award size={13} /> Download Certificate
+                          </button>
+                        )}
                       </div>
 
                       <div className={`rounded-lg p-3 bg-white border border-slate-200/80`}>
