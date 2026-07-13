@@ -27,6 +27,7 @@ const {
   resubmitApplication,
   submitDisbursalClaim,
   getDisbursalClaims,
+  updateApplicationGpsCoordinates,
 } = require('../controllers/yogaIncentiveController');
 
 // Protected routes (require authentication)
@@ -125,5 +126,6 @@ router.post('/incentives/disbursal-claims', upload.fields([
 ]), submitDisbursalClaim);
 
 router.get('/incentives/:applicationId/disbursal-claims', getDisbursalClaims);
+router.put('/incentives/:id/gps', updateApplicationGpsCoordinates);
 
 module.exports = router;

@@ -635,6 +635,20 @@ export default function IncentiveApplication() {
   const [submitting, setSubmitting]     = useState(false);
   const [successMsg, setSuccessMsg]     = useState("");
   const [errorMsg, setErrorMsg]         = useState("");
+  const [editingGpsId, setEditingGpsId] = useState(null);
+  const [gpsValue, setGpsValue] = useState("");
+
+  const saveGpsCoordinates = async (appId) => {
+    try {
+      await axiosInstance.put(`${API}/api/training-centre/incentives/${appId}/gps`, { gpsCoordinates: gpsValue });
+      alert("GPS Coordinates updated successfully!");
+      setEditingGpsId(null);
+      setApplications(prev => prev.map(a => a.id === appId ? { ...a, gps_coordinates: gpsValue } : a));
+    } catch (e) {
+      console.error(e);
+      alert(e.response?.data?.message || "Failed to update GPS coordinates.");
+    }
+  };
 
   const [form, setForm] = useState({
     region: "",
@@ -1864,7 +1878,44 @@ export default function IncentiveApplication() {
                       <div className="bg-white rounded-lg p-3 border border-slate-200/80">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Proposed Site Location</p>
                         <p className="font-bold text-gray-800 text-sm mt-0.5">{app.proposed_location || "—"}</p>
-                        {app.gps_coordinates && <p className="text-xs text-slate-500 mt-1">GPS: {app.gps_coordinates}</p>}
+                        {editingGpsId === app.id ? (
+                          <div className="mt-1 flex gap-1">
+                            <input
+                              type="text"
+                              value={gpsValue}
+                              onChange={(e) => setGpsValue(e.target.value)}
+                              className="border px-2 py-1 text-xs rounded w-full focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 bg-white"
+                              placeholder="e.g. 30.3165, 78.0322"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveGpsCoordinates(app.id)}
+                              className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-1 rounded hover:bg-emerald-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingGpsId(null)}
+                              className="bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-1 rounded hover:bg-slate-300"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-slate-500">GPS: {app.gps_coordinates || '—'}</p>
+                            {!['FORWARDED_TO_SLRC', 'SLRC_APPROVED', 'SLRC_REJECTED', 'IN_PRINCIPLE_APPROVED', 'DIRECTORATE_REJECTED'].includes(app.status) && (
+                              <button
+                                type="button"
+                                onClick={() => { setEditingGpsId(app.id); setGpsValue(app.gps_coordinates || ""); }}
+                                className="text-indigo-600 hover:text-indigo-800 text-[10px] font-semibold flex items-center gap-1"
+                              >
+                                ✎ Edit
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                         <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Claimed Subsidy (Tentative)</p>

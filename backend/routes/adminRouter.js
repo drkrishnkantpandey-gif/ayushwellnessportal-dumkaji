@@ -24,6 +24,7 @@ const {
   revertClaimToApplicant,
   recommendClaimBySLRC,
   releaseClaimSubsidy,
+  updateApplicationGpsCoordinates,
 } = require('../controllers/yogaIncentiveController');
 
 const {
@@ -62,6 +63,9 @@ router.post('/fix-null-statuses', protect, isAdmin, adminController.fixNullRegis
 // ── District Officer — Yoga TC Incentive ─────────────────────────────────────
 router.get('/incentives/district',              protect, districtOnly, getDistrictApplications);
 router.put('/incentives/district/:id/verify',   protect, districtOnly, districtSubmitVerification);
+
+// ── Shared Gps Update — DO / Directorate / Admin ──────────────────────────────
+router.put('/incentives/:id/gps', protect, requireRole('directorate', 'admin', 'district_officer'), updateApplicationGpsCoordinates);
 
 // ── Directorate — Yoga TC Incentive ──────────────────────────────────────────
 router.get('/incentives/directorate',                       protect, directorateOnly, getDirectorateApplications);

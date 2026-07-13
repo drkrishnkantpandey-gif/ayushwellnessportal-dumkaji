@@ -528,6 +528,21 @@ function YogaTCIncentiveReview() {
   const [saving, setSaving]     = useState(false);
   const [msg, setMsg]           = useState("");
 
+  const [editingGpsId, setEditingGpsId] = useState(null);
+  const [gpsValue, setGpsValue] = useState("");
+
+  const saveGpsCoordinates = async (appId) => {
+    try {
+      await axiosInstance.put(`${API}/api/admin/incentives/${appId}/gps`, { gpsCoordinates: gpsValue });
+      alert("GPS Coordinates updated successfully!");
+      setEditingGpsId(null);
+      setApps(prev => prev.map(a => a.id === appId ? { ...a, gps_coordinates: gpsValue } : a));
+    } catch (e) {
+      console.error(e);
+      alert(e.response?.data?.message || "Failed to update GPS coordinates.");
+    }
+  };
+
   const [verificationFiles, setVerificationFiles] = useState([]);
 
   const handleVerificationFileSelect = async (fileList) => {
@@ -722,7 +737,44 @@ function YogaTCIncentiveReview() {
                         </div>
                         <div>
                           <span className="text-[10px] text-gray-400 font-bold block uppercase">GPS Coordinates</span>
-                          <span className="font-bold text-gray-700">{app.gps_coordinates || "—"}</span>
+                          {editingGpsId === app.id ? (
+                            <div className="mt-1 flex gap-1">
+                              <input
+                                type="text"
+                                value={gpsValue}
+                                onChange={(e) => setGpsValue(e.target.value)}
+                                className="border px-2 py-0.5 text-xs rounded w-32 focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 bg-white"
+                                placeholder="e.g. 30.3165, 78.0322"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => saveGpsCoordinates(app.id)}
+                                className="bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded hover:bg-emerald-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingGpsId(null)}
+                                className="bg-slate-200 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded hover:bg-slate-300"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-700">{app.gps_coordinates || "—"}</span>
+                              {app.status === 'FORWARDED_TO_DISTRICT' && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingGpsId(app.id); setGpsValue(app.gps_coordinates || ""); }}
+                                  className="text-indigo-600 hover:text-indigo-800 text-[10px] font-semibold"
+                                >
+                                  ✎ Edit
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div>
                           <span className="text-[10px] text-gray-400 font-bold block uppercase">District</span>

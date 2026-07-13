@@ -964,6 +964,82 @@ async function releaseClaimSubsidy(req, res) {
   }
 }
 
+// Update Application GPS Coordinates
+async function updateApplicationGpsCoordinates(req, res) {
+  try {
+    const { id } = req.params;
+    const { gpsCoordinates } = req.body;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    if (!gpsCoordinates) {
+      return res.status(400).json({ message: 'GPS coordinates are required.' });
+    }
+
+    // 1. Fetch the application
+    const appRes = await db.query(
+      `SELECT * FROM yoga_incentive_applications WHERE id = $1`,
+      [id]
+    );
+    if (!appRes.rows.length) {
+      return res.status(404).json({ message: 'Application not found.' });
+    }
+
+    const app = appRes.rows[0];
+
+    // 2. Validate current status is before SLRC forwarding
+    const forbiddenStatuses = ['FORWARDED_TO_SLRC', 'SLRC_APPROVED', 'SLRC_REJECTED', 'IN_PRINCIPLE_APPROVED', 'DIRECTORATE_REJECTED'];
+    if (forbiddenStatuses.includes(app.status)) {
+      return res.status(400).json({ message: 'Cannot edit GPS coordinates after application is forwarded to SLRC.' });
+    }
+
+    // 3. Role-based authorization
+    if (userRole === 'training_centre') {
+      // Yoga Centre can only edit their own application
+      if (app.user_id !== userId) {
+        return res.status(403).json({ message: 'Forbidden: You can only edit your own application.' });
+      }
+    } else if (userRole === 'district_officer') {
+      // District officer can only edit if application is currently forwarded to their district
+      const doRes = await db.query(`SELECT district FROM users WHERE id = $1`, [userId]);
+      const doDistrict = doRes.rows[0]?.district;
+      if (app.status !== 'FORWARDED_TO_DISTRICT' || app.district !== doDistrict) {
+        return res.status(403).json({ message: 'Forbidden: You can only edit GPS coordinates when the application is forwarded to your district.' });
+      }
+    } else if (userRole !== 'directorate' && userRole !== 'admin') {
+      // Other roles are forbidden
+      return res.status(403).json({ message: 'Forbidden: Invalid role for this action.' });
+    }
+
+    // 4. Update coordinates in database
+    const updateResult = await db.query(
+      `UPDATE yoga_incentive_applications 
+       SET gps_coordinates = $1, updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING *`,
+      [gpsCoordinates, id]
+    );
+
+    const updatedApp = updateResult.rows[0];
+
+    // 5. Log the event
+    const actorName = await getActorName(userId);
+    await logEvent(
+      id,
+      'GPS_COORDINATES_UPDATED',
+      userRole === 'training_centre' ? 'applicant' : 'directorate',
+      userId,
+      actorName,
+      `GPS coordinates updated to ${gpsCoordinates} by ${userRole}`
+    );
+
+    res.json({ success: true, message: 'GPS coordinates updated successfully.', data: updatedApp });
+  } catch (err) {
+    console.error('updateApplicationGpsCoordinates error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -986,4 +1062,5 @@ module.exports = {
   revertClaimToApplicant,
   recommendClaimBySLRC,
   releaseClaimSubsidy,
+  updateApplicationGpsCoordinates,
 };
