@@ -94,13 +94,6 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
             >
               Verify Certificate
             </button>
-            <button 
-              onClick={() => setCurrentPage('trainer')}
-              className="text-white hover:text-teal-200 transition"
-            >
-              Find Trainer
-            </button>
-            
             <select 
               value={language} 
               onChange={(e) => setLanguage(e.target.value)}
@@ -143,7 +136,6 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
           <div className="px-4 space-y-3">
             <button onClick={() => { setCurrentPage('home'); setMobileMenuOpen(false); }} className="block w-full text-left text-white py-2">Home</button>
             <button onClick={() => { setCurrentPage('verify'); setMobileMenuOpen(false); }} className="block w-full text-left text-white py-2">Verify Certificate</button>
-            <button onClick={() => { setCurrentPage('trainer'); setMobileMenuOpen(false); }} className="block w-full text-left text-white py-2">Find Trainer</button>
             <button 
               onClick={() => { setCurrentPage(isLoggedIn ? 'dashboard' : 'login'); setMobileMenuOpen(false); }}
               className="w-full bg-white text-teal-700 px-4 py-2 rounded-lg font-semibold"
