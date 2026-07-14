@@ -9,7 +9,6 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
     home: { EN: "Home", HI: "होम" },
     verify: { EN: "Verify Certificate", HI: "प्रमाणपत्र सत्यापित करें" },
     registry: { EN: "Registry", HI: "रजिस्ट्री" },
-    trainer: { EN: "Find Trainer", HI: "प्रशिक्षक खोजें" },
     dashboard: { EN: "Dashboard", HI: "डैशबोर्ड" },
     login: { EN: "Login / Register", HI: "लॉगिन / रजिस्टर" },
     logout: { EN: "Logout", HI: "लॉगआउट" },
@@ -63,14 +62,6 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
               aria-label="Public Registry"
             >
               {text.registry[language]}
-            </button>
-
-            <button
-              onClick={() => setCurrentPage("trainer")}
-              className="text-white hover:text-teal-200 transition"
-              aria-label="Find Trainer"
-            >
-              {text.trainer[language]}
             </button>
 
             <select
@@ -149,17 +140,6 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
               aria-label="Public Registry"
             >
               {text.registry[language]}
-            </button>
-
-            <button
-              onClick={() => {
-                setCurrentPage("trainer");
-                setMobileMenuOpen(false);
-              }}
-              className="block w-full text-left text-white py-2"
-              aria-label="Find Trainer"
-            >
-              {text.trainer[language]}
             </button>
 
             <button
