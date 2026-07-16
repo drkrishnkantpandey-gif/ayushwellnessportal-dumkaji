@@ -25,22 +25,9 @@ const ORG_TYPES = [
   "Health Organization"
 ];
 
-const ResearchInstitutionForm = ({ formData, setFormData }) => {
+const ResearchInstitutionForm = ({ formData, setFormData, handleFileChange }) => {
   const handleChange = (field, val) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
-  };
-
-  const handleFileChange = (field, e) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      if (e.target.multiple) {
-        // Limit up to 5 files
-        const fileList = Array.from(files).slice(0, 5);
-        handleChange(field, fileList);
-      } else {
-        handleChange(field, files[0]);
-      }
-    }
   };
 
   return (
@@ -333,14 +320,21 @@ const ResearchInstitutionForm = ({ formData, setFormData }) => {
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => handleFileChange("orgRegDoc", e)}
-              required
+              onChange={(e) => handleFileChange("orgRegDoc", e.target.files)}
+              required={!formData.orgRegDoc?.filename}
               className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
             />
             {formData.orgRegDoc && (
-              <p className="mt-1 text-xs text-green-600 font-semibold">
-                ✓ {formData.orgRegDoc.name}
-              </p>
+              formData.orgRegDoc.uploading ? (
+                <div className="flex items-center gap-2 mt-1 text-xs text-teal-600">
+                  <div className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                  <span>Uploading Doc: {formData.orgRegDoc.progress}%</span>
+                </div>
+              ) : (
+                <p className="text-xs text-green-600 mt-1 font-semibold">
+                  ✓ Attached: {formData.orgRegDoc.name}
+                </p>
+              )
             )}
           </div>
 
@@ -352,16 +346,23 @@ const ResearchInstitutionForm = ({ formData, setFormData }) => {
               type="file"
               multiple
               accept=".pdf"
-              onChange={(e) => handleFileChange("relevantDocs", e)}
-              required
+              onChange={(e) => handleFileChange("relevantDocs", e.target.files)}
+              required={!formData.relevantDocs || formData.relevantDocs.length === 0}
               className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
             />
             {formData.relevantDocs && formData.relevantDocs.length > 0 && (
               <div className="mt-2 space-y-1">
                 {Array.from(formData.relevantDocs).map((f, i) => (
-                  <p key={i} className="text-xs text-green-600 font-semibold">
-                    ✓ {f.name}
-                  </p>
+                  f.uploading ? (
+                    <div key={i} className="flex items-center gap-2 text-xs text-teal-600">
+                      <div className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                      <span>Uploading {f.name}: {f.progress}%</span>
+                    </div>
+                  ) : (
+                    <p key={i} className="text-xs text-green-600 font-semibold">
+                      ✓ Attached: {f.name}
+                    </p>
+                  )
                 ))}
               </div>
             )}

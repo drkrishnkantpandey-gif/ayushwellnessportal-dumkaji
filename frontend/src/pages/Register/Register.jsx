@@ -267,7 +267,13 @@ const Register = ({ setCurrentPage, language }) => {
       case "admin":
         return <AdminForm formData={formData} setFormData={setFormData} />;
       case "research_org":
-        return <ResearchInstitutionForm formData={formData} setFormData={setFormData} />;
+        return (
+          <ResearchInstitutionForm
+            formData={formData}
+            setFormData={setFormData}
+            handleFileChange={handleFileChange}
+          />
+        );
       default:
         return (
           <p className="text-sm text-gray-600">
