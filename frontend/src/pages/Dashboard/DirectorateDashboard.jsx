@@ -3059,6 +3059,118 @@ const Directorate = ({ activeTab }) => {
                       </div>
                     </div>
                   </div>
+                ) : selectedEntity.role === "research_org" ? (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2">Research Institution Details</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Applicant Name</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_applicant_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Designation</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_designation || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Organization Name</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_organization_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Organization Type</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_organization_type || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">District</span> 
+                        <span className="text-gray-900">{selectedEntity.district || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Work Experience (Years)</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_work_experience_years || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Email Address</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_email || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Contact Number</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_contact_number || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Registration Doc ID</span> 
+                        <span className="text-gray-900">{selectedEntity.ro_registration_doc_id || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Website</span>
+                        {selectedEntity.ro_website ? (
+                          <a href={selectedEntity.ro_website} target="_blank" rel="noreferrer" className="text-teal-600 font-semibold hover:underline text-sm break-all">
+                            {selectedEntity.ro_website}
+                          </a>
+                        ) : <span className="text-gray-500">N/A</span>}
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">GPS Coordinates</span> 
+                        <span className="text-gray-900">
+                          {selectedEntity.ro_latitude && selectedEntity.ro_longitude ? `${selectedEntity.ro_latitude}, ${selectedEntity.ro_longitude}` : "N/A"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Funding Received till Date</span> 
+                        <span className="text-gray-900">₹{parseFloat(selectedEntity.ro_funding_received || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block">Physical Address</span> 
+                        <span className="text-gray-900 block bg-gray-50 p-3 rounded-lg border border-gray-100">{selectedEntity.ro_physical_address || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block">Projects Completed</span> 
+                        <span className="text-gray-900 block bg-gray-50 p-3 rounded-lg border border-gray-100 whitespace-pre-line">{selectedEntity.ro_projects_completed || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block">Brief Association with Yoga</span> 
+                        <span className="text-gray-900 block bg-gray-50 p-3 rounded-lg border border-gray-100 whitespace-pre-line">{selectedEntity.ro_association_with_yoga || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block">Organization Affiliations</span> 
+                        <span className="text-gray-900 block bg-gray-50 p-3 rounded-lg border border-gray-100 whitespace-pre-line">{selectedEntity.ro_affiliations || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                        <div className="font-bold text-slate-700 text-xs uppercase tracking-wider">Uploaded Documents</div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="font-semibold text-gray-800 block text-xs mb-1">Registration Document</span>
+                            {selectedEntity.ro_registration_doc_path ? (
+                              <a 
+                                href={`${API}/${selectedEntity.ro_registration_doc_path}`} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-1 text-sm"
+                              >
+                                <FileText size={14} /> View Registration Doc
+                              </a>
+                            ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-800 block text-xs mb-1">Relevant Documents</span>
+                            {selectedEntity.ro_relevant_docs_paths && selectedEntity.ro_relevant_docs_paths.length > 0 ? (
+                              <div className="space-y-1.5">
+                                {selectedEntity.ro_relevant_docs_paths.map((path, idx) => (
+                                  <a 
+                                    key={idx}
+                                    href={`${API}/${path}`} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="text-teal-600 font-semibold hover:underline flex items-center gap-1 text-sm"
+                                  >
+                                    <FileText size={14} /> Document #{idx + 1}
+                                  </a>
+                                ))}
+                              </div>
+                            ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2">Profile Details</h4>

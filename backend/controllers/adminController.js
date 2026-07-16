@@ -381,7 +381,14 @@ const getPendingRegistrations = async (req, res) => {
                t.operational_business_certificate_path as tc_operational_business_certificate,
                t.id_proof_type as tc_id_proof_type, t.id_proof_number as tc_id_proof_number,
                t.id_proof_path as tc_id_proof_path, t.gps_coordinates as tc_gps_coordinates, t.website as tc_website,
-               t.address as tc_address
+               t.address as tc_address,
+               r.applicant_name as ro_applicant_name, r.designation as ro_designation, r.organization_type as ro_organization_type,
+               r.organization_name as ro_organization_name, r.work_experience_years as ro_work_experience_years,
+               r.email as ro_email, r.contact_number as ro_contact_number, r.registration_doc_path as ro_registration_doc_path,
+               r.registration_doc_id as ro_registration_doc_id, r.website as ro_website, r.physical_address as ro_physical_address,
+               r.latitude as ro_latitude, r.longitude as ro_longitude, r.projects_completed as ro_projects_completed,
+               r.funding_received as ro_funding_received, r.association_with_yoga as ro_association_with_yoga,
+               r.affiliations as ro_affiliations, r.relevant_docs_paths as ro_relevant_docs_paths
         FROM users u
         LEFT JOIN wellness_centres w ON w.user_id = u.id
         LEFT JOIN training_centres t ON t.user_id = u.id
