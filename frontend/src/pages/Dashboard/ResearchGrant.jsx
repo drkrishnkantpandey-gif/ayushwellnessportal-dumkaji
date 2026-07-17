@@ -557,6 +557,12 @@ export default function ResearchGrant() {
             <p><span className="text-gray-500">Principal Investigator:</span> {form.pi_name || "—"}</p>
             <p><span className="text-gray-500">Co-PIs:</span> {form.co_pis.filter(c => c.name).length}</p>
             <p><span className="text-gray-500">Requested Amount:</span> <strong className="text-blue-700">{fmt(parseFloat(form.requested_amount) || 0)}</strong></p>
+          </div>
+        </div>
+      );
+
+      default: return null;
+    }
   };
 
   const renderProfileTab = () => {
