@@ -684,7 +684,7 @@ const updateUserProfile = async (req, res) => {
     } else if (role === 'yoga_professional') {
       await client.query('UPDATE yoga_professional_profile SET name = $1, phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'research_org') {
-      await client.query('UPDATE research_org_profile SET name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+      await client.query('UPDATE research_org_profile SET applicant_name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'ayush_college') {
       await client.query('UPDATE ayush_colleges SET college_name = $1, phone = $2 WHERE id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'ayush_hospital') {

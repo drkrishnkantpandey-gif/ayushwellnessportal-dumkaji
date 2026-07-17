@@ -203,6 +203,106 @@ async function directorateDecision(req, res) {
   }
 }
 
+// ── GET /api/research-grants/profile ─────────────────────────────────────────
+async function getResearchOrgProfile(req, res) {
+  try {
+    const userId = req.user.id || req.user.userId;
+    const result = await db.query(
+      'SELECT * FROM research_org_profile WHERE user_id = $1',
+      [userId]
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, message: 'Profile not found.' });
+    }
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('getResearchOrgProfile:', err);
+    res.status(500).json({ message: 'Server error fetching profile.' });
+  }
+}
+
+// ── PUT /api/research-grants/profile ─────────────────────────────────────────
+async function updateResearchOrgProfile(req, res) {
+  try {
+    const userId = req.user.id || req.user.userId;
+    const {
+      applicant_name, designation, organization_type, organization_name,
+      district, work_experience_years, email, contact_number,
+      registration_doc_id, website, physical_address,
+      latitude, longitude, projects_completed, funding_received,
+      association_with_yoga, affiliations
+    } = req.body;
+
+    if (!applicant_name || !organization_name || !organization_type || !contact_number) {
+      return res.status(400).json({ message: 'Missing required profile fields.' });
+    }
+
+    let regDocPath = null;
+    let relevantDocsPaths = null;
+
+    if (req.files) {
+      if (req.files.registration_doc && req.files.registration_doc[0]) {
+        regDocPath = req.files.registration_doc[0].path;
+      }
+      if (req.files.relevant_docs) {
+        relevantDocsPaths = req.files.relevant_docs.map(f => f.path);
+      }
+    }
+
+    await db.query('BEGIN');
+
+    // Update users table
+    await db.query(
+      'UPDATE users SET full_name = $1, phone = $2, email = LOWER($3) WHERE id = $4',
+      [applicant_name, contact_number, email, userId]
+    );
+
+    // Update research_org_profile table
+    let profileQuery = `
+      UPDATE research_org_profile
+      SET applicant_name = $1, designation = $2, organization_type = $3, organization_name = $4,
+          district = $5, work_experience_years = $6, email = $7, contact_number = $8,
+          registration_doc_id = $9, website = $10, physical_address = $11,
+          latitude = $12, longitude = $13, projects_completed = $14, funding_received = $15,
+          association_with_yoga = $16, affiliations = $17, updated_at = NOW()
+    `;
+    const params = [
+      applicant_name, designation, organization_type, organization_name,
+      district, parseInt(work_experience_years) || 0, email, contact_number,
+      registration_doc_id, website || null, physical_address,
+      parseFloat(latitude) || 0, parseFloat(longitude) || 0, projects_completed, parseFloat(funding_received) || 0,
+      association_with_yoga, affiliations
+    ];
+
+    let paramIndex = 18;
+
+    if (regDocPath) {
+      profileQuery += `, registration_doc_path = $${paramIndex}`;
+      params.push(regDocPath);
+      paramIndex++;
+    }
+
+    if (relevantDocsPaths && relevantDocsPaths.length > 0) {
+      profileQuery += `, relevant_docs_paths = $${paramIndex}`;
+      params.push(relevantDocsPaths);
+      paramIndex++;
+    }
+
+    profileQuery += ` WHERE user_id = $${paramIndex} RETURNING *`;
+    params.push(userId);
+
+    const result = await db.query(profileQuery, params);
+
+    await db.query('COMMIT');
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    await db.query('ROLLBACK');
+    console.error('updateResearchOrgProfile:', err);
+    res.status(500).json({ message: 'Server error updating profile.' });
+  }
+}
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -210,4 +310,6 @@ module.exports = {
   getAllApplications,
   getPendingApplications,
   directorateDecision,
+  getResearchOrgProfile,
+  updateResearchOrgProfile,
 };
