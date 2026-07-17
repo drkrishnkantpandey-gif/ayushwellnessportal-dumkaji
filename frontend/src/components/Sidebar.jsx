@@ -76,6 +76,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
   const researchOrgMenu = [
     { id: "research", icon: GraduationCap, label: "Research Grant Applications" },
     { id: "profile", icon: User, label: "Institution Profile" },
+    { id: "settings", icon: Users, label: "Account Settings" },
   ];
 
   // Institution menu items

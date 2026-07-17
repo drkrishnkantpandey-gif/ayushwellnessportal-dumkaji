@@ -2,6 +2,20 @@ import React, { useState, useEffect } from "react";
 import axiosInstance from "../../config/axiosInstance";
 import API from "../../config/api";
 import { User, Mail, Phone, Lock, Save, FileText, Award, Building2, MapPin, Briefcase } from "lucide-react";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix default marker icon issue for React-Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
 
 const ORG_TYPES = [
   { value: "NGO",                label: "NGO / Non-Governmental Organisation" },
@@ -11,12 +25,26 @@ const ORG_TYPES = [
   { value: "COLLEGE",            label: "College (with full-time PG course in Yoga)" },
 ];
 
+const DISTRICT_OPTIONS = [
+  "Almora",
+  "Bageshwar",
+  "Chamoli",
+  "Champawat",
+  "Dehradun",
+  "Haridwar",
+  "Nainital",
+  "Pauri Garhwal",
+  "Pithoragarh",
+  "Rudraprayag",
+  "Tehri Garhwal",
+  "Udham Singh Nagar",
+  "Uttarkashi"
+];
+
 export default function ResearchOrgProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ password: "", confirmPassword: "" });
-  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -50,40 +78,30 @@ export default function ResearchOrgProfile() {
     }
   };
 
-  const handlePasswordSave = async (e) => {
-    e.preventDefault();
-    if (!passwordForm.password || !passwordForm.confirmPassword) {
-      return alert("Please fill in both password fields.");
-    }
-    if (passwordForm.password !== passwordForm.confirmPassword) {
-      return alert("Passwords do not match.");
-    }
-    if (passwordForm.password.length < 8) {
-      return alert("Password must be at least 8 characters long.");
-    }
-    const hasUpper = /[A-Z]/.test(passwordForm.password);
-    const hasLower = /[a-z]/.test(passwordForm.password);
-    const hasNumber = /[0-9]/.test(passwordForm.password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(passwordForm.password);
-    if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
-      return alert("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
-    }
+  // Helper map controller to update map view
+  function ChangeView({ center }) {
+    const map = useMap();
+    useEffect(() => {
+      if (center && center[0] && center[1]) {
+        map.setView(center, map.getZoom());
+      }
+    }, [center, map]);
+    return null;
+  }
 
-    setPasswordSaving(true);
-    try {
-      await axiosInstance.post(`${API}/api/auth/update-profile`, {
-        fullName: profile.applicant_name,
-        phone: profile.contact_number,
-        password: passwordForm.password
-      });
-      alert("Password changed successfully!");
-      setPasswordForm({ password: "", confirmPassword: "" });
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to change password.");
-    } finally {
-      setPasswordSaving(false);
-    }
-  };
+  // Click handler on map
+  function MapEvents() {
+    useMapEvents({
+      click(e) {
+        setProfile(prev => ({
+          ...prev,
+          latitude: Number(e.latlng.lat.toFixed(6)),
+          longitude: Number(e.latlng.lng.toFixed(6))
+        }));
+      }
+    });
+    return null;
+  }
 
   if (loading) {
     return <div className="p-8 text-center text-teal-600 font-semibold">Loading profile details...</div>;
@@ -93,13 +111,17 @@ export default function ResearchOrgProfile() {
     return <div className="p-8 text-center text-red-500 font-semibold">Profile details could not be loaded.</div>;
   }
 
+  // Fallback to Dehradun coordinates if not set
+  const lat = parseFloat(profile.latitude) || 30.3165;
+  const lng = parseFloat(profile.longitude) || 78.0322;
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Institution Profile</h1>
         <p className="text-sm text-gray-500 mt-1">
-          View and update your registered Research Institution profile and credentials
+          View and update your registered Research Institution profile
         </p>
       </div>
 
@@ -115,48 +137,60 @@ export default function ResearchOrgProfile() {
           </span>
         </div>
 
-        {/* Section 1: Non-Editable Institutional Info (Greyed out) */}
+        {/* General & Institutional Info (Editable except Email ID) */}
         <div className="space-y-4">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Verified Registry Fields (Non-Editable)</h3>
-          <div className="grid md:grid-cols-2 gap-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+          <h3 className="text-xs font-bold text-teal-600 uppercase tracking-wider">Institutional Information</h3>
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Organization Name</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Organization Name <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
-                className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-sm cursor-not-allowed" 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
                 value={profile.organization_name || ""} 
-                disabled 
+                onChange={(e) => setProfile(prev => ({ ...prev, organization_name: e.target.value }))}
+                required 
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Organization Type</label>
-              <input 
-                type="text" 
-                className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-sm cursor-not-allowed" 
-                value={ORG_TYPES.find(t => t.value === profile.organization_type)?.label || profile.organization_type || ""} 
-                disabled 
-              />
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Organization Type <span className="text-red-500">*</span></label>
+              <select 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" 
+                value={profile.organization_type || ""} 
+                onChange={(e) => setProfile(prev => ({ ...prev, organization_type: e.target.value }))}
+                required
+              >
+                <option value="">-- Select Type --</option>
+                {ORG_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Assigned District</label>
-              <input 
-                type="text" 
-                className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-sm cursor-not-allowed" 
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Assigned District <span className="text-red-500">*</span></label>
+              <select 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white" 
                 value={profile.district || ""} 
-                disabled 
-              />
+                onChange={(e) => setProfile(prev => ({ ...prev, district: e.target.value }))}
+                required
+              >
+                <option value="">-- Select District --</option>
+                {DISTRICT_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Registration Doc ID</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Registration Doc ID <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
-                className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-sm cursor-not-allowed" 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
                 value={profile.registration_doc_id || ""} 
-                disabled 
+                onChange={(e) => setProfile(prev => ({ ...prev, registration_doc_id: e.target.value }))}
+                required 
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Email Address</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Email Address (Non-Editable)</label>
               <input 
                 type="text" 
                 className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-sm cursor-not-allowed" 
@@ -165,19 +199,62 @@ export default function ResearchOrgProfile() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">GPS Coordinates</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Organization Website</label>
               <input 
-                type="text" 
-                className="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-lg px-3 py-2 text-sm cursor-not-allowed" 
-                value={profile.latitude && profile.longitude ? `${profile.latitude}, ${profile.longitude}` : "N/A"} 
-                disabled 
+                type="url" 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
+                value={profile.website || ""} 
+                onChange={(e) => setProfile(prev => ({ ...prev, website: e.target.value }))}
+                placeholder="https://example.org"
               />
             </div>
           </div>
         </div>
 
+        {/* GPS Map & Coordinates Section */}
+        <div className="space-y-4 border-t pt-6">
+          <h3 className="text-xs font-bold text-teal-600 uppercase tracking-wider">Location Map &amp; Coordinates</h3>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">GPS Latitude <span className="text-red-500">*</span></label>
+              <input 
+                type="number" 
+                step="any"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
+                value={profile.latitude || ""} 
+                onChange={(e) => setProfile(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">GPS Longitude <span className="text-red-500">*</span></label>
+              <input 
+                type="number" 
+                step="any"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
+                value={profile.longitude || ""} 
+                onChange={(e) => setProfile(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
+                required 
+              />
+            </div>
+          </div>
+
+          <div className="border border-gray-200 rounded-xl overflow-hidden h-64 relative z-0">
+            <MapContainer center={[lat, lng]} zoom={13} className="h-full w-full">
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker position={[lat, lng]} />
+              <ChangeView center={[lat, lng]} />
+              <MapEvents />
+            </MapContainer>
+            <div className="absolute bottom-2 left-2 z-[1000] bg-white/95 px-3 py-1 rounded shadow text-[10px] text-gray-600">
+              Click on the map to automatically pin coordinates
+            </div>
+          </div>
+        </div>
+
         {/* Section 2: Editable Applicant & General Info */}
-        <div className="space-y-4">
+        <div className="space-y-4 border-t pt-6">
           <h3 className="text-xs font-bold text-teal-600 uppercase tracking-wider">General Information</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
@@ -231,16 +308,6 @@ export default function ResearchOrgProfile() {
                 required 
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Organization Website</label>
-              <input 
-                type="url" 
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" 
-                value={profile.website || ""} 
-                onChange={(e) => setProfile(prev => ({ ...prev, website: e.target.value }))}
-                placeholder="https://example.org"
-              />
-            </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-gray-700 mb-1">Physical Address <span className="text-red-500">*</span></label>
               <textarea 
@@ -255,7 +322,7 @@ export default function ResearchOrgProfile() {
         </div>
 
         {/* Section 3: Yoga & Research Background */}
-        <div className="space-y-4">
+        <div className="space-y-4 border-t pt-6">
           <h3 className="text-xs font-bold text-teal-600 uppercase tracking-wider">Research & Yoga Background</h3>
           <div className="space-y-4">
             <div>
@@ -340,50 +407,6 @@ export default function ResearchOrgProfile() {
             className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition text-sm inline-flex items-center gap-2 shadow-sm"
           >
             <Save size={16} /> {saving ? "Saving..." : "Save Profile Details"}
-          </button>
-        </div>
-      </form>
-
-      {/* Change Password Card */}
-      <form onSubmit={handlePasswordSave} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-        <div className="border-b pb-4 flex items-center gap-2 text-blue-700">
-          <Lock size={18} />
-          <h2 className="text-lg font-bold text-gray-800">Change Password</h2>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">New Password <span className="text-red-500">*</span></label>
-            <input 
-              type="password" 
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              value={passwordForm.password}
-              onChange={(e) => setPasswordForm(p => ({ ...p, password: e.target.value }))}
-              placeholder="Minimum 8 chars with uppercase, lowercase, digits & symbols"
-              required 
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm New Password <span className="text-red-500">*</span></label>
-            <input 
-              type="password" 
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              value={passwordForm.confirmPassword}
-              onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
-              placeholder="Re-enter new password"
-              required 
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button 
-            type="submit" 
-            disabled={passwordSaving}
-            className="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-60 transition text-sm inline-flex items-center gap-2 shadow-sm"
-          >
-            <Lock size={16} /> {passwordSaving ? "Changing..." : "Change Password"}
           </button>
         </div>
       </form>
