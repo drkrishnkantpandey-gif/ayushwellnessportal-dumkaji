@@ -178,6 +178,8 @@ export default function ResearchGrant() {
   const [submitting, setSubmitting]     = useState(false);
   const [successMsg, setSuccessMsg]     = useState("");
   const [expandedId, setExpandedId]     = useState(null);
+  const [acceptingApplications, setAcceptingApplications] = useState(true);
+  const [settingsMode, setSettingsMode] = useState("AUTO");
 
   const activeWindow = getActiveWindow();
 
@@ -186,6 +188,12 @@ export default function ResearchGrant() {
     try {
       const r = await axiosInstance.get(`${API}/api/research-grants`, { headers });
       setApplications(r.data.data || []);
+
+      const settingsRes = await axiosInstance.get(`${API}/api/research-grants/settings`);
+      if (settingsRes.data.success) {
+        setAcceptingApplications(settingsRes.data.isCurrentlyAccepting);
+        setSettingsMode(settingsRes.data.setting);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -511,8 +519,18 @@ export default function ResearchGrant() {
           </p>
         </div>
         <button
-          onClick={() => { setShowForm(!showForm); setSuccessMsg(""); setStep(1); }}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
+          onClick={() => {
+            if (!acceptingApplications) return;
+            setShowForm(!showForm); 
+            setSuccessMsg(""); 
+            setStep(1);
+          }}
+          disabled={!acceptingApplications}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${
+            acceptingApplications
+              ? "bg-emerald-600 text-white hover:bg-emerald-700"
+              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+          }`}
         >
           <PlusCircle size={16} /> New Application
         </button>
@@ -520,19 +538,27 @@ export default function ResearchGrant() {
 
       {/* ── Application window banner ── */}
       <div className={`border rounded-xl p-4 flex items-start gap-3 ${
-        activeWindow ? "bg-green-50 border-green-300" : "bg-amber-50 border-amber-300"
+        acceptingApplications ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
       }`}>
-        <AlertCircle size={18} className={activeWindow ? "text-green-600" : "text-amber-600"} />
+        <AlertCircle size={18} className={acceptingApplications ? "text-green-600" : "text-red-600"} />
         <div className="text-sm">
-          {activeWindow ? (
+          {acceptingApplications ? (
             <>
-              <span className="font-semibold text-green-800">Application window is currently open!</span>
-              <span className="text-green-700"> {WINDOW_INFO[activeWindow].label} window — applications reviewed by Directorate in {WINDOW_INFO[activeWindow].review}.</span>
+              <span className="font-semibold text-green-800">Application submissions are currently open!</span>
+              <span className="text-green-700">
+                {settingsMode === "ON"
+                  ? " The Directorate has manually opened the application window for submissions."
+                  : ` ${WINDOW_INFO[activeWindow]?.label || "Active"} window — applications reviewed by Directorate in ${WINDOW_INFO[activeWindow]?.review || "review month"}.`}
+              </span>
             </>
           ) : (
             <>
-              <span className="font-semibold text-amber-800">Application window is currently closed.</span>
-              <span className="text-amber-700"> Next window opens in <strong>{getNextWindowText()}</strong>. You may still prepare and submit your application.</span>
+              <span className="font-semibold text-red-800">Application submissions are currently closed.</span>
+              <span className="text-red-700">
+                {settingsMode === "OFF"
+                  ? " The Directorate has manually closed the application window."
+                  : ` Next standard window opens in ${getNextWindowText()}.`}
+              </span>
             </>
           )}
         </div>

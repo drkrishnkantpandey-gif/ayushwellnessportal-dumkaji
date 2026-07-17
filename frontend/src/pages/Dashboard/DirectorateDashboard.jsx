@@ -577,6 +577,33 @@ function ResearchGrantReview() {
   const [msg, setMsg]         = useState("");
   const reviewWindow = getCurrentReviewWindow();
 
+  const [settings, setSettings] = useState("AUTO");
+  const [isCurrentlyAccepting, setIsCurrentlyAccepting] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+
+  const fetchSettings = async () => {
+    try {
+      const r = await axiosInstance.get(`${API}/api/research-grants/settings`);
+      if (r.data.success) {
+        setSettings(r.data.setting);
+        setIsCurrentlyAccepting(r.data.isCurrentlyAccepting);
+      }
+    } catch (e) {
+      console.error("Failed to load settings:", e);
+    }
+  };
+
+  const handleToggleSettings = async (newValue) => {
+    setSettingsLoading(true);
+    try {
+      await axiosInstance.put(`${API}/api/research-grants/settings`, { value: newValue });
+      await fetchSettings();
+    } catch (e) {
+      alert("Failed to update application submission settings.");
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -587,7 +614,7 @@ function ResearchGrantReview() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); fetchSettings(); }, []);
 
   const openModal = (id, decision) => { setModal({ id, decision }); setRemarks(""); setApprovedAmt(""); };
 
@@ -606,7 +633,7 @@ function ResearchGrantReview() {
       setExpanded(null);
       load();
     } catch (e) { alert(e.response?.data?.message || "Action failed."); }
-    finally { setSaving(false); }
+    finally { saving && setSaving(false); }
   };
 
   return (
@@ -624,6 +651,44 @@ function ResearchGrantReview() {
         <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
           {apps.length} Pending
         </span>
+      </div>
+
+      {/* ── Settings Toggle ── */}
+      <div className="mx-5 mt-4 p-4 bg-slate-50 border border-slate-100 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">Accept New Applications</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Current Status:{" "}
+            <span className={`font-bold ${isCurrentlyAccepting ? "text-emerald-600" : "text-rose-600"}`}>
+              {isCurrentlyAccepting ? "ON" : "OFF"}
+            </span>{" "}
+            {settings === "AUTO" && "(Using calendar window schedule)"}
+            {settings === "ON" && "(Forced open manually)"}
+            {settings === "OFF" && "(Forced closed manually)"}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="relative inline-flex items-center cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isCurrentlyAccepting}
+              disabled={settingsLoading}
+              onChange={() => handleToggleSettings(isCurrentlyAccepting ? "OFF" : "ON")}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+
+          {settings !== "AUTO" && (
+            <button
+              onClick={() => handleToggleSettings("AUTO")}
+              disabled={settingsLoading}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-300 px-2.5 py-1 rounded-lg bg-white shadow-sm transition"
+            >
+              Reset to Calendar
+            </button>
+          )}
+        </div>
       </div>
 
       {reviewWindow && (

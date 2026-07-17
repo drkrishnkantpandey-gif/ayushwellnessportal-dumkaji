@@ -21,9 +21,30 @@ function getNextWindow() {
   return { window: 'APR_MAY', opens: 'April (next year)' };
 }
 
+async function checkApplicationsAccepted() {
+  try {
+    const result = await db.query("SELECT value FROM system_settings WHERE key = 'accept_research_applications'");
+    const setting = result.rows[0]?.value || 'AUTO';
+    if (setting === 'ON') return true;
+    if (setting === 'OFF') return false;
+    
+    const m = new Date().getMonth() + 1;
+    return (m === 4 || m === 5 || m === 10 || m === 11);
+  } catch (err) {
+    console.error('Error checking applications acceptance:', err);
+    const m = new Date().getMonth() + 1;
+    return (m === 4 || m === 5 || m === 10 || m === 11);
+  }
+}
+
 // ── POST /api/research-grants  ───────────────────────────────────────────────
 async function submitApplication(req, res) {
   try {
+    const accepted = await checkApplicationsAccepted();
+    if (!accepted) {
+      return res.status(400).json({ message: 'Submissions for research grants are currently closed.' });
+    }
+
     const userId = req.user.userId;
     const win    = getActiveWindow();
     // Allow submission even outside window for testing; validate strictly in prod
@@ -310,6 +331,46 @@ async function updateResearchOrgProfile(req, res) {
   }
 }
 
+async function getSettings(req, res) {
+  try {
+    const result = await db.query("SELECT value FROM system_settings WHERE key = 'accept_research_applications'");
+    const setting = result.rows[0]?.value || 'AUTO';
+    
+    const isCurrentlyAccepting = setting === 'ON' ? true : (setting === 'OFF' ? false : (() => {
+      const m = new Date().getMonth() + 1;
+      return (m === 4 || m === 5 || m === 10 || m === 11);
+    })());
+    
+    res.json({ success: true, setting, isCurrentlyAccepting });
+  } catch (err) {
+    console.error('getSettings:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+async function updateSettings(req, res) {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'directorate') {
+      return res.status(403).json({ message: 'Access denied: insufficient role.' });
+    }
+    const { value } = req.body;
+    if (!['AUTO', 'ON', 'OFF'].includes(value)) {
+      return res.status(400).json({ message: 'Invalid settings value. Must be AUTO, ON, or OFF.' });
+    }
+    
+    await db.query(
+      `INSERT INTO system_settings (key, value) 
+       VALUES ('accept_research_applications', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+      [value]
+    );
+    res.json({ success: true, message: 'Settings updated successfully.' });
+  } catch (err) {
+    console.error('updateSettings:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -319,4 +380,6 @@ module.exports = {
   directorateDecision,
   getResearchOrgProfile,
   updateResearchOrgProfile,
+  getSettings,
+  updateSettings,
 };
