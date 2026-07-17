@@ -188,14 +188,20 @@ export default function ResearchGrant() {
     try {
       const r = await axiosInstance.get(`${API}/api/research-grants`, { headers });
       setApplications(r.data.data || []);
+    } catch (e) {
+      console.error("Failed to load applications:", e);
+    }
 
+    try {
       const settingsRes = await axiosInstance.get(`${API}/api/research-grants/settings`, { headers });
       if (settingsRes.data.success) {
         setAcceptingApplications(settingsRes.data.isCurrentlyAccepting);
         setSettingsMode(settingsRes.data.setting);
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error("Failed to load settings:", e);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
