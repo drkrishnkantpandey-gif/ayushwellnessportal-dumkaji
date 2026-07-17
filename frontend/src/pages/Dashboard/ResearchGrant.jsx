@@ -189,7 +189,7 @@ export default function ResearchGrant() {
       const r = await axiosInstance.get(`${API}/api/research-grants`, { headers });
       setApplications(r.data.data || []);
 
-      const settingsRes = await axiosInstance.get(`${API}/api/research-grants/settings`);
+      const settingsRes = await axiosInstance.get(`${API}/api/research-grants/settings`, { headers });
       if (settingsRes.data.success) {
         setAcceptingApplications(settingsRes.data.isCurrentlyAccepting);
         setSettingsMode(settingsRes.data.setting);
@@ -213,6 +213,9 @@ export default function ResearchGrant() {
     }));
 
   const handleSubmit = async () => {
+    if (!acceptingApplications) {
+      return alert("Submissions for research grants are currently closed.");
+    }
     if (!form.title || !form.organization_name || !form.organization_type || !form.pi_name || !form.requested_amount)
       return alert("Please complete all required fields before submitting.");
     if (parseFloat(form.requested_amount) > MAX_AMOUNT)
