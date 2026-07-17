@@ -315,7 +315,7 @@ const App = () => {
             {userRole === "research_org" && activeTab === "profile" && <ResearchOrgProfile />}
             {userRole === "research_org" && activeTab === "settings" && <UserProfileManagement />}
             {userRole === "institution" && <TrainerFeeReimbursement />}
-            {activeTab === "profile" && !["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital"].includes(userRole) && <UserProfileManagement />}
+            {activeTab === "profile" && !["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital", "research_org"].includes(userRole) && <UserProfileManagement />}
             {!["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital", "research_org", "institution"].includes(userRole) &&
               activeTab !== "profile" && renderOtherDashboards()
             }
