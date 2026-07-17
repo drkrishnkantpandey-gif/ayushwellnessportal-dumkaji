@@ -45,7 +45,14 @@ async function submitApplication(req, res) {
       return res.status(400).json({ message: 'Missing required fields.' });
     }
 
-    const validOrgTypes = ['NGO','RESEARCH_INSTITUTE','MEDICAL_HEALTH_ORG','UNIVERSITY','COLLEGE'];
+    const validOrgTypes = [
+      "University",
+      "College",
+      "AYUSH Organization",
+      "AYUSH Related NGO",
+      "Yoga Research Institution",
+      "Health Organization"
+    ];
     if (!validOrgTypes.includes(organization_type)) {
       return res.status(400).json({ message: 'Invalid organization type.' });
     }

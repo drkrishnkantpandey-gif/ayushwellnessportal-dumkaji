@@ -18,11 +18,12 @@ L.Icon.Default.mergeOptions({
 });
 
 const ORG_TYPES = [
-  { value: "NGO",                label: "NGO / Non-Governmental Organisation" },
-  { value: "RESEARCH_INSTITUTE", label: "Research Institute" },
-  { value: "MEDICAL_HEALTH_ORG", label: "Medical / Health Organisation" },
-  { value: "UNIVERSITY",         label: "University" },
-  { value: "COLLEGE",            label: "College (with full-time PG course in Yoga)" },
+  "University",
+  "College",
+  "AYUSH Organization",
+  "AYUSH Related NGO",
+  "Yoga Research Institution",
+  "Health Organization"
 ];
 
 const DISTRICT_OPTIONS = [
@@ -161,7 +162,7 @@ export default function ResearchOrgProfile() {
               >
                 <option value="">-- Select Type --</option>
                 {ORG_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>

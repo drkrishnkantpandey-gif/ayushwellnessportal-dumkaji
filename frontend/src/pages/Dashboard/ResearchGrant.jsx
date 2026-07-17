@@ -12,11 +12,12 @@ import {
 const MAX_AMOUNT = 1000000;
 
 const ORG_TYPES = [
-  { value: "NGO",                label: "NGO / Non-Governmental Organisation" },
-  { value: "RESEARCH_INSTITUTE", label: "Research Institute" },
-  { value: "MEDICAL_HEALTH_ORG", label: "Medical / Health Organisation" },
-  { value: "UNIVERSITY",         label: "University" },
-  { value: "COLLEGE",            label: "College (with full-time PG course in Yoga)" },
+  "University",
+  "College",
+  "AYUSH Organization",
+  "AYUSH Related NGO",
+  "Yoga Research Institution",
+  "Health Organization"
 ];
 
 const DISTRICT_OPTIONS = [
@@ -252,9 +253,9 @@ export default function ResearchGrant() {
               <select className="inp" value={form.organization_type}
                 onChange={(e) => setField("organization_type", e.target.value)} required>
                 <option value="">-- Select type --</option>
-                {ORG_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {ORG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
-              {(form.organization_type === "UNIVERSITY" || form.organization_type === "COLLEGE") && (
+              {(form.organization_type === "University" || form.organization_type === "College") && (
                 <p className="text-xs text-amber-600 mt-1">
                   Full-time post-graduate course in Yoga must be offered by the institution.
                 </p>
@@ -484,7 +485,7 @@ export default function ResearchGrant() {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-2 text-sm">
             <h4 className="font-semibold text-blue-800">Application Summary</h4>
             <p><span className="text-gray-500">Organisation:</span> {form.organization_name || "—"}</p>
-            <p><span className="text-gray-500">Type:</span> {ORG_TYPES.find(t => t.value === form.organization_type)?.label || "—"}</p>
+            <p><span className="text-gray-500">Type:</span> {form.organization_type || "—"}</p>
             <p><span className="text-gray-500">Window:</span> {WINDOW_INFO[form.application_window]?.label || "—"}</p>
             <p><span className="text-gray-500">Project Title:</span> {form.title || "—"}</p>
             <p><span className="text-gray-500">Principal Investigator:</span> {form.pi_name || "—"}</p>
