@@ -12,7 +12,8 @@ import {
   GraduationCap,
   UserCheck,
   Bell,
-  LogOut
+  LogOut,
+  User
 } from "lucide-react";
 
 // Dashboard Sidebar
@@ -74,6 +75,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
   // Research Grant menu items
   const researchOrgMenu = [
     { id: "research", icon: GraduationCap, label: "Research Grant Applications" },
+    { id: "profile", icon: User, label: "Institution Profile" },
   ];
 
   // Institution menu items

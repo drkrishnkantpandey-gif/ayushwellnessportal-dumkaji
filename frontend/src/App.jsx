@@ -48,6 +48,7 @@ import CenterAffiliation from "./pages/Dashboard/YogaTrainingCentre/Affiliation"
 import YogaTCIncentive from "./pages/Dashboard/YogaTrainingCentre/IncentiveApplication";
 
 import ResearchGrant from "./pages/Dashboard/ResearchGrant";
+import ResearchOrgProfile from "./pages/Dashboard/ResearchOrgProfile";
 import ExamFeeReimbursement from "./pages/Dashboard/YogaProfessional/ExamFeeReimbursement";
 import NAACReimbursement from "./pages/Dashboard/AyushCollege/NAACReimbursement";
 import TrainerFeeReimbursement from "./pages/Dashboard/Institution/TrainerFeeReimbursement";
@@ -310,7 +311,7 @@ const App = () => {
             {userRole === "ayush_college" && renderAyushCollegeContent()}
             {userRole === "yoga_centre" && renderYogaTrainingCentreContent()}
             {userRole === "ayush_hospital" && renderAyushHospitalContent()}
-            {userRole === "research_org" && <ResearchGrant />}
+            {userRole === "research_org" && (activeTab === "profile" ? <ResearchOrgProfile /> : <ResearchGrant />)}
             {userRole === "institution" && <TrainerFeeReimbursement />}
             {activeTab === "profile" && !["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital"].includes(userRole) && <UserProfileManagement />}
             {!["yoga_professional", "wellness_centre", "ayush_college", "yoga_centre", "ayush_hospital", "research_org", "institution"].includes(userRole) &&

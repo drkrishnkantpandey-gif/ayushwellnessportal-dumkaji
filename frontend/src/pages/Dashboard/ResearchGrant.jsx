@@ -178,14 +178,6 @@ export default function ResearchGrant() {
   const [successMsg, setSuccessMsg]     = useState("");
   const [expandedId, setExpandedId]     = useState(null);
 
-  // Profile management tab states
-  const [activeSubTab, setActiveSubTab] = useState("applications"); // "applications" or "profile"
-  const [profileForm, setProfileForm] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ password: "", confirmPassword: "" });
-  const [passwordSaving, setPasswordSaving] = useState(false);
-
   const activeWindow = getActiveWindow();
 
   const load = async () => {
@@ -197,68 +189,9 @@ export default function ResearchGrant() {
     finally { setLoading(false); }
   };
 
-  const fetchProfile = async () => {
-    setProfileLoading(true);
-    try {
-      const res = await axiosInstance.get(`${API}/api/research-grants/profile`);
-      if (res.data.success) {
-        setProfileForm(res.data.data);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load profile details.");
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
   useEffect(() => {
     load();
   }, []);
-
-  useEffect(() => {
-    if (activeSubTab === "profile") {
-      fetchProfile();
-    }
-  }, [activeSubTab]);
-
-  const handleProfileSave = async (e) => {
-    e.preventDefault();
-    setProfileSaving(true);
-    try {
-      await axiosInstance.put(`${API}/api/research-grants/profile`, profileForm);
-      alert("Profile updated successfully!");
-      fetchProfile();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to update profile.");
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  const handlePasswordSave = async (e) => {
-    e.preventDefault();
-    if (!passwordForm.password || !passwordForm.confirmPassword) {
-      return alert("Please fill in both password fields.");
-    }
-    if (passwordForm.password !== passwordForm.confirmPassword) {
-      return alert("Passwords do not match.");
-    }
-    setPasswordSaving(true);
-    try {
-      await axiosInstance.post(`${API}/api/auth/update-profile`, {
-        fullName: profileForm.applicant_name,
-        phone: profileForm.contact_number,
-        password: passwordForm.password
-      });
-      alert("Password changed successfully!");
-      setPasswordForm({ password: "", confirmPassword: "" });
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to change password.");
-    } finally {
-      setPasswordSaving(false);
-    }
-  };
 
   const setField = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -565,391 +498,44 @@ export default function ResearchGrant() {
     }
   };
 
-  const renderProfileTab = () => {
-    if (profileLoading) {
-      return <div className="p-8 text-center text-teal-600 font-semibold">Loading profile details...</div>;
-    }
-    if (!profileForm) return (
-      <div className="p-8 text-center text-red-500 font-semibold">
-        Profile details could not be loaded. Please try again.
-      </div>
-    );
-
-    return (
-      <div className="space-y-6">
-        <form onSubmit={handleProfileSave} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-          <div className="border-b pb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-800">Institution Information</h2>
-            <span className="text-xs bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-semibold capitalize border border-teal-100">
-              Status: {profileForm.registration_status || "UNDER_REVIEW"}
-            </span>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="label">Name of Applicant <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                className="inp" 
-                value={profileForm.applicant_name || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, applicant_name: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Designation <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                className="inp" 
-                value={profileForm.designation || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, designation: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Organization Name <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                className="inp" 
-                value={profileForm.organization_name || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, organization_name: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Organization Type <span className="text-red-500">*</span></label>
-              <select 
-                className="inp bg-white" 
-                value={profileForm.organization_type || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, organization_type: e.target.value }))}
-                required
-              >
-                <option value="">-- Select Type --</option>
-                {ORG_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="label">District <span className="text-red-500">*</span></label>
-              <select 
-                className="inp bg-white" 
-                value={profileForm.district || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, district: e.target.value }))}
-                required
-              >
-                <option value="">-- Select District --</option>
-                {DISTRICT_OPTIONS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="label">Work Experience in Yoga (Years) <span className="text-red-500">*</span></label>
-              <input 
-                type="number" 
-                min="0"
-                className="inp" 
-                value={profileForm.work_experience_years || 0} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, work_experience_years: parseInt(e.target.value) || 0 }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Email Address <span className="text-red-500">*</span></label>
-              <input 
-                type="email" 
-                className="inp bg-gray-50 cursor-not-allowed" 
-                value={profileForm.email || ""} 
-                disabled
-              />
-              <p className="text-[10px] text-gray-400 mt-0.5">Email address cannot be changed</p>
-            </div>
-
-            <div>
-              <label className="label">Contact Number <span className="text-red-500">*</span></label>
-              <input 
-                type="tel" 
-                className="inp" 
-                value={profileForm.contact_number || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, contact_number: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Registration Document ID <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                className="inp" 
-                value={profileForm.registration_doc_id || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, registration_doc_id: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Organization Website</label>
-              <input 
-                type="url" 
-                className="inp" 
-                value={profileForm.website || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, website: e.target.value }))}
-                placeholder="https://example.org"
-              />
-            </div>
-
-            <div>
-              <label className="label">GPS Latitude <span className="text-red-500">*</span></label>
-              <input 
-                type="number" 
-                step="any"
-                className="inp" 
-                value={profileForm.latitude || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">GPS Longitude <span className="text-red-500">*</span></label>
-              <input 
-                type="number" 
-                step="any"
-                className="inp" 
-                value={profileForm.longitude || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))}
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Funding Received till Date (₹) <span className="text-red-500">*</span></label>
-              <input 
-                type="number" 
-                className="inp" 
-                value={profileForm.funding_received || 0} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, funding_received: parseFloat(e.target.value) || 0 }))}
-                required 
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="label">Physical Address <span className="text-red-500">*</span></label>
-              <textarea 
-                rows={3} 
-                className="inp" 
-                value={profileForm.physical_address || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, physical_address: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="label">Research Projects Previously Completed <span className="text-red-500">*</span></label>
-              <textarea 
-                rows={3} 
-                className="inp" 
-                value={profileForm.projects_completed || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, projects_completed: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="label">Brief Association with Yoga <span className="text-red-500">*</span></label>
-              <textarea 
-                rows={3} 
-                className="inp" 
-                value={profileForm.association_with_yoga || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, association_with_yoga: e.target.value }))}
-                required 
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="label">Affiliations Details <span className="text-red-500">*</span></label>
-              <textarea 
-                rows={3} 
-                className="inp" 
-                value={profileForm.affiliations || ""} 
-                onChange={(e) => setProfileForm(prev => ({ ...prev, affiliations: e.target.value }))}
-                required 
-              />
-            </div>
-          </div>
-
-          {/* Document Section */}
-          <div className="bg-slate-50 border rounded-2xl p-5 space-y-4">
-            <h4 className="font-bold text-gray-800 text-sm border-b pb-2 uppercase tracking-wide">Registered Documents</h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <span className="font-semibold text-gray-700 block text-xs mb-1">Registration Document</span>
-                {profileForm.registration_doc_path ? (
-                  <a 
-                    href={`${API}/${profileForm.registration_doc_path}`} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-teal-600 font-semibold hover:underline inline-flex items-center gap-1 text-sm mt-1"
-                  >
-                    <FileText size={14} /> View Document
-                  </a>
-                ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
-              </div>
-
-              <div>
-                <span className="font-semibold text-gray-700 block text-xs mb-1">Relevant Documents</span>
-                {profileForm.relevant_docs_paths && profileForm.relevant_docs_paths.length > 0 ? (
-                  <div className="space-y-1 mt-1">
-                    {profileForm.relevant_docs_paths.map((path, idx) => (
-                      <a 
-                        key={idx}
-                        href={`${API}/${path}`} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="text-teal-600 font-semibold hover:underline flex items-center gap-1 text-sm"
-                      >
-                        <FileText size={14} /> Document #{idx + 1}
-                      </a>
-                    ))}
-                  </div>
-                ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button 
-              type="submit" 
-              disabled={profileSaving}
-              className="bg-emerald-600 text-white font-bold px-6 py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition text-sm inline-flex items-center gap-2"
-            >
-              <Save size={16} /> {profileSaving ? "Saving..." : "Save Profile Details"}
-            </button>
-          </div>
-        </form>
-
-        {/* Change Password Card */}
-        <form onSubmit={handlePasswordSave} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-          <div className="border-b pb-3">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <Lock size={18} /> Change Password
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="label">New Password <span className="text-red-500">*</span></label>
-              <input 
-                type="password" 
-                className="inp" 
-                value={passwordForm.password}
-                onChange={(e) => setPasswordForm(p => ({ ...p, password: e.target.value }))}
-                placeholder="Minimum 8 characters with symbols"
-                required 
-              />
-            </div>
-
-            <div>
-              <label className="label">Confirm New Password <span className="text-red-500">*</span></label>
-              <input 
-                type="password" 
-                className="inp" 
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                placeholder="Re-enter new password"
-                required 
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button 
-              type="submit" 
-              disabled={passwordSaving}
-              className="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-60 transition text-sm inline-flex items-center gap-2"
-            >
-              <Lock size={16} /> {passwordSaving ? "Changing..." : "Change Password"}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  };
 
   return (
     <div className="p-6 space-y-6">
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Research Grant Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Research Grant</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Apply for research funding (max ₹10 lakh) or manage your registered institution profile
+            Apply for research funding (max ₹10 lakh) — open to NGOs, Research Institutes, Medical Organisations, Universities &amp; Colleges
           </p>
         </div>
-        {activeSubTab === "applications" && (
-          <button
-            onClick={() => { setShowForm(!showForm); setSuccessMsg(""); setStep(1); }}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
-          >
-            <PlusCircle size={16} /> New Application
-          </button>
-        )}
-      </div>
-
-      {/* Sub tabs */}
-      <div className="flex border-b border-gray-200">
         <button
-          onClick={() => { setActiveSubTab("applications"); setShowForm(false); }}
-          className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition ${
-            activeSubTab === "applications"
-              ? "border-emerald-500 text-emerald-600 font-bold"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
+          onClick={() => { setShowForm(!showForm); setSuccessMsg(""); setStep(1); }}
+          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
         >
-          Applications
-        </button>
-        <button
-          onClick={() => { setActiveSubTab("profile"); setShowForm(false); }}
-          className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition ${
-            activeSubTab === "profile"
-              ? "border-emerald-500 text-emerald-600 font-bold"
-              : "border-transparent text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          Institution Profile
+          <PlusCircle size={16} /> New Application
         </button>
       </div>
 
-      {activeSubTab === "profile" ? (
-        renderProfileTab()
-      ) : (
-        <>
-          {/* ── Application window banner ── */}
-          <div className={`border rounded-xl p-4 flex items-start gap-3 ${
-            activeWindow ? "bg-green-50 border-green-300" : "bg-amber-50 border-amber-300"
-          }`}>
-            <AlertCircle size={18} className={activeWindow ? "text-green-600" : "text-amber-600"} />
-            <div className="text-sm">
-              {activeWindow ? (
-                <>
-                  <span className="font-semibold text-green-800">Application window is currently open!</span>
-                  <span className="text-green-700"> {WINDOW_INFO[activeWindow].label} window — applications reviewed by Directorate in {WINDOW_INFO[activeWindow].review}.</span>
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold text-amber-800">Application window is currently closed.</span>
-                  <span className="text-amber-700"> Next window opens in <strong>{getNextWindowText()}</strong>. You may still prepare and submit your application.</span>
-                </>
-              )}
-            </div>
-          </div>
+      {/* ── Application window banner ── */}
+      <div className={`border rounded-xl p-4 flex items-start gap-3 ${
+        activeWindow ? "bg-green-50 border-green-300" : "bg-amber-50 border-amber-300"
+      }`}>
+        <AlertCircle size={18} className={activeWindow ? "text-green-600" : "text-amber-600"} />
+        <div className="text-sm">
+          {activeWindow ? (
+            <>
+              <span className="font-semibold text-green-800">Application window is currently open!</span>
+              <span className="text-green-700"> {WINDOW_INFO[activeWindow].label} window — applications reviewed by Directorate in {WINDOW_INFO[activeWindow].review}.</span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-amber-800">Application window is currently closed.</span>
+              <span className="text-amber-700"> Next window opens in <strong>{getNextWindowText()}</strong>. You may still prepare and submit your application.</span>
+            </>
+          )}
+        </div>
+      </div>
 
       {successMsg && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
@@ -1103,8 +689,6 @@ export default function ResearchGrant() {
           </div>
         )}
       </div>
-      </>
-      )}
     </div>
   );
 }
