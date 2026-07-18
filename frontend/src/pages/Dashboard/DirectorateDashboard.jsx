@@ -3925,277 +3925,181 @@ const Directorate = ({ activeTab }) => {
       {/* Yoga TC Directorate Review */}
       <YogaTCDirectorateReview />
 
-      {/* Top 3 cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {topCards.map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <div key={index} className="bg-white p-6 rounded-xl shadow hover:shadow-md transition">
-              <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center mb-4`}>
-                <Icon className="text-white" size={24} />
-              </div>
-              <h3 className="text-sm text-gray-600 font-medium">{card.title}</h3>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{card.desc}</p>
-            </div>
-          );
-        })}
-      </div>
+      {/* ── Overview Statistics ── */}
+      <div>
+        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <BarChart3 size={22} className="text-teal-600" /> Portal Overview
+        </h2>
 
-      {/* Action Required */}
-      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
-        <div className="flex items-start">
-          <AlertCircle className="text-yellow-600 mr-3 mt-1" size={20} />
-          <div className="flex-1">
-            <h4 className="font-semibold text-gray-800 mb-2">Action Required</h4>
-            <ul className="space-y-1">
-              {actionRequiredItems.map((item, index) => (
-                <li key={index} className="text-sm text-gray-700">• {item}</li>
-              ))}
-            </ul>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
-                Review Reports
-              </button>
-              <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm">
-                View Details
-              </button>
+        {/* Top 3 summary cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[
+            {
+              title: "Total Approved Entities",
+              value: stats ? stats.totalEntities : "—",
+              desc: "All approved AYUSH entities on the portal",
+              icon: Building,
+              color: "bg-blue-600"
+            },
+            {
+              title: "Pending Registrations",
+              value: stats ? stats.pendingVerifications : "—",
+              desc: "User registrations awaiting approval",
+              icon: FileText,
+              color: "bg-amber-500"
+            },
+            {
+              title: "Total Registered Users",
+              value: stats ? stats.totalUsers : "—",
+              desc: "All registered users on the platform",
+              icon: Users,
+              color: "bg-emerald-600"
+            }
+          ].map((card, i) => {
+            const Icon = card.icon;
+            return (
+              <div key={i} className="bg-white p-6 rounded-xl shadow hover:shadow-md transition">
+                <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center mb-4`}>
+                  <Icon className="text-white" size={24} />
+                </div>
+                <h3 className="text-sm text-gray-600 font-medium">{card.title}</h3>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{card.value}</p>
+                <p className="text-xs text-gray-500 mt-1">{card.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Entity Breakdown by Role */}
+        {stats?.roleStats?.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Entity Breakdown by Type</h3>
+            <div className="bg-white rounded-xl shadow overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold">Entity Type</th>
+                    <th className="text-left px-4 py-3 font-semibold">Total Registered</th>
+                    <th className="text-left px-4 py-3 font-semibold">Approved / Active</th>
+                    <th className="text-left px-4 py-3 font-semibold">Pending</th>
+                    <th className="text-left px-4 py-3 font-semibold">Approval Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.roleStats.map((row, i) => {
+                    const rate = row.registered > 0 ? ((row.active / row.registered) * 100).toFixed(0) : 0;
+                    return (
+                      <tr key={i} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-800">{row.type}</td>
+                        <td className="px-4 py-3 text-gray-600">{row.registered}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-emerald-700 font-semibold">{row.active}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {row.pending > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                              {row.pending}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">None</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${rate >= 70 ? 'bg-emerald-500' : rate >= 40 ? 'bg-amber-500' : 'bg-red-400'}`}
+                                style={{ width: `${rate}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium text-gray-600">{rate}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* District-wise Statistics */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">District-wise Statistics</h3>
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="text-left px-4 py-2">District</th>
-                <th className="text-left px-4 py-2">Total Entities</th>
-                <th className="text-left px-4 py-2">Incentives Disbursed</th>
-                <th className="text-left px-4 py-2">Pending</th>
-                <th className="text-left px-4 py-2">District Officer</th>
-              </tr>
-            </thead>
-            <tbody>
-              {districtStats.map((district, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2 font-medium">{district.district}</td>
-                  <td className="px-4 py-2">{district.entities}</td>
-                  <td className="px-4 py-2">{district.incentives}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      district.pending === 0 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {district.pending}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">{district.officer}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        {/* District-wise Statistics */}
+        {stats?.districtStats?.length > 0 ? (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">District-wise Entity Distribution</h3>
+            <div className="bg-white rounded-xl shadow overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold">District</th>
+                    <th className="text-left px-4 py-3 font-semibold">Total Entities</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.districtStats.map((d, i) => (
+                    <tr key={i} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-800">{d.district || "—"}</td>
+                      <td className="px-4 py-3 text-gray-600">{d.entities}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
 
-      {/* Incentive Schemes Overview */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Incentive Schemes Overview</h3>
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="text-left px-4 py-2">Scheme Name</th>
-                <th className="text-left px-4 py-2">Total Applications</th>
-                <th className="text-left px-4 py-2">Approved</th>
-                <th className="text-left px-4 py-2">Total Amount</th>
-                <th className="text-left px-4 py-2">Budget Utilization</th>
-              </tr>
-            </thead>
-            <tbody>
-              {incentiveSchemes.map((scheme, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2">{scheme.scheme}</td>
-                  <td className="px-4 py-2">{scheme.totalApplications}</td>
-                  <td className="px-4 py-2">{scheme.approved}</td>
-                  <td className="px-4 py-2">{scheme.amount}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center">
-                      <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full" 
-                          style={{ width: `${scheme.utilization}` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{scheme.utilization}</span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        {/* Incentive Schemes Overview */}
+        {stats?.schemesStats?.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Incentive Schemes Overview</h3>
+            <div className="bg-white rounded-xl shadow overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold">Scheme Name</th>
+                    <th className="text-left px-4 py-3 font-semibold">Total Applications</th>
+                    <th className="text-left px-4 py-3 font-semibold">Approved</th>
+                    <th className="text-left px-4 py-3 font-semibold">Pending / Others</th>
+                    <th className="text-left px-4 py-3 font-semibold">Amount Disbursed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.schemesStats.map((s, i) => {
+                    const pending = s.totalApplications - s.approved;
+                    return (
+                      <tr key={i} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-800">{s.scheme}</td>
+                        <td className="px-4 py-3 text-gray-600">{s.totalApplications}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-emerald-700 font-bold">{s.approved}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {pending > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                              {pending}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-gray-800">{s.amount}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-      {/* Pending Directorate Approvals */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Pending Directorate Approvals</h3>
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="text-left px-4 py-2">Type</th>
-                <th className="text-left px-4 py-2">Name</th>
-                <th className="text-left px-4 py-2">District</th>
-                <th className="text-left px-4 py-2">Submitted Date</th>
-                <th className="text-left px-4 py-2">Priority</th>
-                <th className="text-left px-4 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingApprovals.map((item, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2">{item.type}</td>
-                  <td className="px-4 py-2">{item.name}</td>
-                  <td className="px-4 py-2">{item.district}</td>
-                  <td className="px-4 py-2">{item.submittedDate}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      item.priority === 'High' 
-                        ? 'bg-red-100 text-red-700' 
-                        : item.priority === 'Medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {item.priority}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      Review
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Budget Utilization */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Budget Utilization</h3>
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="text-left px-4 py-2">Category</th>
-                <th className="text-left px-4 py-2">Allocated</th>
-                <th className="text-left px-4 py-2">Utilized</th>
-                <th className="text-left px-4 py-2">Utilization %</th>
-                <th className="text-left px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {budgetBreakdown.map((budget, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2">{budget.category}</td>
-                  <td className="px-4 py-2">{budget.allocated}</td>
-                  <td className="px-4 py-2">{budget.utilized}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center">
-                      <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            budget.percentage >= 80 
-                              ? 'bg-green-500' 
-                              : budget.percentage >= 50
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
-                          }`}
-                          style={{ width: `${budget.percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{budget.percentage}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      budget.percentage >= 80 
-                        ? 'bg-green-100 text-green-700' 
-                        : budget.percentage >= 50
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {budget.percentage >= 80 ? 'Good' : budget.percentage >= 50 ? 'Moderate' : 'Low'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Compliance Reports */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Compliance Reports Status</h3>
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="text-left px-4 py-2">Report Type</th>
-                <th className="text-left px-4 py-2">Due Date</th>
-                <th className="text-left px-4 py-2">Submitted</th>
-                <th className="text-left px-4 py-2">Pending</th>
-                <th className="text-left px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {complianceReports.map((report, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2">{report.type}</td>
-                  <td className="px-4 py-2">{report.dueDate}</td>
-                  <td className="px-4 py-2">{report.submitted}</td>
-                  <td className="px-4 py-2">{report.pending}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      report.status === 'On Track' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {report.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-3">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm flex items-center">
-          <FileText className="mr-2" size={16} />
-          Review Applications
-        </button>
-        <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm flex items-center">
-          <CheckCircle className="mr-2" size={16} />
-          Approve Incentives
-        </button>
-        <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm flex items-center">
-          <BarChart3 className="mr-2" size={16} />
-          Generate Reports
-        </button>
-        <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm flex items-center">
-          <Award className="mr-2" size={16} />
-          Manage Schemes
-        </button>
+        {/* No data fallback */}
+        {!stats && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-10 text-center text-gray-400">
+            <BarChart3 size={32} className="mx-auto mb-2 opacity-40" />
+            <p className="font-medium">Loading dashboard statistics...</p>
+          </div>
+        )}
       </div>
     </div>
   );
