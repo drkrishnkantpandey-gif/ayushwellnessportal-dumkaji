@@ -752,10 +752,33 @@ function ResearchGrantReview() {
             {reviewWindow && ` — Currently reviewing ${WINDOW_LABELS[reviewWindow]} applications`}
           </p>
         </div>
-        <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
-          {apps.length} Pending
-        </span>
       </div>
+
+      {/* ── Header Stats ── */}
+      {(() => {
+        const PENDING_STATUSES = ['SUBMITTED', 'RESUBMITTED', 'FORWARDED_TO_RPAC', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC'];
+        const pendingCount = apps.filter(a => PENDING_STATUSES.includes(a.status)).length;
+        const completedCount = apps.filter(a => ['SLRC_APPROVED', 'APPROVED', 'SLRC_REJECTED', 'REJECTED_BY_RPAC'].includes(a.status)).length;
+        return (
+          <div className="px-5 py-3 border-b bg-gray-50 flex items-center gap-3 flex-wrap">
+            {pendingCount > 0 ? (
+              <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
+                {pendingCount} Action Required
+              </span>
+            ) : (
+              <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">
+                ✓ No Pending Actions
+              </span>
+            )}
+            {completedCount > 0 && (
+              <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full">
+                {completedCount} Completed
+              </span>
+            )}
+            <span className="text-xs text-gray-400 ml-auto">{apps.length} Total Applications</span>
+          </div>
+        );
+      })()}
 
       {/* ── Settings Toggle ── */}
       <div className="mx-5 mt-4 p-4 bg-slate-50 border border-slate-100 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
