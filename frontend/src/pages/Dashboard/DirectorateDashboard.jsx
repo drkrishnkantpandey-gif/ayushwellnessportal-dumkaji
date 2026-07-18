@@ -747,32 +747,207 @@ function ResearchGrantReview() {
                 </button>
 
                 {open && (
-                  <div className="mt-4 ml-11 space-y-4">
-                    <div className="grid md:grid-cols-2 gap-3 text-sm">
-                      {[
-                        ["Organisation", app.organization_name],
-                        ["Org Type", app.organization_type?.replace(/_/g, " ")],
-                        ["PI Name", app.pi_name],
-                        ["PI Designation", app.pi_designation || "—"],
-                        ["Keywords", app.keywords || "—"],
-                        ["Submitted", new Date(app.created_at).toLocaleDateString("en-IN")],
-                      ].map(([lbl, val]) => (
-                        <div key={lbl} className="bg-gray-50 rounded-lg p-2.5">
-                          <p className="text-xs text-gray-400">{lbl}</p>
-                          <p className="font-medium text-gray-700 text-xs mt-0.5">{val}</p>
-                        </div>
-                      ))}
-                    </div>
-                    {app.abstract && (
-                      <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-gray-700">
-                        <p className="font-semibold text-blue-700 mb-1">Abstract</p>
-                        <p className="leading-relaxed line-clamp-4">{app.abstract}</p>
+                  <div className="mt-4 ml-11 space-y-6 text-sm text-gray-800">
+                    
+                    {/* Section 1: Organisation & Cycle */}
+                    <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-4 space-y-3">
+                      <h4 className="font-bold text-gray-700 border-b pb-1 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                        <Building size={14} className="text-gray-500" /> 1. Organisation &amp; Cycle Details
+                      </h4>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {[
+                          ["Organisation Name", app.organization_name],
+                          ["Organisation Type", app.organization_type],
+                          ["Yoga field experience", app.yoga_experience_years ? `${app.yoga_experience_years} Years` : "—"],
+                          ["Application Window", `${app.application_window === 'APR_MAY' ? 'April - May' : 'October - November'} ${app.application_year || ""}`],
+                          ["Received Prior Grant", app.received_prior_grant ? `Yes (App: ${app.prior_grant_app_number || "—"})` : "No"],
+                          ["Completed Research Works", app.completed_research_count || "0"],
+                          ["Max Project Funding Claimed", app.max_funding_amount ? fmt(app.max_funding_amount) : "—"],
+                          ["Applicant Name", app.applicant_name],
+                          ["Designation of Applicant", app.applicant_designation],
+                          ["Authorized By", app.authorized_by]
+                        ].map(([lbl, val]) => (
+                          <div key={lbl} className="bg-white rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">{lbl}</p>
+                            <p className="font-medium text-gray-800 text-xs mt-0.5">{val}</p>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
 
-                    {/* Research proposal document */}
+                    {/* Section 2: Investigators */}
+                    <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-4 space-y-4">
+                      <h4 className="font-bold text-gray-700 border-b pb-1 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                        <Users size={14} className="text-gray-500" /> 2. Research Investigators
+                      </h4>
+                      
+                      {/* PI card */}
+                      <div className="bg-white border rounded-lg p-3 space-y-2">
+                        <h5 className="font-semibold text-xs text-gray-700 border-b pb-1">Principal Investigator (PI)</h5>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {[
+                            ["Name", app.pi_name],
+                            ["Date of Birth", app.pi_dob ? new Date(app.pi_dob).toLocaleDateString('en-IN') : "—"],
+                            ["Position in Org", app.pi_position === 'Other' ? app.pi_position_other : app.pi_position],
+                            ["Educational Qualifications", (() => {
+                              try {
+                                const q = typeof app.pi_qualifications === 'string' ? JSON.parse(app.pi_qualifications) : app.pi_qualifications;
+                                return (q || []).filter(item => item.trim()).join(", ") || "—";
+                              } catch {
+                                return app.pi_qualifications || "—";
+                              }
+                            })()]
+                          ].map(([lbl, val]) => (
+                            <div key={lbl}>
+                              <p className="text-[10px] text-gray-400 font-semibold uppercase">{lbl}</p>
+                              <p className="font-medium text-gray-800 text-xs mt-0.5">{val}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Co-PI list */}
+                      {(() => {
+                        try {
+                          const coPisArr = typeof app.co_pis === 'string' ? JSON.parse(app.co_pis) : (app.co_pis || []);
+                          if (!coPisArr || coPisArr.length === 0) return null;
+                          return (
+                            <div className="space-y-2">
+                              <h5 className="font-semibold text-xs text-gray-700">Co-Principal Investigators (Co-PIs)</h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {coPisArr.map((c, idx) => (
+                                  <div key={idx} className="bg-white border rounded-lg p-3 space-y-2">
+                                    <h6 className="font-semibold text-xs text-emerald-700">Co-PI #{idx + 1}: {c.name || "—"}</h6>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div>
+                                        <p className="text-[9px] text-gray-400 font-semibold uppercase">DOB</p>
+                                        <p className="font-medium text-gray-800 text-xs">{c.dob || "—"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[9px] text-gray-400 font-semibold uppercase">Position</p>
+                                        <p className="font-medium text-gray-800 text-xs">{c.position === 'Other' ? c.position_other : c.position || "—"}</p>
+                                      </div>
+                                      <div className="col-span-2">
+                                        <p className="text-[9px] text-gray-400 font-semibold uppercase">Qualifications</p>
+                                        <p className="font-medium text-gray-800 text-xs">{(c.qualifications || []).filter(q => q.trim()).join(", ") || "—"}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        } catch {
+                          return null;
+                        }
+                      })()}
+                    </div>
+
+                    {/* Section 3: Project Overview */}
+                    <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-4 space-y-3">
+                      <h4 className="font-bold text-gray-700 border-b pb-1 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                        <FileText size={14} className="text-gray-500" /> 3. Project Overview
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div className="bg-white p-2.5 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Project Title</p>
+                            <p className="font-semibold text-gray-800 text-xs mt-0.5">{app.title}</p>
+                          </div>
+                          <div className="bg-white p-2.5 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Duration</p>
+                            <p className="font-semibold text-gray-800 text-xs mt-0.5">{app.research_duration_months || "—"} Months</p>
+                          </div>
+                        </div>
+
+                        {app.abstract && (
+                          <div className="bg-white p-3 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Abstract / Summary</p>
+                            <p className="text-xs leading-relaxed text-gray-700">{app.abstract}</p>
+                          </div>
+                        )}
+
+                        {app.expected_outcomes && (
+                          <div className="bg-white p-3 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Expected Outcome</p>
+                            <p className="text-xs leading-relaxed text-gray-700">{app.expected_outcomes}</p>
+                          </div>
+                        )}
+
+                        {app.literature_review && (
+                          <div className="bg-white p-3 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Literature Review</p>
+                            <p className="text-xs leading-relaxed text-gray-700">{app.literature_review}</p>
+                          </div>
+                        )}
+
+                        {app.methodology && (
+                          <div className="bg-white p-3 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Methodology &amp; Data Plan</p>
+                            <p className="text-xs leading-relaxed text-gray-700">{app.methodology}</p>
+                          </div>
+                        )}
+
+                        {app.timeline && (
+                          <div className="bg-white p-3 rounded-lg border">
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Timeline &amp; Gantt Chart Description</p>
+                            <p className="text-xs leading-relaxed text-gray-700">{app.timeline}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section 4: Budget Details */}
+                    <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-4 space-y-3">
+                      <h4 className="font-bold text-gray-700 border-b pb-1 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                        <DollarSign size={14} className="text-gray-500" /> 4. Budget &amp; Funds Breakdown
+                      </h4>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded-lg border flex flex-col justify-center">
+                          <p className="text-[10px] text-gray-400 font-semibold uppercase">Total Requested Grant</p>
+                          <p className="text-xl font-bold text-blue-900 mt-1">{fmt(app.requested_amount)}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border space-y-1 text-xs">
+                          <div className="flex justify-between border-b pb-1 font-semibold text-gray-500 text-[10px] uppercase">
+                            <span>Budget Head</span>
+                            <span>Allocated Amount</span>
+                          </div>
+                          {[
+                            ["Equipment & Research Materials (Max 40%)", app.budget_equipment],
+                            ["Manpower (Max 20%)", app.budget_manpower],
+                            ["Documentation (Max 15%)", app.budget_documentation],
+                            ["Travel & Fieldwork (Max 20%)", app.budget_travel],
+                            ["Contingency (Max 5%)", app.budget_contingency]
+                          ].map(([lbl, val]) => (
+                            <div key={lbl} className="flex justify-between text-xs py-0.5 border-b border-gray-50">
+                              <span className="text-gray-600">{lbl}</span>
+                              <span className="font-bold text-gray-800">{fmt(val)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 5: Documents list */}
                     <DocList docs={[
-                      { label: "Research Proposal Document", path: app.doc_proposal },
+                      { label: "Documentary Proof of Org", path: app.doc_proof_path },
+                      { label: "Prior Grant Approval Document", path: app.prior_grant_approval_doc_path },
+                      { label: "Behalf Affidavit", path: app.behalf_affidavit_path },
+                      { label: "Proof of Completed Research", path: app.research_proof_doc_path },
+                      { label: "Authorization Letter", path: app.authorization_letter_path },
+                      { label: "No Prior Grant Affidavit", path: app.no_prior_grant_affidavit_path },
+                      { label: "PI DOB Proof", path: app.pi_dob_proof_path },
+                      { label: "PI ID Proof", path: app.pi_id_proof_path },
+                      { label: "PI Qualification Certificate", path: app.pi_qualifications_doc_path },
+                      { label: "PI Proof of Position", path: app.pi_position_proof_path },
+                      { label: "Project Synopsis", path: app.synopsis_path },
+                      { label: "Other Project Document", path: app.other_doc_path },
+                      { label: "Objective Milestone Chart", path: app.milestone_chart_path },
+                      { label: "Budget Details Sheet", path: app.budget_details_doc_path },
+                      { label: "Ethical Clearance Document", path: app.ethical_clearance_doc_path },
+                      { label: "Research Team CVs", path: app.team_cvs_path },
+                      { label: "Originality Affidavit", path: app.originality_affidavit_path },
+                      { label: "Other Relevant Document", path: app.other_relevant_doc_path }
                     ]} />
 
                     <div className="flex gap-3 pt-2">
