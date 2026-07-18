@@ -97,6 +97,12 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "profile", icon: Users, label: "Profile Management" },
     { id: "approvals", icon: UserCheck, label: "District Officer Approvals" },
     { id: "entity_approvals", icon: Award, label: "Entity Approvals" },
+    { id: "trainer_fee_review", icon: DollarSign, label: "Trainer Fee Reimbursements" },
+    { id: "nabh_reimbursement_review", icon: CreditCard, label: "NABH Reimbursements" },
+    { id: "naac_reimbursement_review", icon: Award, label: "NAAC Reimbursements" },
+    { id: "exam_fee_reimbursement_review", icon: GraduationCap, label: "Exam Fee Reimbursements" },
+    { id: "research_grant_review", icon: FileText, label: "Research Grant Applications" },
+    { id: "yoga_tc_incentive_review", icon: DollarSign, label: "Yoga TC Incentives" }
   ];
 
   // District Officer menu items

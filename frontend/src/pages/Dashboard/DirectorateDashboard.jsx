@@ -3897,6 +3897,54 @@ const Directorate = ({ activeTab }) => {
     );
   }
 
+  if (activeTab === "trainer_fee_review") {
+    return (
+      <div className="p-6">
+        <TrainerFeeReview />
+      </div>
+    );
+  }
+
+  if (activeTab === "nabh_reimbursement_review") {
+    return (
+      <div className="p-6">
+        <NABHReimbursementReview />
+      </div>
+    );
+  }
+
+  if (activeTab === "naac_reimbursement_review") {
+    return (
+      <div className="p-6">
+        <NAACReimbursementReview />
+      </div>
+    );
+  }
+
+  if (activeTab === "exam_fee_reimbursement_review") {
+    return (
+      <div className="p-6">
+        <ExamFeeReimbursementReview />
+      </div>
+    );
+  }
+
+  if (activeTab === "research_grant_review") {
+    return (
+      <div className="p-6">
+        <ResearchGrantReview />
+      </div>
+    );
+  }
+
+  if (activeTab === "yoga_tc_incentive_review") {
+    return (
+      <div className="p-6">
+        <YogaTCDirectorateReview />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
@@ -3906,24 +3954,6 @@ const Directorate = ({ activeTab }) => {
         </h1>
         <p className="text-gray-500 font-semibold mt-1">State AYUSH Directorate Dashboard</p>
       </div>
-
-      {/* Trainer Fee Reimbursement Review */}
-      <TrainerFeeReview />
-
-      {/* NABH Accreditation Fee Reimbursement Review */}
-      <NABHReimbursementReview />
-
-      {/* NAAC Reimbursement Review */}
-      <NAACReimbursementReview />
-
-      {/* Exam Fee Reimbursement Review */}
-      <ExamFeeReimbursementReview />
-
-      {/* Research Grant Review */}
-      <ResearchGrantReview />
-
-      {/* Yoga TC Directorate Review */}
-      <YogaTCDirectorateReview />
 
       {/* ── Overview Statistics ── */}
       <div>
