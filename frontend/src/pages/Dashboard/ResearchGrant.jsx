@@ -379,6 +379,9 @@ export default function ResearchGrant() {
   const [acceptingApplications, setAcceptingApplications] = useState(true);
   const [settingsMode, setSettingsMode] = useState("AUTO");
 
+  const activeWindow = getActiveWindow();
+  const appYear = new Date().getFullYear();
+
   const load = async () => {
     setLoading(true);
     try {
