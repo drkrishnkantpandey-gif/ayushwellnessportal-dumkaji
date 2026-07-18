@@ -1141,7 +1141,7 @@ function ResearchGrantReview() {
                     </div>
 
                     {/* Disbursal Requests review queue */}
-                    {app.status === 'SLRC_APPROVED' && disbursals[app.id] && disbursals[app.id].length > 0 && (
+                    {['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC'].includes(app.status) && disbursals[app.id] && disbursals[app.id].length > 0 && (
                       <div className="border-t pt-4 space-y-3">
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                           <Landmark size={14} className="text-emerald-700" /> Disbursal Requests Review

@@ -555,13 +555,14 @@ async function submitDisbursalRequest(req, res) {
       return res.status(400).json({ message: 'Invalid installment number (must be 1, 2, or 3).' });
     }
 
-    // Verify application status is SLRC_APPROVED
+    // Verify application status is SLRC_APPROVED, APPROVED_BY_RPAC, or FORWARDED_TO_SLRC
     const grantRes = await db.query(`SELECT status, approved_amount FROM research_grants WHERE id = $1`, [id]);
     if (!grantRes.rows.length) return res.status(404).json({ message: 'Application not found.' });
     
     const { status, approved_amount } = grantRes.rows[0];
-    if (status !== 'SLRC_APPROVED') {
-      return res.status(400).json({ message: 'Grant disbursal can only be requested after SLRC Approval.' });
+    const validStatuses = ['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Grant disbursal can only be requested after RPAC or SLRC Approval.' });
     }
 
     const approvedAmt = parseFloat(approved_amount) || 0;
@@ -643,7 +644,7 @@ async function submitDisbursalRequest(req, res) {
     await db.query(
       `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments)
        VALUES ($1, 'APPLICANT', $2, $3, $4, $5)`,
-      [id, req.user.userId, 'SLRC_APPROVED', `DISB_REQ_INSTALLMENT_${instNum}`, `Submitted request for installment #${instNum} (${pct*100}%).`]
+      [id, req.user.userId, status, `DISB_REQ_INSTALLMENT_${instNum}`, `Submitted request for installment #${instNum} (${pct*100}%).`]
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });

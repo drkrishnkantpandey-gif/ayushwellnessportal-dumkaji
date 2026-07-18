@@ -1830,8 +1830,8 @@ export default function ResearchGrant() {
                         </div>
                       )}
 
-                      {/* Disbursal Section — only if SLRC approved */}
-                      {app.status === "SLRC_APPROVED" && (
+                      {/* Disbursal Section — only if approved by RPAC or SLRC */}
+                      {["SLRC_APPROVED", "APPROVED_BY_RPAC", "FORWARDED_TO_SLRC"].includes(app.status) && (
                         <DisbursalSection
                           appId={app.id}
                           approvedAmount={app.approved_amount}
