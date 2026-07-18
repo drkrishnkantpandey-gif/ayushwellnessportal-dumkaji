@@ -1112,6 +1112,10 @@ function ResearchGrantReview() {
                               className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
                               <CheckCircle size={13} /> Forward to SLRC
                             </button>
+                            <button onClick={() => openModal(app.id, "REVERTED_TO_APPLICANT")}
+                              className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <AlertCircle size={13} /> Revert to Applicant (Ask Clarification)
+                            </button>
                           </div>
                         </div>
                       )}
