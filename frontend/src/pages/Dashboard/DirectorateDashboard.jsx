@@ -3,6 +3,7 @@ import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
 import { Building, Users, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Award, BarChart3, XCircle, ChevronDown, ChevronUp, Clock, BookOpen, IndianRupee, Paperclip, X, Calendar, Download } from "lucide-react";
 import { toast } from "react-toastify";
+import { printResearchApplication } from "./ResearchGrant";
 
 
 const fmt = (n) =>
@@ -726,7 +727,7 @@ function ResearchGrantReview() {
                     <div>
                       <p className="font-medium text-gray-800">{app.title}</p>
                       <p className="text-xs text-gray-500">
-                        {app.organization_name} · {WINDOW_LABELS[app.application_window]} {app.application_year}
+                        <span className="font-bold text-emerald-700">{app.serial_number || "Draft"}</span> · {app.organization_name} · {WINDOW_LABELS[app.application_window]} {app.application_year}
                         {" · "}{app.applicant_name || app.applicant_email}
                       </p>
                       {isCurrentWindow && (
@@ -773,6 +774,15 @@ function ResearchGrantReview() {
                     <DocList docs={[
                       { label: "Research Proposal Document", path: app.doc_proposal },
                     ]} />
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={() => printResearchApplication(app, API)}
+                        className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
+                      >
+                        <FileText size={14} /> Download / Print Application PDF
+                      </button>
+                    </div>
 
                     {/* Research Project Approval Committee Decision */}
                     <div className="border-t pt-4">

@@ -55,7 +55,7 @@ const profileUpload = multer({
 
 // ── Applicant routes ─────────────────────────────────────────────────────────
 router.get('/',    protect, getMyApplications);
-router.post('/',   protect, researchUpload.single('doc_proposal'), submitApplication);
+router.post('/',   protect, submitApplication);
 router.put('/:id/bank-details', protect, submitBankDetails);
 router.get('/profile', protect, getResearchOrgProfile);
 router.put('/profile', protect, profileUpload.fields([

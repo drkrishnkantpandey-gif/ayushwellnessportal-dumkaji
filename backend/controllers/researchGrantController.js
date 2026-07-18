@@ -47,19 +47,21 @@ async function submitApplication(req, res) {
 
     const userId = req.user.userId;
     const win    = getActiveWindow();
-    // Allow submission even outside window for testing; validate strictly in prod
     const appWindow = win || (req.body.application_window) || 'APR_MAY';
     const appYear   = new Date().getFullYear();
 
     const {
-      organization_name, organization_type,
-      pi_name, pi_designation, pi_qualification, pi_email, pi_phone,
-      pi_is_yoga_background, co_pis, yoga_background_member,
-      title, abstract, keywords, problem_statement, objectives_hypotheses,
-      literature_review, methodology, feasibility, timeline,
-      budget_justification, institutional_capabilities, biographical_sketches,
-      ethical_considerations, endorsement_letters, expected_outcomes,
-      requested_amount,
+      organization_name, organization_type, yoga_experience_years, doc_proof_path,
+      received_prior_grant, prior_grant_app_number, prior_grant_approval_doc_path, behalf_affidavit_path,
+      completed_research_count, max_funding_amount, research_proof_doc_path,
+      applicant_name, applicant_designation, authorized_by, authorization_letter_path, no_prior_grant_affidavit_path,
+      pi_name, pi_dob, pi_dob_proof_path, pi_id_proof_path, pi_qualifications, pi_qualifications_doc_path,
+      pi_position, pi_position_other, pi_position_proof_path, co_pis,
+      title, abstract, synopsis_path, research_duration_months, other_doc_path, expected_outcomes,
+      literature_review, methodology, timeline, milestone_chart_path,
+      requested_amount, budget_equipment, budget_manpower, budget_documentation,
+      budget_travel, budget_contingency, budget_details_doc_path, ethical_clearance_doc_path,
+      team_cvs_path, other_relevant_doc_path, other_relevant_doc_desc, originality_affidavit_path
     } = req.body;
 
     if (!organization_name || !organization_type || !pi_name || !title || !requested_amount) {
@@ -78,44 +80,105 @@ async function submitApplication(req, res) {
       return res.status(400).json({ message: 'Invalid organization type.' });
     }
 
-    if (parseFloat(requested_amount) > MAX_GRANT) {
+    const reqAmt = parseFloat(requested_amount) || 0;
+    if (reqAmt > MAX_GRANT) {
       return res.status(400).json({ message: `Maximum grant amount is ₹10,00,000 (10 lakh).` });
     }
+
+    if (organization_type === "Yoga Research Institution" || organization_type === "Research Institution") {
+      const exp = parseInt(yoga_experience_years) || 0;
+      if (exp < 3) {
+        return res.status(400).json({ message: "Minimum 3 years of experience in Yoga Field is required for Research Institute." });
+      }
+    }
+    if (organization_type === "Health Organization") {
+      const exp = parseInt(yoga_experience_years) || 0;
+      if (exp < 5) {
+        return res.status(400).json({ message: "Minimum 5 years of experience in Yoga Field is required for Health Organisation." });
+      }
+    }
+
+    if (parseInt(completed_research_count) < 1) {
+      return res.status(400).json({ message: "Number of completed research works must be at least 1." });
+    }
+
+    if (parseFloat(max_funding_amount) < 500000) {
+      return res.status(400).json({ message: "Maximum funding received for a single research work must be at least ₹5 Lakh." });
+    }
+
+    const equip = parseFloat(budget_equipment) || 0;
+    const power = parseFloat(budget_manpower) || 0;
+    const docum = parseFloat(budget_documentation) || 0;
+    const trav = parseFloat(budget_travel) || 0;
+    const cont = parseFloat(budget_contingency) || 0;
+
+    if (equip > reqAmt * 0.40) return res.status(400).json({ message: "Equipment budget cannot exceed 40% of requested grant." });
+    if (power > reqAmt * 0.20) return res.status(400).json({ message: "Manpower budget cannot exceed 20% of requested grant." });
+    if (docum > reqAmt * 0.15) return res.status(400).json({ message: "Documentation budget cannot exceed 15% of requested grant." });
+    if (trav > reqAmt * 0.20) return res.status(400).json({ message: "Travel & Fieldwork budget cannot exceed 20% of requested grant." });
+    if (cont > reqAmt * 0.05) return res.status(400).json({ message: "Contingency budget cannot exceed 5% of requested grant." });
+
+    const totalBudget = equip + power + docum + trav + cont;
+    if (totalBudget > reqAmt) return res.status(400).json({ message: "Total of budget heads exceeds the Requested Grant amount." });
+    if (totalBudget !== reqAmt) return res.status(400).json({ message: `Total of budget heads must equal the Requested Grant amount (₹${reqAmt.toLocaleString('en-IN')}).` });
+
+    const seqRes = await db.query("SELECT nextval('seq_research_grant_serial')");
+    const num = seqRes.rows[0].nextval;
+    const paddedNum = num.toString().padStart(4, '0');
+    
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    let fy = "";
+    if (month >= 4) {
+      fy = `${year}-${(year + 1).toString().slice(-2)}`;
+    } else {
+      fy = `${year - 1}-${year.toString().slice(-2)}`;
+    }
+    const serialNumber = `UK-RG-FY${fy}-${paddedNum}`;
 
     const coPisArr = (() => {
       try { return typeof co_pis === 'string' ? JSON.parse(co_pis) : (co_pis || []); }
       catch { return []; }
     })();
 
-    const docPath = req.file?.path || null;
-
     const result = await db.query(
       `INSERT INTO research_grants (
-        user_id, organization_name, organization_type,
-        application_window, application_year,
-        pi_name, pi_designation, pi_qualification, pi_email, pi_phone,
-        pi_is_yoga_background, co_pis, yoga_background_member,
-        title, abstract, keywords, problem_statement, objectives_hypotheses,
-        literature_review, methodology, feasibility, timeline,
-        budget_justification, institutional_capabilities, biographical_sketches,
-        ethical_considerations, endorsement_letters, expected_outcomes,
-        requested_amount, doc_proposal, status
+        user_id, organization_name, organization_type, yoga_experience_years, doc_proof_path,
+        application_window, application_year, received_prior_grant, prior_grant_app_number,
+        prior_grant_approval_doc_path, behalf_affidavit_path, completed_research_count,
+        max_funding_amount, research_proof_doc_path, applicant_name, applicant_designation,
+        authorized_by, authorization_letter_path, no_prior_grant_affidavit_path,
+        pi_name, pi_dob, pi_dob_proof_path, pi_id_proof_path, pi_qualifications,
+        pi_qualifications_doc_path, pi_position, pi_position_other, pi_position_proof_path,
+        co_pis, title, abstract, synopsis_path, research_duration_months, other_doc_path,
+        expected_outcomes, literature_review, methodology, timeline, milestone_chart_path,
+        requested_amount, budget_equipment, budget_manpower, budget_documentation,
+        budget_travel, budget_contingency, budget_details_doc_path, ethical_clearance_doc_path,
+        team_cvs_path, other_relevant_doc_path, other_relevant_doc_desc, originality_affidavit_path,
+        serial_number, status
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16,$17,$18,
-        $19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'SUBMITTED'
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32, $33, $34, $35, $36, $37, $38, $39, $40,
+        $41, $42, $43, $44, $45, $46, $47, $48, $49, $50,
+        $51, $52, 'SUBMITTED'
       ) RETURNING *`,
       [
-        userId, organization_name, organization_type,
-        appWindow, appYear,
-        pi_name, pi_designation || null, pi_qualification || null, pi_email || null, pi_phone || null,
-        pi_is_yoga_background === 'true' || pi_is_yoga_background === true,
-        JSON.stringify(coPisArr), yoga_background_member || null,
-        title, abstract || null, keywords || null, problem_statement || null, objectives_hypotheses || null,
-        literature_review || null, methodology || null, feasibility || null, timeline || null,
-        budget_justification || null, institutional_capabilities || null, biographical_sketches || null,
-        ethical_considerations || null, endorsement_letters || null, expected_outcomes || null,
-        requested_amount, docPath,
+        userId, organization_name, organization_type, parseInt(yoga_experience_years) || null, doc_proof_path || null,
+        appWindow, appYear, received_prior_grant === 'true' || received_prior_grant === true, prior_grant_app_number || null,
+        prior_grant_approval_doc_path || null, behalf_affidavit_path || null, parseInt(completed_research_count) || null,
+        parseFloat(max_funding_amount) || null, research_proof_doc_path || null, applicant_name, applicant_designation,
+        authorized_by, authorization_letter_path || null, no_prior_grant_affidavit_path || null,
+        pi_name, pi_dob || null, pi_dob_proof_path || null, pi_id_proof_path || null, JSON.stringify(pi_qualifications || []),
+        pi_qualifications_doc_path || null, pi_position || null, pi_position_other || null, pi_position_proof_path || null,
+        JSON.stringify(coPisArr), title, abstract, synopsis_path || null, parseInt(research_duration_months) || null, other_doc_path || null,
+        expected_outcomes || null, literature_review || null, methodology || null, timeline || null, milestone_chart_path || null,
+        parseFloat(requested_amount) || null, parseFloat(budget_equipment) || null, parseFloat(budget_manpower) || null, parseFloat(budget_documentation) || null,
+        parseFloat(budget_travel) || null, parseFloat(budget_contingency) || null, budget_details_doc_path || null, ethical_clearance_doc_path || null,
+        team_cvs_path || null, other_relevant_doc_path || null, other_relevant_doc_desc || null, originality_affidavit_path || null,
+        serialNumber
       ]
     );
 
