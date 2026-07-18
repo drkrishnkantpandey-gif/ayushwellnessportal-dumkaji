@@ -1,5 +1,6 @@
 // src/pages/Register/forms/WellnessCentreForm.jsx
 import React from "react";
+import { Upload, FileText, CheckCircle2, X } from "lucide-react";
 
 const DISTRICTS = [
   "Almora",
@@ -29,6 +30,101 @@ const ENTITY_TYPES = [
 ];
 
 const WellnessCentreForm = ({ formData, setFormData, handleFileChange }) => {
+  const removeFile = (field) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: null
+    }));
+  };
+
+  const FileUploadField = ({ label, field, accept = "image/*,.pdf" }) => {
+    const fileVal = formData[field];
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">{label} <span className="text-red-500">*</span></label>
+        {!fileVal ? (
+          <label className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-teal-500 transition-colors group cursor-pointer relative bg-gray-50/50">
+            <div className="space-y-1 text-center">
+              <Upload className="mx-auto h-10 w-10 text-gray-400 group-hover:text-teal-500 transition-colors" />
+              <div className="flex text-sm text-gray-600 justify-center">
+                <span className="font-semibold text-teal-600 hover:text-teal-700">Upload a file</span>
+                <p className="pl-1">or drag and drop</p>
+              </div>
+              <p className="text-xs text-gray-400">PDF, PNG, JPG up to 10MB</p>
+              <input
+                type="file"
+                className="sr-only"
+                accept={accept}
+                onChange={(e) => handleFileChange(field, e.target.files)}
+              />
+            </div>
+          </label>
+        ) : (
+          <div className="flex items-center justify-between p-4 bg-teal-50/60 border border-teal-100 rounded-xl">
+            <div className="flex items-center space-x-3 min-w-0">
+              {fileVal.uploading ? (
+                <div className="relative flex items-center justify-center h-10 w-10 shrink-0">
+                  {(() => {
+                    const radius = 14;
+                    const circumference = 2 * Math.PI * radius;
+                    const strokeDashoffset = circumference - ((fileVal.progress || 0) / 100) * circumference;
+                    return (
+                      <>
+                        <svg className="w-10 h-10 transform -rotate-90">
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={radius}
+                            className="text-gray-200"
+                            strokeWidth="3"
+                            stroke="currentColor"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="20"
+                            cy="20"
+                            r={radius}
+                            className="text-teal-600 transition-all duration-300"
+                            strokeWidth="3"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            fill="transparent"
+                          />
+                        </svg>
+                        <span className="absolute text-[10px] font-bold text-teal-700">{fileVal.progress || 0}%</span>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <FileText className="h-6 w-6 text-teal-600 shrink-0" />
+              )}
+              <div className="truncate">
+                <p className="text-sm font-semibold text-gray-800 truncate">{fileVal.name}</p>
+                {fileVal.uploading ? (
+                  <p className="text-xs text-teal-600 font-medium">Uploading...</p>
+                ) : (
+                  <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <CheckCircle2 size={12} /> Uploaded & verified
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeFile(field)}
+              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="border-b pb-2">
@@ -217,40 +313,19 @@ const WellnessCentreForm = ({ formData, setFormData, handleFileChange }) => {
       </div>
 
       {/* Document uploads */}
-      <div className="space-y-4 pt-4 border-t border-gray-100">
+      <div className="space-y-6 pt-4 border-t border-gray-100">
         <h3 className="text-sm font-semibold text-gray-700">Upload Required Documents</h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Upload Entity Registration Document */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Upload Entity Registration Document <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="file"
-              onChange={(e) => handleFileChange("entityCertificate", e.target.files)}
-              className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-              required={!formData.entityCertificate}
-            />
-            {formData.entityCertificate && (
-              <p className="text-xs text-emerald-600 mt-1">✓ {formData.entityCertificate.name}</p>
-            )}
-          </div>
-
-          {/* Upload Applicant's ID Proof */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Upload Applicant's ID Proof <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="file"
-              onChange={(e) => handleFileChange("idProofFile", e.target.files)}
-              className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-              required={!formData.idProofFile}
-            />
-            {formData.idProofFile && (
-              <p className="text-xs text-emerald-600 mt-1">✓ {formData.idProofFile.name}</p>
-            )}
-          </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <FileUploadField
+            label="Upload Entity Registration Document"
+            field="entityCertificate"
+            accept=".pdf,image/*"
+          />
+          <FileUploadField
+            label="Upload Applicant's ID Proof"
+            field="idProofFile"
+            accept=".pdf,image/*"
+          />
         </div>
       </div>
     </div>
