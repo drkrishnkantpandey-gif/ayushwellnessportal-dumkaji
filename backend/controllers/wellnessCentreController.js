@@ -358,21 +358,36 @@ async function getCentreProfile(req, res) {
 async function updateCentreProfile(req, res) {
   try {
     const userId = req.user.userId;
-    const { name, address, city, state, district, pincode, contact_person, contact_email, contact_phone, accreditation_level, registration_valid_to } = req.body;
+    const {
+      name,
+      address,
+      district,
+      contact_phone,
+      applicant_name,
+      designation,
+      entity_type
+    } = req.body;
 
     const result = await db.query(
       `UPDATE wellness_centres 
-       SET name = $1, address = $2, city = $3, state = $4, district = $5, pincode = $6,
-           contact_person = $7, contact_email = $8, contact_phone = $9, 
-           accreditation_level = $10, registration_valid_to = $11, updated_at = NOW()
-       WHERE user_id = $12
+       SET name = $1, address = $2, district = $3, contact_phone = $4,
+           applicant_name = $5, designation = $6, entity_type = $7,
+           contact_person = $5, updated_at = NOW()
+       WHERE user_id = $8
        RETURNING *`,
-      [name, address, city, state, district, pincode, contact_person, contact_email, contact_phone, accreditation_level, registration_valid_to, userId]
+      [name, address, district, contact_phone, applicant_name, designation, entity_type, userId]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Wellness centre not found" });
     }
+
+    // Update users table full name and phone too
+    await db.query(
+      `UPDATE users SET full_name = $1, phone = $2 WHERE id = $3`,
+      [applicant_name, contact_phone, userId]
+    );
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error("Error in updateCentreProfile:", err);

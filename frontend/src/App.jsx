@@ -28,6 +28,7 @@ import WellnessPrograms from "./pages/Dashboard/WellnessCentre/WellnessPrograms"
 import SessionTracker from "./pages/Dashboard/WellnessCentre/SessionTracker";
 import IncentivesGrants from "./pages/Dashboard/WellnessCentre/IncentivesGrants";
 import TherapistsStaff from "./pages/Dashboard/WellnessCentre/TherapistsStaff";
+import WellnessCentreProfile from "./pages/Dashboard/WellnessCentre/Profile";
 
 // AYUSH College Components
 import AyushCollegeHome from "./pages/Dashboard/AyushCollege/DashboardHome";
@@ -142,6 +143,8 @@ const App = () => {
             setCurrentPage("public_profile");
           }}
         />;
+      case "profile":
+        return <WellnessCentreProfile />;
       case "programs":
         return <WellnessPrograms />;
       case "sessions":
@@ -150,6 +153,8 @@ const App = () => {
         return <IncentivesGrants />;
       case "therapists":
         return <TherapistsStaff />;
+      case "settings":
+        return <UserProfileManagement />;
       default:
         return <WellnessDashboardHome />;
     }

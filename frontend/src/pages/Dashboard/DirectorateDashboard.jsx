@@ -3828,6 +3828,65 @@ const Directorate = ({ activeTab }) => {
                       </div>
                     </div>
                   </div>
+                ) : selectedEntity.role === "wellness_centre" ? (
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2">Wellness Centre Details</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Name of Applicant</span> 
+                        <span>{selectedEntity.wc_applicant_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Designation</span> 
+                        <span>{selectedEntity.wc_designation || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Name of Entity</span> 
+                        <span>{selectedEntity.full_name || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Entity Type</span> 
+                        <span>{selectedEntity.wc_entity_type || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Email ID</span> 
+                        <span>{selectedEntity.email || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Mobile Number</span> 
+                        <span>{selectedEntity.phone || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">District</span> 
+                        <span>{selectedEntity.district || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Address</span> 
+                        <span>{selectedEntity.wc_address || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2 border-t pt-2 mt-2 space-y-2">
+                        <span className="font-semibold text-gray-800 block text-xs uppercase tracking-wider">Uploaded Documents</span>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-xs text-gray-500 block">Entity Registration Document</span>
+                            {selectedEntity.wc_entity_certificate ? (
+                              <a href={`${API}${selectedEntity.wc_entity_certificate}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold text-xs inline-flex items-center gap-1 mt-0.5">
+                                📄 View Document
+                              </a>
+                            ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-500 block">Applicant's ID Proof</span>
+                            {selectedEntity.wc_id_proof_file ? (
+                              <a href={`${API}${selectedEntity.wc_id_proof_file}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-semibold text-xs inline-flex items-center gap-1 mt-0.5">
+                                📄 View Document
+                              </a>
+                            ) : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2">Profile Details</h4>

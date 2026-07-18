@@ -388,7 +388,9 @@ const getPendingRegistrations = async (req, res) => {
                r.registration_doc_id as ro_registration_doc_id, r.website as ro_website, r.physical_address as ro_physical_address,
                r.latitude as ro_latitude, r.longitude as ro_longitude, r.projects_completed as ro_projects_completed,
                r.funding_received as ro_funding_received, r.association_with_yoga as ro_association_with_yoga,
-               r.affiliations as ro_affiliations, r.relevant_docs_paths as ro_relevant_docs_paths
+               r.affiliations as ro_affiliations, r.relevant_docs_paths as ro_relevant_docs_paths,
+               w.applicant_name as wc_applicant_name, w.designation as wc_designation, w.entity_type as wc_entity_type,
+               w.entity_certificate as wc_entity_certificate, w.id_proof_file as wc_id_proof_file, w.address as wc_address
         FROM users u
         LEFT JOIN wellness_centres w ON w.user_id = u.id
         LEFT JOIN training_centres t ON t.user_id = u.id
@@ -422,7 +424,9 @@ const getPendingRegistrations = async (req, res) => {
                t.operational_business_certificate_path as tc_operational_business_certificate,
                t.id_proof_type as tc_id_proof_type, t.id_proof_number as tc_id_proof_number,
                t.id_proof_path as tc_id_proof_path, t.gps_coordinates as tc_gps_coordinates, t.website as tc_website,
-               t.address as tc_address
+               t.address as tc_address,
+               w.applicant_name as wc_applicant_name, w.designation as wc_designation, w.entity_type as wc_entity_type,
+               w.entity_certificate as wc_entity_certificate, w.id_proof_file as wc_id_proof_file, w.address as wc_address
         FROM users u
         LEFT JOIN wellness_centres w ON w.user_id = u.id
         LEFT JOIN training_centres t ON t.user_id = u.id

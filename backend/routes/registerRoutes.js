@@ -70,10 +70,8 @@ router.post("/upload-temp-file", upload.single("file"), (req, res) => {
 router.post(
   "/wellness-centre",
   upload.fields([
-    { name: "ownershipProof", maxCount: 1 },
-    { name: "therapyMenu", maxCount: 1 },
-    { name: "facilityImages", maxCount: 10 },
-    { name: "staffCerts", maxCount: 1 },
+    { name: "entityCertificate", maxCount: 1 },
+    { name: "idProofFile", maxCount: 1 }
   ]),
   populatePreUploadedFiles,
   registerWellnessCentre

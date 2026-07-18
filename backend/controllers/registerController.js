@@ -16,28 +16,21 @@ const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
  */
 async function registerWellnessCentre(req, res) {
   const {
+    applicantName,
+    designation,
     centreName,
-    entityType,   // WELLNESS_CENTRE | WELLNESS_CENTRE_HOSPITAL | WELLNESS_RESORT
-    centreType,   // legacy field (kept for backward compat)
-    ownershipType,
-    registrationNumber,
-    contactPerson,
-    contactEmail,
-    contactPhone,
-    userType,
-    password,
-    address,
-    city,
-    state,
+    entityType,
+    email,
+    phone,
     district,
-    pincode,
+    address,
+    password,
+    userType,
   } = req.body;
 
-  // services may arrive as JSON string or array
-  let services = req.body.services || [];
-  if (typeof services === "string") {
-    try { services = JSON.parse(services); } catch { services = [services]; }
-  }
+  const contactEmail = email;
+  const contactPhone = phone;
+  const contactPerson = applicantName;
 
   if (!contactEmail || !password) {
     return res.status(400).json({ message: "Email and password are required." });
@@ -47,30 +40,30 @@ async function registerWellnessCentre(req, res) {
     return res.status(400).json({ message: "Invalid userType for this route" });
   }
 
-  const VALID_ENTITY_TYPES = ["WELLNESS_CENTRE", "WELLNESS_CENTRE_HOSPITAL", "WELLNESS_RESORT"];
-  const VALID_SERVICES     = ["PANCHKARMA", "YOGA", "NATUROPATHY"];
-
-  if (!entityType || !VALID_ENTITY_TYPES.includes(entityType)) {
-    return res.status(400).json({ message: "Please select a valid wellness facility type." });
-  }
-
-  if (!services.length || !services.every((s) => VALID_SERVICES.includes(s))) {
-    return res.status(400).json({ message: "Please select at least one valid service (Panchkarma, Yoga, Naturopathy)." });
-  }
-
   if (
     !centreName ||
-    !ownershipType ||
-    !registrationNumber ||
-    !contactPerson ||
+    !applicantName ||
+    !designation ||
+    !entityType ||
     !contactEmail ||
-    !contactPhone
+    !contactPhone ||
+    !district ||
+    !address
   ) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   // uploaded files
   const files = req.files || {};
+  const entityCertificateFile = files.entityCertificate && files.entityCertificate[0];
+  const idProofFile = files.idProofFile && files.idProofFile[0];
+
+  const entityCertificatePath = entityCertificateFile ? `/uploads/${entityCertificateFile.filename}` : null;
+  const idProofPath = idProofFile ? `/uploads/${idProofFile.filename}` : null;
+
+  if (!entityCertificatePath || !idProofPath) {
+    return res.status(400).json({ message: "Please upload Entity Registration Document and Applicant's ID Proof." });
+  }
 
   const client = await db.pool.connect();
   try {
@@ -107,7 +100,7 @@ async function registerWellnessCentre(req, res) {
         `INSERT INTO users (full_name, email, password_hash, role, is_verified, registration_status)
          VALUES ($1, LOWER($2), $3, $4, true, 'pending')
          RETURNING id`,
-        [contactPerson, contactEmail, passwordHash, "wellness_centre"]
+         [contactPerson, contactEmail, passwordHash, "wellness_centre"]
       );
       userId = userResult.rows[0].id;
     }
@@ -135,7 +128,11 @@ async function registerWellnessCentre(req, res) {
           city,
           state,
           district,
-          pincode
+          pincode,
+          applicant_name,
+          designation,
+          entity_certificate,
+          id_proof_file
         )
         VALUES (
           $1, $2,
@@ -145,71 +142,29 @@ async function registerWellnessCentre(req, res) {
           'NOT_LISTED',
           NULL,
           NULL,
-          $3, $4, $5, $6, $7, $8, $9, $10,
-          $11, $12, $13, $14, $15
-        )
-        RETURNING id`,
+          $3, NULL, '{}', NULL, NULL, $4, $5, $6,
+          $7, NULL, NULL, $8, NULL,
+          $9, $10, $11, $12
+        ) RETURNING id`,
       [
         userId,
         centreName,
         entityType,
-        centreType || entityType,   // legacy fallback
-        services,                   // stored as PostgreSQL array
-        ownershipType,
-        registrationNumber,
         contactPerson,
         contactEmail,
         contactPhone,
         address || null,
-        city || null,
-        state || null,
         district || null,
-        pincode || null,
+        applicantName,
+        designation,
+        entityCertificatePath,
+        idProofPath
       ]
     );
 
     const centreId = centreResult.rows[0].id;
 
-    // 3) helper to create document rows if file exists
-    async function insertDoc(docType, file) {
-      if (!file) return;
-      await client.query(
-        `INSERT INTO centre_documents (
-            centre_id,
-            doc_type,
-            status,
-            remarks,
-            uploaded_at,
-            file_path
-          )
-          VALUES ($1, $2, 'UPLOADED', NULL, NOW(), $3)`,
-        [centreId, docType, file.path]
-      );
-    }
-
-    await insertDoc(
-      "OWNERSHIP",
-      files.ownershipProof && files.ownershipProof[0]
-    );
-    await insertDoc("THERAPY_MENU", files.therapyMenu && files.therapyMenu[0]);
-
-    if (files.facilityImages && files.facilityImages.length > 0) {
-      for (const f of files.facilityImages) {
-        await insertDoc("FACILITY_PHOTO", f);
-      }
-    }
-
-    await insertDoc("STAFF_CERTS", files.staffCerts && files.staffCerts[0]);
-
-    // Extra docs based on entity type
-    if (entityType === "WELLNESS_CENTRE_HOSPITAL") {
-      await insertDoc("HOSPITAL_CERT", files.hospitalCert && files.hospitalCert[0]);
-    }
-    if (entityType === "WELLNESS_RESORT") {
-      await insertDoc("RESORT_LICENSE", files.resortLicense && files.resortLicense[0]);
-    }
-
-    // 4) Generate and store OTP
+    // 3) Generate and store OTP
     const otp = generateOTP();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -221,7 +176,7 @@ async function registerWellnessCentre(req, res) {
 
     await client.query("COMMIT");
 
-    // 5) Send verification email (after commit to ensure user exists)
+    // 4) Send verification email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: contactEmail,
@@ -230,34 +185,33 @@ async function registerWellnessCentre(req, res) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome to AYUSH Portal</h2>
           <p>Hello ${contactPerson},</p>
-          <p>Thank you for registering <strong>${centreName}</strong> as a Wellness Centre!</p>
           <p>Your OTP for email verification is:</p>
           <div style="background: #f4f4f4; padding: 20px; text-align: center; margin: 20px 0; font-size: 24px; letter-spacing: 5px;">
             <strong>${otp}</strong>
           </div>
-          <p>This code will expire in 10 minutes.</p>
-          <p>Best regards,<br>AYUSH Portal Team</p>
+          <p>This OTP is valid for 10 minutes. Please enter this code to verify your registration.</p>
         </div>
-      `,
+      `
     };
 
     try {
       await sendMail(mailOptions);
     } catch (mailErr) {
-      console.error("Failed to send registration email:", mailErr);
+      console.error("Verification email failed:", mailErr);
     }
 
-    return res.status(201).json({
-      message: "Wellness centre registered successfully",
+    res.status(201).json({
+      success: true,
+      message: "Registration initialised. OTP has been sent.",
+      email: contactEmail,
       centreId,
       userId,
-      contactEmail, // Use original email from body
       status: "UNDER_REVIEW",
     });
   } catch (err) {
-    console.error("Error in registerWellnessCentre:", err);
-    try { await client.query("ROLLBACK"); } catch (rbErr) { }
-    return res.status(500).json({ message: "Server error while registering" });
+    try { await client.query("ROLLBACK"); } catch (rbErr) {}
+    console.error("registerWellnessCentre error:", err);
+    res.status(500).json({ message: "Server error during registration" });
   } finally {
     client.release();
   }

@@ -441,14 +441,14 @@ const Register = ({ setCurrentPage, language }) => {
       }
 
       if (isWellnessCentre) {
-        const requiredFields = ["centreName", "centreType", "ownershipType", "registrationNumber", "contactPerson", "contactEmail", "contactPhone"];
+        const requiredFields = ["applicantName", "designation", "centreName", "entityType", "entityCertificate", "idProofFile", "email", "phone", "district", "address"];
         const missing = requiredFields.filter(f => !formData[f]);
         if (missing.length > 0) {
-          alert(`Please fill in all required fields.`);
+          alert("Please fill in all required fields and upload all requested documents.");
           return false;
         }
-        if (formData.contactPhone.length !== 10) {
-          alert("Contact phone must be exactly 10 digits.");
+        if (formData.phone.length !== 10) {
+          alert("Mobile number must be exactly 10 digits.");
           return false;
         }
       }
