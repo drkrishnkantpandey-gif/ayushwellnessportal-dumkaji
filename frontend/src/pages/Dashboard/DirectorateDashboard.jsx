@@ -819,6 +819,7 @@ function ResearchGrantReview() {
           {apps.map((app) => {
             const open = expanded === app.id;
             const isCurrentWindow = app.application_window === reviewWindow;
+            const meta = STATUS_META[app.status] || { label: app.status.replace(/_/g, " "), color: "bg-slate-100 text-slate-700" };
             return (
               <div key={app.id} className="p-4">
                 <button className="w-full flex items-center justify-between text-left"
@@ -840,11 +841,16 @@ function ResearchGrantReview() {
                         <span className="font-bold text-emerald-700">{app.serial_number || "Draft"}</span> · {app.organization_name} · {WINDOW_LABELS[app.application_window]} {app.application_year}
                         {" · "}{app.applicant_name || app.applicant_email}
                       </p>
-                      {isCurrentWindow && (
-                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                          Due for review this month
+                      <div className="flex gap-2 items-center mt-1">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${meta.color}`}>
+                          {meta.label}
                         </span>
-                      )}
+                        {isCurrentWindow && (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+                            Due for review
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
