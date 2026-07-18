@@ -1092,11 +1092,11 @@ function ResearchGrantReview() {
                           <div className="flex gap-3">
                             <button onClick={() => openModal(app.id, "APPROVED_BY_RPAC")}
                               className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
-                              <CheckCircle size={13} /> Approve by RPAC
+                              <CheckCircle size={13} /> Approved by RPAC
                             </button>
                             <button onClick={() => openModal(app.id, "REJECTED_BY_RPAC")}
                               className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
-                              <XCircle size={13} /> Reject by RPAC
+                              <XCircle size={13} /> Rejected by RPAC
                             </button>
                           </div>
                         </div>
