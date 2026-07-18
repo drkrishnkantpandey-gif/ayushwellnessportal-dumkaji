@@ -717,20 +717,21 @@ function ResearchGrantReview() {
 
   const submitDecision = async () => {
     if (!modal) return;
-    if (modal.decision === "APPROVED" && !approvedAmt)
+    const isApproval = (modal.decision === "APPROVED_BY_RPAC" || modal.decision === "SLRC_APPROVED");
+    if (isApproval && !approvedAmt)
       return alert("Please enter the approved grant amount.");
     setSaving(true);
     try {
       await axiosInstance.put(`${API}/api/research-grants/admin/${modal.id}`, {
         decision: modal.decision, remarks,
-        approved_amount: modal.decision === "APPROVED" ? approvedAmt : null,
+        approved_amount: isApproval ? approvedAmt : null,
       });
-      setMsg(`Research grant #${modal.id} has been ${modal.decision === "APPROVED" ? "approved" : "rejected"}.`);
+      setMsg(`Research grant #${modal.id} status updated to ${modal.decision.replace(/_/g, " ")}.`);
       setModal(null);
       setExpanded(null);
       load();
     } catch (e) { alert(e.response?.data?.message || "Action failed."); }
-    finally { saving && setSaving(false); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -1141,7 +1142,7 @@ function ResearchGrantReview() {
                     </div>
 
                     {/* Disbursal Requests review queue */}
-                    {['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC'].includes(app.status) && disbursals[app.id] && disbursals[app.id].length > 0 && (
+                    {['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC', 'APPROVED'].includes(app.status) && disbursals[app.id] && disbursals[app.id].length > 0 && (
                       <div className="border-t pt-4 space-y-3">
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                           <Landmark size={14} className="text-emerald-700" /> Disbursal Requests Review

@@ -560,7 +560,7 @@ async function submitDisbursalRequest(req, res) {
     if (!grantRes.rows.length) return res.status(404).json({ message: 'Application not found.' });
     
     const { status, approved_amount } = grantRes.rows[0];
-    const validStatuses = ['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC'];
+    const validStatuses = ['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC', 'APPROVED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Grant disbursal can only be requested after RPAC or SLRC Approval.' });
     }
