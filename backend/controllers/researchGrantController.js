@@ -280,7 +280,6 @@ async function getPendingApplications(req, res) {
       `SELECT r.*, u.email AS applicant_email, u.full_name AS applicant_name
        FROM research_grants r
        JOIN users u ON u.id = r.user_id
-       WHERE r.status IN ('SUBMITTED','RESUBMITTED','FORWARDED_TO_RPAC','APPROVED_BY_RPAC','FORWARDED_TO_SLRC','REVERTED_TO_APPLICANT')
        ORDER BY r.application_window, r.created_at ASC`
     );
     res.json({ success: true, data: result.rows });
