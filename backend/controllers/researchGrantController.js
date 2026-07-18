@@ -529,13 +529,78 @@ async function getGrantLogs(req, res) {
 async function getDisbursals(req, res) {
   try {
     const { id } = req.params;
-    const result = await db.query(
+    const disbursals = await db.query(
       `SELECT * FROM research_grant_disbursals WHERE grant_id = $1 ORDER BY installment_num ASC`,
       [id]
     );
-    res.json({ success: true, data: result.rows });
+    // For each disbursal, fetch compliance history
+    const rows = disbursals.rows;
+    const withCompliance = await Promise.all(rows.map(async (d) => {
+      const comp = await db.query(
+        `SELECT c.*, u.full_name AS submitter_name
+         FROM research_grant_disbursal_compliance c
+         JOIN users u ON u.id = c.submitted_by
+         WHERE c.disbursal_id = $1
+         ORDER BY c.submitted_at ASC`,
+        [d.id]
+      );
+      return { ...d, compliance_history: comp.rows };
+    }));
+    res.json({ success: true, data: withCompliance });
   } catch (err) {
     console.error('getDisbursals:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── Disbursal Compliance (applicant responds to revert) ───────────────────────
+async function submitDisbursalCompliance(req, res) {
+  try {
+    const { id, disbursalId } = req.params;
+    const { comments, doc_path } = req.body;
+
+    if (!comments || !comments.trim()) {
+      return res.status(400).json({ message: 'Comments are required.' });
+    }
+
+    // Verify disbursal belongs to this grant and is REVERTED
+    const disb = await db.query(
+      `SELECT id, status, installment_num FROM research_grant_disbursals WHERE id = $1 AND grant_id = $2`,
+      [disbursalId, id]
+    );
+    if (!disb.rows.length) return res.status(404).json({ message: 'Disbursal not found.' });
+    if (disb.rows[0].status !== 'REVERTED') {
+      return res.status(400).json({ message: 'Compliance can only be submitted for a REVERTED disbursal claim.' });
+    }
+
+    const instNum = disb.rows[0].installment_num;
+
+    // Insert compliance record
+    await db.query(
+      `INSERT INTO research_grant_disbursal_compliance (disbursal_id, grant_id, submitted_by, comments, doc_path)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [disbursalId, id, req.user.userId, comments.trim(), doc_path || null]
+    );
+
+    // Reset disbursal status back to PENDING
+    await db.query(
+      `UPDATE research_grant_disbursals SET status = 'PENDING', directorate_remarks = NULL, updated_at = NOW() WHERE id = $1`,
+      [disbursalId]
+    );
+
+    // Log it
+    await db.query(
+      `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments, attachment_path)
+       VALUES ($1, 'APPLICANT', $2, $3, $4, $5, $6)`,
+      [id, req.user.userId,
+       `DISB_REVERTED_INSTALLMENT_${instNum}`,
+       `DISB_COMPLIANCE_INSTALLMENT_${instNum}`,
+       comments.trim(), doc_path || null]
+    );
+
+    res.json({ success: true, message: 'Compliance submitted. Your claim is now under review again.' });
+  } catch (err) {
+    console.error('submitDisbursalCompliance:', err);
     res.status(500).json({ message: 'Server error' });
   }
 }
@@ -614,11 +679,10 @@ async function submitDisbursalRequest(req, res) {
         return res.status(400).json({ message: `Installment ${instNum} has already been approved.` });
       }
       if (existingStatus === 'REVERTED') {
-        // Overwrite the reverted request
-        await db.query(
-          `DELETE FROM research_grant_disbursals WHERE grant_id = $1 AND installment_num = $2`,
-          [id, instNum]
-        );
+        // Cannot submit new claim if it's already REVERTED — use compliance endpoint instead
+        return res.status(400).json({
+          message: `Installment ${instNum} was reverted. Please use the compliance submission to respond with comments and documents rather than re-submitting the full claim form.`
+        });
       }
     }
 
@@ -715,5 +779,6 @@ module.exports = {
   getGrantLogs,
   getDisbursals,
   submitDisbursalRequest,
-  reviewDisbursalRequest
+  reviewDisbursalRequest,
+  submitDisbursalCompliance
 };

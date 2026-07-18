@@ -19,7 +19,8 @@ const {
   getGrantLogs,
   getDisbursals,
   submitDisbursalRequest,
-  reviewDisbursalRequest
+  reviewDisbursalRequest,
+  submitDisbursalCompliance
 } = require('../controllers/researchGrantController');
 
 // Accept PDF and Word documents for the proposal
@@ -74,6 +75,7 @@ router.get('/:id/logs',        protect, getGrantLogs);
 router.get('/:id/disbursals',   protect, getDisbursals);
 router.post('/:id/disbursals',  protect, submitDisbursalRequest);
 router.put('/:id/disbursals/:disbursalId', protect, reviewDisbursalRequest);
+router.post('/:id/disbursals/:disbursalId/compliance', protect, submitDisbursalCompliance);
 
 // ── Settings routes ──────────────────────────────────────────────────────────
 router.get('/settings', protect, getSettings);

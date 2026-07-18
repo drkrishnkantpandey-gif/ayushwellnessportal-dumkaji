@@ -1249,6 +1249,32 @@ function ResearchGrantReview() {
                                 ))}
                               </div>
 
+                              {/* Compliance History */}
+                              {disb.compliance_history?.length > 0 && (
+                                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 space-y-2">
+                                  <p className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+                                    <Clock size={10} /> Applicant Compliance Submissions ({disb.compliance_history.length})
+                                  </p>
+                                  {disb.compliance_history.map((comp, idx) => (
+                                    <div key={comp.id} className="bg-white border border-indigo-100 rounded p-2 space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-bold text-indigo-600 uppercase">
+                                          Compliance #{idx + 1} — {new Date(comp.submitted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400">{comp.submitter_name}</span>
+                                      </div>
+                                      <p className="text-gray-700 text-[11px] leading-relaxed">{comp.comments}</p>
+                                      {comp.doc_path && (
+                                        <a href={docUrl(comp.doc_path)} target="_blank" rel="noopener noreferrer"
+                                          className="flex items-center gap-1 text-blue-600 hover:underline font-medium text-[10px]">
+                                          <Paperclip size={9} /> Supporting Document
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
                               {/* Decision for Pending Disbursals */}
                               {disb.status === 'PENDING' && (
                                 <div className="space-y-2 pt-2 border-t">

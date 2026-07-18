@@ -673,8 +673,10 @@ function WorkflowLogs({ logsList }) {
 function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploadField }) {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
-  // Form fields
+  const [complianceSubmitting, setComplianceSubmitting] = useState(false);
+  const [showComplianceForm, setShowComplianceForm] = useState({});
+
+  // Claim form fields
   const [progressDetails, setProgressDetails] = useState("");
   const [slrcDoc, setSlrcDoc] = useState("");
   const [milestoneDoc, setMilestoneDoc] = useState("");
@@ -686,76 +688,31 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
   const [ucDoc, setUcDoc] = useState("");
   const [otherDoc, setOtherDoc] = useState("");
 
-  // Determine eligible installment number
-  let eligibleInstNum = null;
-  let installmentLabel = "";
-  let isReverted = false;
-  let prevDisb = null;
+  // Compliance form fields (per disbursal)
+  const [complianceComments, setComplianceComments] = useState({});
+  const [complianceDocs, setComplianceDocs] = useState({});
 
   const d1 = disbList?.find(d => d.installment_num === 1);
   const d2 = disbList?.find(d => d.installment_num === 2);
   const d3 = disbList?.find(d => d.installment_num === 3);
 
+  // Determine next eligible installment (only for fresh claims)
+  let eligibleInstNum = null;
+  let installmentLabel = "";
   if (!d1) {
     eligibleInstNum = 1;
     installmentLabel = "1st Installment (40%)";
-  } else if (d1.status === 'REVERTED') {
-    eligibleInstNum = 1;
-    installmentLabel = "1st Installment (40%) — Resubmission";
-    isReverted = true;
-    prevDisb = d1;
-  } else if (d1.status === 'PENDING') {
-    // Waiting 1st review
   } else if (d1.status === 'APPROVED') {
     if (!d2) {
       eligibleInstNum = 2;
       installmentLabel = "2nd Installment (30%)";
-    } else if (d2.status === 'REVERTED') {
-      eligibleInstNum = 2;
-      installmentLabel = "2nd Installment (30%) — Resubmission";
-      isReverted = true;
-      prevDisb = d2;
-    } else if (d2.status === 'PENDING') {
-      // Waiting 2nd review
     } else if (d2.status === 'APPROVED') {
       if (!d3) {
         eligibleInstNum = 3;
         installmentLabel = "3rd Installment (30%)";
-      } else if (d3.status === 'REVERTED') {
-        eligibleInstNum = 3;
-        installmentLabel = "3rd Installment (30%) — Resubmission";
-        isReverted = true;
-        prevDisb = d3;
       }
     }
   }
-
-  // Pre-fill if reverted
-  useEffect(() => {
-    if (isReverted && prevDisb) {
-      setProgressDetails(prevDisb.progress_details || "");
-      setSlrcDoc(prevDisb.slrc_approval_doc_path || "");
-      setMilestoneDoc(prevDisb.milestone_chart_path || "");
-      setAccNum(prevDisb.account_number || "");
-      setHolderName(prevDisb.account_holder_name || "");
-      setIfsc(prevDisb.ifsc_code || "");
-      setBank(prevDisb.bank_name || "");
-      setChequeDoc(prevDisb.cancelled_cheque_path || "");
-      setUcDoc(prevDisb.utilization_certificate_path || "");
-      setOtherDoc(prevDisb.other_doc_path || "");
-    } else {
-      setProgressDetails("");
-      setSlrcDoc("");
-      setMilestoneDoc("");
-      setAccNum("");
-      setHolderName("");
-      setIfsc("");
-      setBank("");
-      setChequeDoc("");
-      setUcDoc("");
-      setOtherDoc("");
-    }
-  }, [eligibleInstNum, isReverted, prevDisb]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -767,7 +724,6 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
       alert("Utilization Certificate is mandatory for 2nd and 3rd Installments.");
       return;
     }
-
     setSubmitting(true);
     try {
       await axiosInstance.post(`${API}/api/research-grants/${appId}/disbursals`, {
@@ -793,8 +749,40 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
     }
   };
 
+  const handleComplianceSubmit = async (disbId) => {
+    const comments = complianceComments[disbId] || "";
+    if (!comments.trim()) {
+      alert("Please provide comments explaining your compliance response.");
+      return;
+    }
+    setComplianceSubmitting(true);
+    try {
+      await axiosInstance.post(`${API}/api/research-grants/${appId}/disbursals/${disbId}/compliance`, {
+        comments: comments.trim(),
+        doc_path: complianceDocs[disbId] || null
+      });
+      alert("Compliance submitted successfully! Your claim is now under review again.");
+      setShowComplianceForm(p => ({ ...p, [disbId]: false }));
+      setComplianceComments(p => ({ ...p, [disbId]: "" }));
+      setComplianceDocs(p => ({ ...p, [disbId]: "" }));
+      onReload();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to submit compliance.");
+    } finally {
+      setComplianceSubmitting(false);
+    }
+  };
+
   const fmt = (n) =>
     n != null ? `₹${parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
+
+  const docUrl = (p) => p?.startsWith("http") ? p : `${API}/${p}`;
+
+  const INST_CONFIG = [
+    { label: "1st Installment (40%)", pct: 0.4, record: d1 },
+    { label: "2nd Installment (30%)", pct: 0.3, record: d2 },
+    { label: "3rd Installment (30%)", pct: 0.3, record: d3 },
+  ];
 
   return (
     <div className="border rounded-xl p-4 bg-slate-50/50 space-y-4 text-xs">
@@ -805,19 +793,18 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
         <span className="text-gray-400 font-medium">Approved Amount: {fmt(approvedAmount)}</span>
       </div>
 
-      {/* Disbursals Status Badges */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "1st Installment (40%)", amount: approvedAmount * 0.4, record: d1 },
-          { label: "2nd Installment (30%)", amount: approvedAmount * 0.3, record: d2 },
-          { label: "3rd Installment (30%)", amount: approvedAmount * 0.3, record: d3 }
-        ].map(({ label, amount, record }) => (
-          <div key={label} className="bg-white border rounded-lg p-2.5 space-y-1">
-            <p className="text-[10px] text-gray-400 font-semibold">{label}</p>
-            <p className="font-bold text-gray-800 text-sm">{fmt(amount)}</p>
-            <div>
+      {/* Per-installment cards with full history */}
+      <div className="space-y-4">
+        {INST_CONFIG.map(({ label, pct, record }) => (
+          <div key={label} className="bg-white border rounded-xl p-3 space-y-3">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-gray-800 text-[11px] uppercase tracking-wide">{label}</p>
+                <p className="font-semibold text-emerald-700 text-sm mt-0.5">{fmt(approvedAmount * pct)}</p>
+              </div>
               {record ? (
-                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
                   record.status === 'APPROVED' ? 'bg-teal-100 text-teal-800 border border-teal-200' :
                   record.status === 'SLRC_APPROVED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
                   record.status === 'FORWARDED_TO_SLRC' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
@@ -828,27 +815,152 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
                   {record.status === 'APPROVED' ? `${record.installment_num === 1 ? '1st' : record.installment_num === 2 ? '2nd' : '3rd'} Installment Release Approved` :
                    record.status === 'SLRC_APPROVED' ? 'SLRC Approved (Awaiting Release)' :
                    record.status === 'FORWARDED_TO_SLRC' ? 'Forwarded to SLRC' :
-                   record.status === 'REVERTED' ? 'Reverted' :
+                   record.status === 'REVERTED' ? 'Reverted — Compliance Required' :
                    record.status === 'SLRC_REJECTED' ? 'SLRC Rejected' :
                    'Pending Review'}
                 </span>
               ) : (
-                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-500 uppercase">
+                <span className="inline-block px-2 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-500 uppercase">
                   Not Claimed
                 </span>
               )}
             </div>
-            {record?.directorate_remarks && (
-              <p className="text-[9px] text-red-600 italic mt-1 leading-normal">
-                Remarks: {record.directorate_remarks}
-              </p>
+
+            {/* If there's a record, show original claim details */}
+            {record && (
+              <div className="space-y-2">
+                {/* Original claim summary */}
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 space-y-2">
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Original Claim Details</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[9px] text-gray-400 font-semibold uppercase">Progress Details</p>
+                      <p className="text-gray-700">{record.progress_details || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-gray-400 font-semibold uppercase">Bank</p>
+                      <p className="text-gray-700">{record.bank_name ? `${record.bank_name} · ${record.account_number}` : "—"}</p>
+                    </div>
+                  </div>
+                  {/* Document links */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {[
+                      ["SLRC Approval Doc", record.slrc_approval_doc_path],
+                      ["Milestone Chart", record.milestone_chart_path],
+                      ["Cancelled Cheque", record.cancelled_cheque_path],
+                      ["Utilization Certificate", record.utilization_certificate_path],
+                      ["Other Doc", record.other_doc_path],
+                    ].map(([lbl, path]) => path ? (
+                      <a key={lbl} href={docUrl(path)} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-blue-600 hover:underline font-medium text-[10px]">
+                        <Paperclip size={9} /> {lbl}
+                      </a>
+                    ) : null)}
+                  </div>
+                  {record.directorate_remarks && (
+                    <div className="bg-amber-50 border border-amber-200 rounded p-2 text-amber-800 text-[10px] italic">
+                      <strong>Directorate Remarks:</strong> {record.directorate_remarks}
+                    </div>
+                  )}
+                </div>
+
+                {/* Compliance history versions */}
+                {record.compliance_history?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <Clock size={10} /> Compliance Submissions ({record.compliance_history.length})
+                    </p>
+                    {record.compliance_history.map((comp, idx) => (
+                      <div key={comp.id} className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-bold text-indigo-700 uppercase">
+                            Compliance #{idx + 1} — {new Date(comp.submitted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="text-[9px] text-gray-400">{comp.submitter_name}</span>
+                        </div>
+                        <p className="text-gray-700 text-[11px] leading-relaxed">{comp.comments}</p>
+                        {comp.doc_path && (
+                          <a href={docUrl(comp.doc_path)} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-blue-600 hover:underline font-medium text-[10px]">
+                            <Paperclip size={9} /> Supporting Document
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* REVERTED: show compact compliance form */}
+                {record.status === 'REVERTED' && (
+                  <div className="border border-amber-200 rounded-lg p-3 bg-amber-50/60 space-y-3">
+                    <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wide">
+                      Action Required — Submit Compliance Response
+                    </p>
+                    {!showComplianceForm[record.id] ? (
+                      <button
+                        onClick={() => setShowComplianceForm(p => ({ ...p, [record.id]: true }))}
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg transition text-[11px]"
+                      >
+                        Submit Compliance Response
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 block mb-1 uppercase">
+                            Comments / Explanation *
+                          </label>
+                          <textarea
+                            rows={3}
+                            className="w-full border border-gray-300 rounded-lg p-2 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+                            placeholder="Explain your response to the Directorate's reversion remarks..."
+                            value={complianceComments[record.id] || ""}
+                            onChange={(e) => setComplianceComments(p => ({ ...p, [record.id]: e.target.value }))}
+                          />
+                        </div>
+                        <FileUploadField
+                          label="Supporting Document (Optional)"
+                          value={complianceDocs[record.id] || ""}
+                          onUploadSuccess={(path) => setComplianceDocs(p => ({ ...p, [record.id]: path }))}
+                          required={false}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleComplianceSubmit(record.id)}
+                            disabled={complianceSubmitting}
+                            className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
+                          >
+                            {complianceSubmitting ? "Submitting..." : "Submit Compliance"}
+                          </button>
+                          <button
+                            onClick={() => setShowComplianceForm(p => ({ ...p, [record.id]: false }))}
+                            className="bg-white border text-gray-600 hover:bg-gray-50 font-semibold px-3 py-1.5 rounded-lg transition text-[11px]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* PENDING or forwarded: show status info */}
+                {['PENDING', 'FORWARDED_TO_SLRC', 'SLRC_APPROVED'].includes(record.status) && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-blue-700 text-[10px] font-semibold flex items-center gap-1.5">
+                    <Clock size={11} />
+                    {record.status === 'PENDING' ? 'Claim submitted. Awaiting Directorate review.' :
+                     record.status === 'FORWARDED_TO_SLRC' ? 'Forwarded to SLRC for final decision.' :
+                     'SLRC Approved. Awaiting installment release by Directorate.'}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         ))}
       </div>
 
-      {eligibleInstNum ? (
-        <div className="pt-2">
+      {/* Fresh claim button — only for new eligible installment (not REVERTED) */}
+      {eligibleInstNum && (
+        <div className="pt-2 border-t">
           {!showForm ? (
             <button
               onClick={() => setShowForm(true)}
@@ -859,21 +971,9 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
           ) : (
             <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-4 space-y-4">
               <div className="flex justify-between items-center border-b pb-2">
-                <h5 className="font-bold text-emerald-800">Claim Details: {installmentLabel}</h5>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="text-gray-400 hover:text-gray-600 font-semibold"
-                >
-                  Cancel
-                </button>
+                <h5 className="font-bold text-emerald-800">New Claim: {installmentLabel}</h5>
+                <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 font-semibold">Cancel</button>
               </div>
-
-              {isReverted && prevDisb?.directorate_remarks && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded text-xs italic">
-                  <strong>Reversion Reason:</strong> {prevDisb.directorate_remarks}
-                </div>
-              )}
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -886,118 +986,61 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
                     onChange={(e) => setProgressDetails(e.target.value)}
                   />
                 </div>
-
                 <div>
-                  <FileUploadField
-                    label="SLRC Approval Document *"
-                    value={slrcDoc}
-                    onUploadSuccess={(p) => setSlrcDoc(p)}
-                    required={true}
-                  />
+                  <FileUploadField label="SLRC Approval Document *" value={slrcDoc} onUploadSuccess={(p) => setSlrcDoc(p)} required={true} />
                 </div>
                 <div>
-                  <FileUploadField
-                    label="Milestone Chart Details *"
-                    value={milestoneDoc}
-                    onUploadSuccess={(p) => setMilestoneDoc(p)}
-                    required={true}
-                  />
+                  <FileUploadField label="Milestone Chart Details *" value={milestoneDoc} onUploadSuccess={(p) => setMilestoneDoc(p)} required={true} />
                 </div>
-
                 <div className="md:col-span-2 border-t pt-3 mt-1">
                   <h6 className="font-bold text-slate-700 mb-2">Bank Details for Disbursal</h6>
                   <div className="grid md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Bank Account Number *</label>
-                      <input
-                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                        value={accNum}
-                        onChange={(e) => setAccNum(e.target.value)}
-                        placeholder="Enter account number"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Account Holder Name *</label>
-                      <input
-                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                        value={holderName}
-                        onChange={(e) => setHolderName(e.target.value)}
-                        placeholder="Name of account holder"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">IFSC Code *</label>
-                      <input
-                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                        value={ifsc}
-                        onChange={(e) => setIfsc(e.target.value)}
-                        placeholder="IFSC Code"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Bank Name *</label>
-                      <input
-                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                        value={bank}
-                        onChange={(e) => setBank(e.target.value)}
-                        placeholder="Bank Name"
-                      />
-                    </div>
+                    {[
+                      ["Bank Account Number *", accNum, setAccNum, "Enter account number"],
+                      ["Account Holder Name *", holderName, setHolderName, "Name of account holder"],
+                      ["IFSC Code *", ifsc, setIfsc, "IFSC Code"],
+                      ["Bank Name *", bank, setBank, "Bank Name"],
+                    ].map(([lbl, val, setter, ph]) => (
+                      <div key={lbl}>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1">{lbl}</label>
+                        <input
+                          className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                          value={val}
+                          onChange={(e) => setter(e.target.value)}
+                          placeholder={ph}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
-
                 <div>
-                  <FileUploadField
-                    label="Upload Cancelled Cheque *"
-                    value={chequeDoc}
-                    onUploadSuccess={(p) => setChequeDoc(p)}
-                    required={true}
-                  />
+                  <FileUploadField label="Upload Cancelled Cheque *" value={chequeDoc} onUploadSuccess={(p) => setChequeDoc(p)} required={true} />
                 </div>
-
                 {(eligibleInstNum === 2 || eligibleInstNum === 3) && (
                   <div>
-                    <FileUploadField
-                      label="Upload Utilization Certificate *"
-                      value={ucDoc}
-                      onUploadSuccess={(p) => setUcDoc(p)}
-                      required={true}
-                    />
+                    <FileUploadField label="Upload Utilization Certificate *" value={ucDoc} onUploadSuccess={(p) => setUcDoc(p)} required={true} />
                   </div>
                 )}
-
                 <div>
-                  <FileUploadField
-                    label="Other Supporting Document (Optional)"
-                    value={otherDoc}
-                    onUploadSuccess={(p) => setOtherDoc(p)}
-                    required={false}
-                  />
+                  <FileUploadField label="Other Supporting Document (Optional)" value={otherDoc} onUploadSuccess={(p) => setOtherDoc(p)} required={false} />
                 </div>
               </div>
-
               <div className="text-right border-t pt-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 text-xs"
-                >
+                <button type="submit" disabled={submitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 text-xs">
                   {submitting ? "Submitting..." : "Submit Disbursal Claim"}
                 </button>
               </div>
             </form>
           )}
         </div>
-      ) : (
-        d3?.status === 'APPROVED' ? (
-          <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg font-semibold text-center">
-            ✓ All grant installments have been fully claimed and approved!
-          </div>
-        ) : (
-          <div className="bg-blue-50 border border-blue-100 text-blue-700 p-3 rounded-lg font-semibold text-center">
-            ⌛ Installment claim is currently pending review by the Directorate.
-          </div>
-        )
+      )}
+
+      {/* All 3 released */}
+      {d3?.status === 'APPROVED' && (
+        <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg font-semibold text-center">
+          ✓ All grant installments have been fully claimed and approved!
+        </div>
       )}
     </div>
   );
