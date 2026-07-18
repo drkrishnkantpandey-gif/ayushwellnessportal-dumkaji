@@ -556,16 +556,16 @@ async function submitDisbursalRequest(req, res) {
     }
 
     // Verify application status is SLRC_APPROVED, APPROVED_BY_RPAC, or FORWARDED_TO_SLRC
-    const grantRes = await db.query(`SELECT status, approved_amount FROM research_grants WHERE id = $1`, [id]);
+    const grantRes = await db.query(`SELECT status, approved_amount, requested_amount FROM research_grants WHERE id = $1`, [id]);
     if (!grantRes.rows.length) return res.status(404).json({ message: 'Application not found.' });
     
-    const { status, approved_amount } = grantRes.rows[0];
+    const { status, approved_amount, requested_amount } = grantRes.rows[0];
     const validStatuses = ['SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC', 'APPROVED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Grant disbursal can only be requested after RPAC or SLRC Approval.' });
     }
 
-    const approvedAmt = parseFloat(approved_amount) || 0;
+    const approvedAmt = parseFloat(approved_amount) || parseFloat(requested_amount) || 0;
     if (approvedAmt <= 0) {
       return res.status(400).json({ message: 'Approved grant amount is zero or invalid.' });
     }

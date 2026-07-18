@@ -1743,10 +1743,10 @@ export default function ResearchGrant() {
                           <p className="text-xs text-gray-400">Requested Amount</p>
                           <p className="font-bold text-gray-800">{fmt(app.requested_amount)}</p>
                         </div>
-                        {app.approved_amount && (
+                        {(app.approved_amount || app.requested_amount) && (
                           <div className="bg-emerald-50 rounded-lg p-3">
-                            <p className="text-xs text-emerald-500">Approved Amount</p>
-                            <p className="font-bold text-emerald-700">{fmt(app.approved_amount)}</p>
+                            <p className="text-xs text-emerald-500">Approved/Requested Amount</p>
+                            <p className="font-bold text-emerald-700">{fmt(app.approved_amount || app.requested_amount)}</p>
                           </div>
                         )}
                         <div className="bg-gray-50 rounded-lg p-3">
@@ -1834,7 +1834,7 @@ export default function ResearchGrant() {
                       {["SLRC_APPROVED", "APPROVED_BY_RPAC", "FORWARDED_TO_SLRC", "APPROVED"].includes(app.status) && (
                         <DisbursalSection
                           appId={app.id}
-                          approvedAmount={app.approved_amount}
+                          approvedAmount={app.approved_amount || app.requested_amount}
                           disbList={disbursals[app.id]}
                           onReload={() => fetchDisbursals(app.id)}
                           FileUploadField={FileUploadField}
