@@ -1,6 +1,52 @@
--- Migration: Update research_grants table with new columns
+-- Migration: Ensure research_grants table exists and update it with new columns
 BEGIN;
 
+-- 1. Create table if it does not exist (e.g., in fresh environments like production/Render)
+CREATE TABLE IF NOT EXISTS research_grants (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    organization_name VARCHAR(255) NOT NULL,
+    organization_type VARCHAR(100) NOT NULL,
+    application_window VARCHAR(20) NOT NULL,
+    application_year INTEGER NOT NULL,
+    pi_name VARCHAR(255) NOT NULL,
+    pi_designation VARCHAR(255),
+    pi_qualification VARCHAR(255),
+    pi_email VARCHAR(255),
+    pi_phone VARCHAR(50),
+    pi_is_yoga_background BOOLEAN DEFAULT FALSE,
+    co_pis JSONB DEFAULT '[]'::jsonb,
+    yoga_background_member VARCHAR(255),
+    title VARCHAR(255) NOT NULL,
+    abstract TEXT,
+    keywords VARCHAR(255),
+    problem_statement TEXT,
+    objectives_hypotheses TEXT,
+    literature_review TEXT,
+    methodology TEXT,
+    feasibility TEXT,
+    timeline TEXT,
+    budget_justification TEXT,
+    institutional_capabilities TEXT,
+    biographical_sketches TEXT,
+    ethical_considerations TEXT,
+    endorsement_letters TEXT,
+    expected_outcomes TEXT,
+    requested_amount NUMERIC(15, 2) NOT NULL,
+    doc_proposal TEXT,
+    status VARCHAR(50) DEFAULT 'SUBMITTED',
+    approved_amount NUMERIC(15, 2),
+    directorate_remarks TEXT,
+    bank_account_number VARCHAR(100),
+    ifsc_code VARCHAR(50),
+    branch_name VARCHAR(255),
+    beneficiary_name VARCHAR(255),
+    bank_details_submitted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Add any new columns that are not present in the base table
 ALTER TABLE research_grants 
   ADD COLUMN IF NOT EXISTS yoga_experience_years INTEGER,
   ADD COLUMN IF NOT EXISTS doc_proof_path TEXT,
@@ -41,6 +87,7 @@ ALTER TABLE research_grants
   ADD COLUMN IF NOT EXISTS originality_affidavit_path TEXT,
   ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100) UNIQUE;
 
+-- 3. Create serial sequence for research grant application serial numbers
 CREATE SEQUENCE IF NOT EXISTS seq_research_grant_serial START WITH 1;
 
 COMMIT;
