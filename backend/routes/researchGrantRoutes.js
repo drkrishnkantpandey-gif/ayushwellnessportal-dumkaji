@@ -15,6 +15,11 @@ const {
   updateResearchOrgProfile,
   getSettings,
   updateSettings,
+  submitCompliance,
+  getGrantLogs,
+  getDisbursals,
+  submitDisbursalRequest,
+  reviewDisbursalRequest
 } = require('../controllers/researchGrantController');
 
 // Accept PDF and Word documents for the proposal
@@ -62,6 +67,13 @@ router.put('/profile', protect, profileUpload.fields([
   { name: 'registration_doc', maxCount: 1 },
   { name: 'relevant_docs', maxCount: 5 }
 ]), updateResearchOrgProfile);
+
+// ── Workflow routes ──────────────────────────────────────────────────────────
+router.post('/:id/compliance', protect, submitCompliance);
+router.get('/:id/logs',        protect, getGrantLogs);
+router.get('/:id/disbursals',   protect, getDisbursals);
+router.post('/:id/disbursals',  protect, submitDisbursalRequest);
+router.put('/:id/disbursals/:disbursalId', protect, reviewDisbursalRequest);
 
 // ── Settings routes ──────────────────────────────────────────────────────────
 router.get('/settings', protect, getSettings);

@@ -567,6 +567,57 @@ function getCurrentReviewWindow() {
   return null;
 }
 
+function WorkflowLogs({ logsList }) {
+  if (!logsList || logsList.length === 0) {
+    return <p className="text-xs text-gray-400 italic">No movement logs recorded yet.</p>;
+  }
+
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+      <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wide flex items-center gap-1.5 border-b pb-1">
+        <Activity size={14} className="text-slate-500" /> Application Movement & Audit Logs
+      </h4>
+      <div className="relative pl-6 border-l-2 border-slate-200 space-y-4">
+        {logsList.map((log) => (
+          <div key={log.id} className="relative">
+            {/* Dot */}
+            <div className="absolute -left-[31px] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-slate-400" />
+            
+            <div className="text-xs space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-gray-400 font-semibold">
+                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold uppercase">
+                  {log.action_by}
+                </span>
+                <span>{new Date(log.created_at).toLocaleString("en-IN")}</span>
+              </div>
+              <p className="font-medium text-gray-700">
+                Transitioned {log.from_status ? `from ${log.from_status.replace(/_/g, " ")}` : ""} to <span className="text-emerald-700 font-semibold">{log.to_status.replace(/_/g, " ")}</span>
+              </p>
+              {log.comments && (
+                <p className="text-gray-600 italic bg-white p-2 rounded border leading-relaxed">
+                  &ldquo;{log.comments}&rdquo;
+                </p>
+              )}
+              {log.attachment_path && (
+                <div className="mt-1">
+                  <a
+                    href={docUrl(log.attachment_path)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold"
+                  >
+                    <Paperclip size={10} /> View Log Attachment
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ResearchGrantReview() {
   const [apps, setApps]       = useState([]);
   const [loading, setLoading] = useState(true);
@@ -576,6 +627,51 @@ function ResearchGrantReview() {
   const [approvedAmt, setApprovedAmt] = useState("");
   const [saving, setSaving]   = useState(false);
   const [msg, setMsg]         = useState("");
+  const [logs, setLogs] = useState({});
+  const [disbursals, setDisbursals] = useState({});
+  const [disbRemarks, setDisbRemarks] = useState({});
+  const [disbSaving, setDisbSaving] = useState({});
+
+  const fetchLogs = async (id) => {
+    try {
+      const res = await axiosInstance.get(`${API}/api/research-grants/${id}/logs`);
+      setLogs(prev => ({ ...prev, [id]: res.data.data }));
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+    }
+  };
+
+  const fetchDisbursals = async (id) => {
+    try {
+      const res = await axiosInstance.get(`${API}/api/research-grants/${id}/disbursals`);
+      setDisbursals(prev => ({ ...prev, [id]: res.data.data }));
+    } catch (err) {
+      console.error("Error fetching disbursals:", err);
+    }
+  };
+
+  const handleReviewDisbursal = async (appId, disbId, status) => {
+    const rem = disbRemarks[disbId] || "";
+    if (status === 'REVERTED' && !rem.trim()) {
+      alert("Please specify reversion comments.");
+      return;
+    }
+    setDisbSaving(p => ({ ...p, [disbId]: true }));
+    try {
+      await axiosInstance.put(`${API}/api/research-grants/${appId}/disbursals/${disbId}`, {
+        status,
+        remarks: rem
+      });
+      alert(`Disbursal request has been ${status.toLowerCase()} successfully.`);
+      fetchDisbursals(appId);
+      fetchLogs(appId);
+    } catch (err) {
+      alert(err.response?.data?.message || "Action failed.");
+    } finally {
+      setDisbSaving(p => ({ ...p, [disbId]: false }));
+    }
+  };
+
   const reviewWindow = getCurrentReviewWindow();
 
   const [settings, setSettings] = useState("AUTO");
@@ -719,7 +815,14 @@ function ResearchGrantReview() {
             return (
               <div key={app.id} className="p-4">
                 <button className="w-full flex items-center justify-between text-left"
-                  onClick={() => setExpanded(open ? null : app.id)}>
+                  onClick={() => {
+                    const nextOpen = !open;
+                    setExpanded(nextOpen ? app.id : null);
+                    if (nextOpen) {
+                      fetchLogs(app.id);
+                      fetchDisbursals(app.id);
+                    }
+                  }}>
                   <div className="flex items-start gap-3">
                     <div className="bg-blue-100 rounded-full p-2 mt-0.5">
                       <BookOpen size={16} className="text-blue-700" />
@@ -959,21 +1062,187 @@ function ResearchGrantReview() {
                       </button>
                     </div>
 
-                    {/* Research Project Approval Committee Decision */}
-                    <div className="border-t pt-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">
-                        Research Project Approval Committee — Decision
+                    {/* Workflow Decisions */}
+                    <div className="border-t pt-4 space-y-4">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Workflow Stage: <span className="text-emerald-700 font-extrabold">{app.status.replace(/_/g, " ")}</span>
                       </p>
-                      <div className="flex gap-3">
-                        <button onClick={() => openModal(app.id, "APPROVED")}
-                          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-                          <CheckCircle size={15} /> Approve
-                        </button>
-                        <button onClick={() => openModal(app.id, "REJECTED")}
-                          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600">
-                          <XCircle size={15} /> Reject
-                        </button>
+
+                      {/* 1. Submitted / Resubmitted */}
+                      {(app.status === 'SUBMITTED' || app.status === 'RESUBMITTED') && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-400">Select initial review action:</p>
+                          <div className="flex gap-3">
+                            <button onClick={() => openModal(app.id, "FORWARDED_TO_RPAC")}
+                              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <CheckCircle size={13} /> Forward to RPAC
+                            </button>
+                            <button onClick={() => openModal(app.id, "REVERTED_TO_APPLICANT")}
+                              className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <AlertCircle size={13} /> Revert to Applicant (Ask Clarification)
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. Forwarded to RPAC */}
+                      {app.status === 'FORWARDED_TO_RPAC' && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-400">Select RPAC evaluation result:</p>
+                          <div className="flex gap-3">
+                            <button onClick={() => openModal(app.id, "APPROVED_BY_RPAC")}
+                              className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <CheckCircle size={13} /> Approve by RPAC
+                            </button>
+                            <button onClick={() => openModal(app.id, "REJECTED_BY_RPAC")}
+                              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <XCircle size={13} /> Reject by RPAC
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. Approved by RPAC */}
+                      {app.status === 'APPROVED_BY_RPAC' && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-400">Action required:</p>
+                          <div className="flex gap-3">
+                            <button onClick={() => openModal(app.id, "FORWARDED_TO_SLRC")}
+                              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <CheckCircle size={13} /> Forward to SLRC
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. Forwarded to SLRC */}
+                      {app.status === 'FORWARDED_TO_SLRC' && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-400">Select final SLRC committee decision:</p>
+                          <div className="flex gap-3">
+                            <button onClick={() => openModal(app.id, "SLRC_APPROVED")}
+                              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <CheckCircle size={13} /> Approve by SLRC
+                            </button>
+                            <button onClick={() => openModal(app.id, "SLRC_REJECTED")}
+                              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              <XCircle size={13} /> Reject by SLRC
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 5. Reverted to Applicant */}
+                      {app.status === 'REVERTED_TO_APPLICANT' && (
+                        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs font-semibold">
+                          ⌛ Waiting for Applicant compliance submission details.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Disbursal Requests review queue */}
+                    {app.status === 'SLRC_APPROVED' && disbursals[app.id] && disbursals[app.id].length > 0 && (
+                      <div className="border-t pt-4 space-y-3">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                          <Landmark size={14} className="text-emerald-700" /> Disbursal Requests Review
+                        </p>
+                        <div className="space-y-3">
+                          {disbursals[app.id].map((disb) => (
+                            <div key={disb.id} className="bg-slate-50 border rounded-xl p-3 space-y-3 text-xs">
+                              <div className="flex justify-between items-center border-b pb-1">
+                                <span className="font-bold text-gray-800">Installment #{disb.installment_num} ({disb.percentage}%)</span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  disb.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                                  disb.status === 'REVERTED' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {disb.status}
+                                </span>
+                              </div>
+
+                              <div className="grid md:grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <p className="text-[10px] text-gray-400 font-semibold uppercase">Requested Amount</p>
+                                  <p className="font-bold text-gray-800">{fmt(disb.amount)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-gray-400 font-semibold uppercase">Progress Details</p>
+                                  <p className="text-gray-700 font-medium">{disb.progress_details || "—"}</p>
+                                </div>
+                              </div>
+
+                              {/* Bank Details */}
+                              <div className="bg-white p-2.5 rounded border space-y-1">
+                                <p className="text-[9px] text-gray-400 font-bold uppercase">Bank details submitted for disbursal</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                                  <div><span className="text-gray-400">Bank:</span> {disb.bank_name}</div>
+                                  <div><span className="text-gray-400">Account:</span> {disb.account_number}</div>
+                                  <div><span className="text-gray-400">Holder:</span> {disb.account_holder_name}</div>
+                                  <div><span className="text-gray-400">IFSC:</span> {disb.ifsc_code}</div>
+                                </div>
+                              </div>
+
+                              {/* Document Links */}
+                              <div className="bg-white p-2 rounded border grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {[
+                                  ["SLRC Approval Document", disb.slrc_approval_doc_path],
+                                  ["Milestone Chart", disb.milestone_chart_path],
+                                  ["Cancelled Cheque", disb.cancelled_cheque_path],
+                                  ["Utilization Certificate", disb.utilization_certificate_path],
+                                  ["Other Doc", disb.other_doc_path]
+                                ].map(([lbl, path]) => (
+                                  path ? (
+                                    <a key={lbl} href={docUrl(path)} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1 font-medium truncate">
+                                      <Paperclip size={10} /> {lbl}
+                                    </a>
+                                  ) : null
+                                ))}
+                              </div>
+
+                              {/* Decision for Pending Disbursals */}
+                              {disb.status === 'PENDING' && (
+                                <div className="space-y-2 pt-2 border-t">
+                                  <div>
+                                    <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Reversion Remarks (Required if reverting)</label>
+                                    <textarea
+                                      rows={2}
+                                      value={disbRemarks[disb.id] || ""}
+                                      onChange={(e) => setDisbRemarks(p => ({ ...p, [disb.id]: e.target.value }))}
+                                      placeholder="Provide audit feedback or request details..."
+                                      className="w-full border border-gray-300 rounded p-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'APPROVED')}
+                                      disabled={disbSaving[disb.id]}
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
+                                    >
+                                      Approve Disbursal
+                                    </button>
+                                    <button
+                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'REVERTED')}
+                                      disabled={disbSaving[disb.id]}
+                                      className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
+                                    >
+                                      Revert to Applicant
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {disb.status === 'REVERTED' && disb.directorate_remarks && (
+                                <p className="text-red-600 italic">Reversion comments: &ldquo;{disb.directorate_remarks}&rdquo;</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                    )}
+
+                    {/* Movement Logs Timeline */}
+                    <div className="border-t pt-4">
+                      <WorkflowLogs logsList={logs[app.id]} />
                     </div>
                   </div>
                 )}
@@ -987,37 +1256,37 @@ function ResearchGrantReview() {
       {modal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl space-y-4">
-            <h4 className="font-semibold text-gray-800">
-              {modal.decision === "APPROVED" ? "Approve" : "Reject"} Research Grant #{modal.id}
+            <h4 className="font-semibold text-gray-800 text-sm">
+              Confirm Action: {modal.decision.replace(/_/g, " ")}
             </h4>
-            <p className="text-xs text-gray-500">Research Project Approval Committee — Directorate Decision</p>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase">Research Project Approval Committee — Directorate Workflow Action</p>
 
-            {modal.decision === "APPROVED" && (
+            {(modal.decision === "APPROVED_BY_RPAC" || modal.decision === "SLRC_APPROVED") && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">
                   Approved Grant Amount (₹) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <IndianRupee size={14} className="absolute left-3 top-2.5 text-gray-400" />
+                  <IndianRupee size={12} className="absolute left-3 top-2.5 text-gray-400" />
                   <input type="number" min="0" max="1000000"
                     value={approvedAmt} onChange={(e) => setApprovedAmt(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg pl-8 pr-3 py-2 text-sm"
+                    className="w-full border border-gray-300 rounded-lg pl-8 pr-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     placeholder="Max ₹10,00,000" />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Remarks / Comments {modal.decision === 'REVERTED_TO_APPLICANT' && <span className="text-red-500">*</span>}</label>
               <textarea rows={3} value={remarks} onChange={(e) => setRemarks(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                placeholder="Committee remarks or conditions..." />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                placeholder="Enter feedback comments, actions or details here..." />
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600">Cancel</button>
+              <button onClick={() => setModal(null)} className="px-4 py-1.5 text-xs border border-gray-300 rounded-lg text-gray-600 font-semibold shadow-sm hover:bg-gray-50">Cancel</button>
               <button onClick={submitDecision} disabled={saving}
-                className={`px-5 py-2 text-sm text-white rounded-lg disabled:opacity-60 ${modal.decision === "APPROVED" ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"}`}>
-                {saving ? "Saving…" : `Confirm ${modal.decision === "APPROVED" ? "Approval" : "Rejection"}`}
+                className="px-5 py-1.5 text-xs text-white bg-emerald-600 hover:bg-emerald-700 font-semibold rounded-lg disabled:opacity-60 shadow-sm transition">
+                {saving ? "Saving…" : "Confirm Action"}
               </button>
             </div>
           </div>

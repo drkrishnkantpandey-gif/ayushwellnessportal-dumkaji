@@ -5,7 +5,8 @@ const headers = {};
 import {
   PlusCircle, FileText, CheckCircle, Clock, XCircle,
   ChevronDown, ChevronUp, Upload, IndianRupee, AlertCircle,
-  User, Users, Building2, Trash2, Landmark, BookOpen, Save, Lock
+  User, Users, Building2, Trash2, Landmark, BookOpen, Save, Lock,
+  Activity, AlertTriangle, Paperclip
 } from "lucide-react";
 
 
@@ -374,6 +375,384 @@ function BankDetailsForm({ appId, existing, onSaved }) {
   );
 }
 
+function WorkflowLogs({ logsList }) {
+  if (!logsList || logsList.length === 0) {
+    return <p className="text-xs text-gray-400 italic">No movement logs recorded yet.</p>;
+  }
+
+  const docUrl = (p) => p ? `${API}${p.startsWith('/') ? '' : '/'}${p}` : '#';
+
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+      <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wide flex items-center gap-1.5 border-b pb-1">
+        <Activity size={14} className="text-slate-500" /> Application Movement & Audit Logs
+      </h4>
+      <div className="relative pl-6 border-l-2 border-slate-200 space-y-4">
+        {logsList.map((log) => (
+          <div key={log.id} className="relative">
+            {/* Dot */}
+            <div className="absolute -left-[31px] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-slate-400" />
+            
+            <div className="text-xs space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-gray-400 font-semibold">
+                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold uppercase">
+                  {log.action_by}
+                </span>
+                <span>{new Date(log.created_at).toLocaleString("en-IN")}</span>
+              </div>
+              <p className="font-medium text-gray-700">
+                Transitioned {log.from_status ? `from ${log.from_status.replace(/_/g, " ")}` : ""} to <span className="text-emerald-700 font-semibold">{log.to_status.replace(/_/g, " ")}</span>
+              </p>
+              {log.comments && (
+                <p className="text-gray-600 italic bg-white p-2 rounded border leading-relaxed">
+                  &ldquo;{log.comments}&rdquo;
+                </p>
+              )}
+              {log.attachment_path && (
+                <div className="mt-1">
+                  <a
+                    href={docUrl(log.attachment_path)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold"
+                  >
+                    <Paperclip size={10} /> View Log Attachment
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploadField }) {
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Form fields
+  const [progressDetails, setProgressDetails] = useState("");
+  const [slrcDoc, setSlrcDoc] = useState("");
+  const [milestoneDoc, setMilestoneDoc] = useState("");
+  const [accNum, setAccNum] = useState("");
+  const [holderName, setHolderName] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [bank, setBank] = useState("");
+  const [chequeDoc, setChequeDoc] = useState("");
+  const [ucDoc, setUcDoc] = useState("");
+  const [otherDoc, setOtherDoc] = useState("");
+
+  // Determine eligible installment number
+  let eligibleInstNum = null;
+  let installmentLabel = "";
+  let isReverted = false;
+  let prevDisb = null;
+
+  const d1 = disbList?.find(d => d.installment_num === 1);
+  const d2 = disbList?.find(d => d.installment_num === 2);
+  const d3 = disbList?.find(d => d.installment_num === 3);
+
+  if (!d1) {
+    eligibleInstNum = 1;
+    installmentLabel = "1st Installment (40%)";
+  } else if (d1.status === 'REVERTED') {
+    eligibleInstNum = 1;
+    installmentLabel = "1st Installment (40%) — Resubmission";
+    isReverted = true;
+    prevDisb = d1;
+  } else if (d1.status === 'PENDING') {
+    // Waiting 1st review
+  } else if (d1.status === 'APPROVED') {
+    if (!d2) {
+      eligibleInstNum = 2;
+      installmentLabel = "2nd Installment (30%)";
+    } else if (d2.status === 'REVERTED') {
+      eligibleInstNum = 2;
+      installmentLabel = "2nd Installment (30%) — Resubmission";
+      isReverted = true;
+      prevDisb = d2;
+    } else if (d2.status === 'PENDING') {
+      // Waiting 2nd review
+    } else if (d2.status === 'APPROVED') {
+      if (!d3) {
+        eligibleInstNum = 3;
+        installmentLabel = "3rd Installment (30%)";
+      } else if (d3.status === 'REVERTED') {
+        eligibleInstNum = 3;
+        installmentLabel = "3rd Installment (30%) — Resubmission";
+        isReverted = true;
+        prevDisb = d3;
+      }
+    }
+  }
+
+  // Pre-fill if reverted
+  useEffect(() => {
+    if (isReverted && prevDisb) {
+      setProgressDetails(prevDisb.progress_details || "");
+      setSlrcDoc(prevDisb.slrc_approval_doc_path || "");
+      setMilestoneDoc(prevDisb.milestone_chart_path || "");
+      setAccNum(prevDisb.account_number || "");
+      setHolderName(prevDisb.account_holder_name || "");
+      setIfsc(prevDisb.ifsc_code || "");
+      setBank(prevDisb.bank_name || "");
+      setChequeDoc(prevDisb.cancelled_cheque_path || "");
+      setUcDoc(prevDisb.utilization_certificate_path || "");
+      setOtherDoc(prevDisb.other_doc_path || "");
+    } else {
+      setProgressDetails("");
+      setSlrcDoc("");
+      setMilestoneDoc("");
+      setAccNum("");
+      setHolderName("");
+      setIfsc("");
+      setBank("");
+      setChequeDoc("");
+      setUcDoc("");
+      setOtherDoc("");
+    }
+  }, [eligibleInstNum, isReverted, prevDisb]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!progressDetails || !slrcDoc || !milestoneDoc || !accNum || !holderName || !ifsc || !bank || !chequeDoc) {
+      alert("Please fill all required fields and upload all mandatory documents.");
+      return;
+    }
+    if ((eligibleInstNum === 2 || eligibleInstNum === 3) && !ucDoc) {
+      alert("Utilization Certificate is mandatory for 2nd and 3rd Installments.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await axiosInstance.post(`${API}/api/research-grants/${appId}/disbursals`, {
+        installment_num: eligibleInstNum,
+        progress_details: progressDetails,
+        slrc_approval_doc_path: slrcDoc,
+        milestone_chart_path: milestoneDoc,
+        account_number: accNum,
+        account_holder_name: holderName,
+        ifsc_code: ifsc,
+        bank_name: bank,
+        cancelled_cheque_path: chequeDoc,
+        utilization_certificate_path: ucDoc || null,
+        other_doc_path: otherDoc || null
+      });
+      alert(`Installment Claim for ${installmentLabel} submitted successfully!`);
+      setShowForm(false);
+      onReload();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to submit claim.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const fmt = (n) =>
+    n != null ? `₹${parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
+
+  return (
+    <div className="border rounded-xl p-4 bg-slate-50/50 space-y-4 text-xs">
+      <div className="flex items-center justify-between border-b pb-2">
+        <h4 className="font-bold text-slate-800 text-xs uppercase flex items-center gap-1.5">
+          <Landmark size={14} className="text-emerald-600" /> Grant Disbursal Claims
+        </h4>
+        <span className="text-gray-400 font-medium">Approved Amount: {fmt(approvedAmount)}</span>
+      </div>
+
+      {/* Disbursals Status Badges */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "1st Installment (40%)", amount: approvedAmount * 0.4, record: d1 },
+          { label: "2nd Installment (30%)", amount: approvedAmount * 0.3, record: d2 },
+          { label: "3rd Installment (30%)", amount: approvedAmount * 0.3, record: d3 }
+        ].map(({ label, amount, record }) => (
+          <div key={label} className="bg-white border rounded-lg p-2.5 space-y-1">
+            <p className="text-[10px] text-gray-400 font-semibold">{label}</p>
+            <p className="font-bold text-gray-800 text-sm">{fmt(amount)}</p>
+            <div>
+              {record ? (
+                <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                  record.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                  record.status === 'REVERTED' ? 'bg-amber-100 text-amber-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {record.status}
+                </span>
+              ) : (
+                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-500 uppercase">
+                  Not Claimed
+                </span>
+              )}
+            </div>
+            {record?.directorate_remarks && (
+              <p className="text-[9px] text-red-600 italic mt-1 leading-normal">
+                Remarks: {record.directorate_remarks}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {eligibleInstNum ? (
+        <div className="pt-2">
+          {!showForm ? (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition"
+            >
+              Claim {installmentLabel}
+            </button>
+          ) : (
+            <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-4 space-y-4">
+              <div className="flex justify-between items-center border-b pb-2">
+                <h5 className="font-bold text-emerald-800">Claim Details: {installmentLabel}</h5>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="text-gray-400 hover:text-gray-600 font-semibold"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {isReverted && prevDisb?.directorate_remarks && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded text-xs italic">
+                  <strong>Reversion Reason:</strong> {prevDisb.directorate_remarks}
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Progress Details / Achievements *</label>
+                  <textarea
+                    rows={3}
+                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
+                    placeholder="Provide details on project progress..."
+                    value={progressDetails}
+                    onChange={(e) => setProgressDetails(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <FileUploadField
+                    label="SLRC Approval Document *"
+                    value={slrcDoc}
+                    onUploadSuccess={(p) => setSlrcDoc(p)}
+                    required={true}
+                  />
+                </div>
+                <div>
+                  <FileUploadField
+                    label="Milestone Chart Details *"
+                    value={milestoneDoc}
+                    onUploadSuccess={(p) => setMilestoneDoc(p)}
+                    required={true}
+                  />
+                </div>
+
+                <div className="md:col-span-2 border-t pt-3 mt-1">
+                  <h6 className="font-bold text-slate-700 mb-2">Bank Details for Disbursal</h6>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Bank Account Number *</label>
+                      <input
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                        value={accNum}
+                        onChange={(e) => setAccNum(e.target.value)}
+                        placeholder="Enter account number"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Account Holder Name *</label>
+                      <input
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                        value={holderName}
+                        onChange={(e) => setHolderName(e.target.value)}
+                        placeholder="Name of account holder"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">IFSC Code *</label>
+                      <input
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                        value={ifsc}
+                        onChange={(e) => setIfsc(e.target.value)}
+                        placeholder="IFSC Code"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Bank Name *</label>
+                      <input
+                        className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
+                        value={bank}
+                        onChange={(e) => setBank(e.target.value)}
+                        placeholder="Bank Name"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <FileUploadField
+                    label="Upload Cancelled Cheque *"
+                    value={chequeDoc}
+                    onUploadSuccess={(p) => setChequeDoc(p)}
+                    required={true}
+                  />
+                </div>
+
+                {(eligibleInstNum === 2 || eligibleInstNum === 3) && (
+                  <div>
+                    <FileUploadField
+                      label="Upload Utilization Certificate *"
+                      value={ucDoc}
+                      onUploadSuccess={(p) => setUcDoc(p)}
+                      required={true}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <FileUploadField
+                    label="Other Supporting Document (Optional)"
+                    value={otherDoc}
+                    onUploadSuccess={(p) => setOtherDoc(p)}
+                    required={false}
+                  />
+                </div>
+              </div>
+
+              <div className="text-right border-t pt-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50 text-xs"
+                >
+                  {submitting ? "Submitting..." : "Submit Disbursal Claim"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      ) : (
+        d3?.status === 'APPROVED' ? (
+          <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg font-semibold text-center">
+            ✓ All grant installments have been fully claimed and approved!
+          </div>
+        ) : (
+          <div className="bg-blue-50 border border-blue-100 text-blue-700 p-3 rounded-lg font-semibold text-center">
+            ⌛ Installment claim is currently pending review by the Directorate.
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 export default function ResearchGrant() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -385,6 +764,52 @@ export default function ResearchGrant() {
   const [expandedId, setExpandedId]     = useState(null);
   const [acceptingApplications, setAcceptingApplications] = useState(true);
   const [settingsMode, setSettingsMode] = useState("AUTO");
+
+  const [logs, setLogs] = useState({});
+  const [disbursals, setDisbursals] = useState({});
+  const [complianceComment, setComplianceComment] = useState("");
+  const [complianceDoc, setComplianceDoc] = useState("");
+  const [complianceSubmitting, setComplianceSubmitting] = useState(false);
+
+  const fetchLogs = async (id) => {
+    try {
+      const res = await axiosInstance.get(`${API}/api/research-grants/${id}/logs`);
+      setLogs(prev => ({ ...prev, [id]: res.data.data }));
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+    }
+  };
+
+  const fetchDisbursals = async (id) => {
+    try {
+      const res = await axiosInstance.get(`${API}/api/research-grants/${id}/disbursals`);
+      setDisbursals(prev => ({ ...prev, [id]: res.data.data }));
+    } catch (err) {
+      console.error("Error fetching disbursals:", err);
+    }
+  };
+
+  const handleComplianceSubmit = async (appId) => {
+    if (!complianceComment.trim()) {
+      alert("Please provide comments/details on the compliance actions taken.");
+      return;
+    }
+    setComplianceSubmitting(true);
+    try {
+      await axiosInstance.post(`${API}/api/research-grants/${appId}/compliance`, {
+        comments: complianceComment,
+        attachment_path: complianceDoc
+      });
+      alert("Compliance response submitted successfully! The application has been returned to the Directorate.");
+      setComplianceComment("");
+      setComplianceDoc("");
+      load(); // Reload applications list
+    } catch (err) {
+      alert(err.response?.data?.message || "Error submitting compliance.");
+    } finally {
+      setComplianceSubmitting(false);
+    }
+  };
 
   const activeWindow = getActiveWindow();
   const appYear = new Date().getFullYear();
@@ -582,7 +1007,7 @@ export default function ResearchGrant() {
     }
   };
 
-  function FileUploadField({ label, fieldPath, required, accept = ".pdf,.jpg,.jpeg,.png" }) {
+  function FileUploadField({ label, fieldPath, required, accept = ".pdf,.jpg,.jpeg,.png", value, onUploadSuccess }) {
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
 
@@ -607,14 +1032,16 @@ export default function ResearchGrant() {
           }
         });
         if (res.data.success) {
-          if (fieldPath.startsWith("co_pis.")) {
+          if (onUploadSuccess) {
+            onUploadSuccess(res.data.path);
+          } else if (fieldPath && fieldPath.startsWith("co_pis.")) {
             const [_, indexStr, subField] = fieldPath.split('.');
             const idx = parseInt(indexStr);
             setForm(prev => ({
               ...prev,
               co_pis: prev.co_pis.map((c, i) => i === idx ? { ...c, [subField]: res.data.path } : c)
             }));
-          } else {
+          } else if (fieldPath) {
             setField(fieldPath, res.data.path);
           }
         }
@@ -626,12 +1053,14 @@ export default function ResearchGrant() {
       }
     };
 
-    const currentPath = fieldPath.startsWith("co_pis.")
-      ? (() => {
-          const [_, indexStr, subField] = fieldPath.split('.');
-          return form.co_pis[parseInt(indexStr)]?.[subField];
-        })()
-      : form[fieldPath];
+    const currentPath = value || (
+      (fieldPath && fieldPath.startsWith("co_pis."))
+        ? (() => {
+            const [_, indexStr, subField] = fieldPath.split('.');
+            return form.co_pis[parseInt(indexStr)]?.[subField];
+          })()
+        : (fieldPath ? form[fieldPath] : null)
+    );
 
     return (
       <div className="space-y-1">
@@ -1129,6 +1558,13 @@ export default function ResearchGrant() {
   };
 
 
+  const hasActiveApplication = applications.some(app => 
+    !['REJECTED_BY_RPAC', 'SLRC_REJECTED'].includes(app.status)
+  );
+  const activeApp = applications.find(app => 
+    !['REJECTED_BY_RPAC', 'SLRC_REJECTED'].includes(app.status)
+  );
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -1140,14 +1576,14 @@ export default function ResearchGrant() {
         </div>
         <button
           onClick={() => {
-            if (!acceptingApplications) return;
+            if (!acceptingApplications || hasActiveApplication) return;
             setShowForm(!showForm); 
             setSuccessMsg(""); 
             setStep(1);
           }}
-          disabled={!acceptingApplications}
+          disabled={!acceptingApplications || hasActiveApplication}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition ${
-            acceptingApplications
+            (acceptingApplications && !hasActiveApplication)
               ? "bg-emerald-600 text-white hover:bg-emerald-700"
               : "bg-gray-200 text-gray-400 cursor-not-allowed"
           }`}
@@ -1155,6 +1591,18 @@ export default function ResearchGrant() {
           <PlusCircle size={16} /> New Application
         </button>
       </div>
+
+      {hasActiveApplication && (
+        <div className="border rounded-xl p-4 flex items-start gap-3 bg-amber-50 border-amber-300">
+          <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <span className="font-semibold text-amber-800">
+              You already have an active or approved Research Grant Application (Serial: {activeApp?.serial_number || "Pending"}). 
+              You cannot submit a new application unless your current application is rejected.
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className={`border rounded-xl p-4 flex items-start gap-3 ${
         acceptingApplications ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
@@ -1260,7 +1708,14 @@ export default function ResearchGrant() {
               return (
                 <div key={app.id} className="p-4">
                   <button className="w-full flex items-center justify-between text-left"
-                    onClick={() => setExpandedId(open ? null : app.id)}>
+                    onClick={() => {
+                      const nextOpen = !open;
+                      setExpandedId(nextOpen ? app.id : null);
+                      if (nextOpen) {
+                        fetchLogs(app.id);
+                        fetchDisbursals(app.id);
+                      }
+                    }}>
                     <div className="flex items-center gap-4">
                       <div className="bg-blue-100 rounded-full p-2">
                         <BookOpen size={18} className="text-blue-700" />
@@ -1327,6 +1782,67 @@ export default function ResearchGrant() {
                           onSaved={load}
                         />
                       )}
+
+                      {/* Compliance submission form for reverted applications */}
+                      {app.status === 'REVERTED_TO_APPLICANT' && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                          <h5 className="font-bold text-amber-800 text-xs uppercase flex items-center gap-1.5">
+                            <AlertTriangle size={14} /> Action Required: Reverted by Directorate
+                          </h5>
+                          <p className="text-xs text-amber-700 leading-relaxed">
+                            The Directorate has requested additional details or clarifications. Please review their remarks below, provide your response, upload any supporting documents, and click submit.
+                          </p>
+                          
+                          {/* Directorate remarks */}
+                          <div className="bg-white p-2.5 rounded border text-xs text-gray-700 italic">
+                            <strong>Directorate Remarks:</strong> {app.directorate_remarks || "No remarks provided."}
+                          </div>
+
+                          <div className="space-y-3 pt-1">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-700 block mb-1">Response Comments <span className="text-red-500">*</span></label>
+                              <textarea
+                                className="w-full text-xs p-2.5 border rounded-lg focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                                rows={3}
+                                placeholder="Describe the updates, explanations, or compliance actions taken..."
+                                value={complianceComment}
+                                onChange={(e) => setComplianceComment(e.target.value)}
+                              />
+                            </div>
+
+                            <div>
+                              <FileUploadField 
+                                label="Upload Supporting Document (Optional)" 
+                                value={complianceDoc}
+                                onUploadSuccess={(path) => setComplianceDoc(path)}
+                                required={false}
+                              />
+                            </div>
+
+                            <button
+                              onClick={() => handleComplianceSubmit(app.id)}
+                              disabled={complianceSubmitting}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2 rounded-lg transition disabled:opacity-50"
+                            >
+                              {complianceSubmitting ? "Submitting..." : "Submit Compliance Details"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Disbursal Section — only if SLRC approved */}
+                      {app.status === "SLRC_APPROVED" && (
+                        <DisbursalSection
+                          appId={app.id}
+                          approvedAmount={app.approved_amount}
+                          disbList={disbursals[app.id]}
+                          onReload={() => fetchDisbursals(app.id)}
+                          FileUploadField={FileUploadField}
+                        />
+                      )}
+
+                      {/* Movement Logs Timeline */}
+                      <WorkflowLogs logsList={logs[app.id]} />
                     </div>
                   )}
                 </div>

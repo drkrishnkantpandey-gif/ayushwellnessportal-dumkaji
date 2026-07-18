@@ -46,6 +46,19 @@ async function submitApplication(req, res) {
     }
 
     const userId = req.user.userId;
+    
+    // Check if applicant already has an active application
+    const activeCheck = await db.query(
+      `SELECT id, status, serial_number FROM research_grants 
+       WHERE user_id = $1 AND status NOT IN ('REJECTED_BY_RPAC', 'SLRC_REJECTED')`,
+      [userId]
+    );
+    if (activeCheck.rows.length) {
+      return res.status(400).json({ 
+        message: `You already have an active or approved research grant application (Serial: ${activeCheck.rows[0].serial_number}). You cannot submit a new application.` 
+      });
+    }
+
     const win    = getActiveWindow();
     const appWindow = win || (req.body.application_window) || 'APR_MAY';
     const appYear   = new Date().getFullYear();
@@ -182,7 +195,15 @@ async function submitApplication(req, res) {
       ]
     );
 
-    res.status(201).json({ success: true, data: result.rows[0] });
+    // Log the initial submission
+    const newGrant = result.rows[0];
+    await db.query(
+      `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments)
+       VALUES ($1, 'APPLICANT', $2, NULL, 'SUBMITTED', 'Initial submission of the Research Grant application proposal.')`,
+      [newGrant.id, userId]
+    );
+
+    res.status(201).json({ success: true, data: newGrant });
   } catch (err) {
     console.error('submitApplication (research):', err);
     res.status(500).json({ message: 'Server error' });
@@ -259,7 +280,7 @@ async function getPendingApplications(req, res) {
       `SELECT r.*, u.email AS applicant_email, u.full_name AS applicant_name
        FROM research_grants r
        JOIN users u ON u.id = r.user_id
-       WHERE r.status IN ('SUBMITTED','UNDER_REVIEW')
+       WHERE r.status IN ('SUBMITTED','RESUBMITTED','FORWARDED_TO_RPAC','APPROVED_BY_RPAC','FORWARDED_TO_SLRC','REVERTED_TO_APPLICANT')
        ORDER BY r.application_window, r.created_at ASC`
     );
     res.json({ success: true, data: result.rows });
@@ -273,20 +294,43 @@ async function getPendingApplications(req, res) {
 async function directorateDecision(req, res) {
   try {
     const { id } = req.params;
-    const { decision, remarks, approved_amount } = req.body;
+    const { decision, remarks, approved_amount, attachment_path } = req.body;
 
-    if (!['APPROVED','REJECTED'].includes(decision)) {
-      return res.status(400).json({ message: 'Decision must be APPROVED or REJECTED.' });
+    const validDecisions = [
+      'REVERTED_TO_APPLICANT', 
+      'FORWARDED_TO_RPAC', 
+      'APPROVED_BY_RPAC', 
+      'REJECTED_BY_RPAC', 
+      'FORWARDED_TO_SLRC', 
+      'SLRC_APPROVED', 
+      'SLRC_REJECTED'
+    ];
+
+    if (!validDecisions.includes(decision)) {
+      return res.status(400).json({ message: 'Invalid decision / status transition.' });
     }
 
+    // Fetch current status
+    const current = await db.query(`SELECT status FROM research_grants WHERE id = $1`, [id]);
+    if (!current.rows.length) return res.status(404).json({ message: 'Application not found.' });
+    const fromStatus = current.rows[0].status;
+
+    // Update grant status and optionally approved amount
     const result = await db.query(
       `UPDATE research_grants
        SET status=$1, directorate_remarks=$2, directorate_reviewed_at=NOW(),
-           reviewed_by=$3, approved_amount=$4, updated_at=NOW()
+           reviewed_by=$3, approved_amount=COALESCE($4, approved_amount), updated_at=NOW()
        WHERE id=$5 RETURNING *`,
-      [decision, remarks || null, req.user.userId, approved_amount || null, id]
+      [decision, remarks || null, req.user.userId, approved_amount ? parseFloat(approved_amount) : null, id]
     );
-    if (!result.rows.length) return res.status(404).json({ message: 'Application not found.' });
+
+    // Log the transaction
+    await db.query(
+      `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments, attachment_path)
+       VALUES ($1, 'DIRECTORATE', $2, $3, $4, $5, $6)`,
+      [id, req.user.userId, fromStatus, decision, remarks || null, attachment_path || null]
+    );
+
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     console.error('directorateDecision (research):', err);
@@ -434,6 +478,220 @@ async function updateSettings(req, res) {
   }
 }
 
+// ── Compliance Submissions ───────────────────────────────────────────────────
+async function submitCompliance(req, res) {
+  try {
+    const { id } = req.params;
+    const { comments, attachment_path } = req.body;
+
+    const current = await db.query(`SELECT status FROM research_grants WHERE id = $1`, [id]);
+    if (!current.rows.length) return res.status(404).json({ message: 'Application not found.' });
+    const fromStatus = current.rows[0].status;
+
+    if (fromStatus !== 'REVERTED_TO_APPLICANT') {
+      return res.status(400).json({ message: 'Only reverted applications can submit compliance details.' });
+    }
+
+    const nextStatus = 'RESUBMITTED';
+    const result = await db.query(
+      `UPDATE research_grants SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [nextStatus, id]
+    );
+
+    await db.query(
+      `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments, attachment_path)
+       VALUES ($1, 'APPLICANT', $2, $3, $4, $5, $6)`,
+      [id, req.user.userId, fromStatus, nextStatus, comments || null, attachment_path || null]
+    );
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('submitCompliance:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── GET Logs ─────────────────────────────────────────────────────────────────
+async function getGrantLogs(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      `SELECT * FROM research_grant_logs WHERE grant_id = $1 ORDER BY created_at ASC`,
+      [id]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('getGrantLogs:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// ── Disbursal Requests ───────────────────────────────────────────────────────
+async function getDisbursals(req, res) {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      `SELECT * FROM research_grant_disbursals WHERE grant_id = $1 ORDER BY installment_num ASC`,
+      [id]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('getDisbursals:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+async function submitDisbursalRequest(req, res) {
+  try {
+    const { id } = req.params;
+    const {
+      installment_num, progress_details, slrc_approval_doc_path, milestone_chart_path,
+      account_number, account_holder_name, ifsc_code, bank_name, cancelled_cheque_path,
+      utilization_certificate_path, other_doc_path
+    } = req.body;
+
+    const instNum = parseInt(installment_num);
+    if (![1, 2, 3].includes(instNum)) {
+      return res.status(400).json({ message: 'Invalid installment number (must be 1, 2, or 3).' });
+    }
+
+    // Verify application status is SLRC_APPROVED
+    const grantRes = await db.query(`SELECT status, approved_amount FROM research_grants WHERE id = $1`, [id]);
+    if (!grantRes.rows.length) return res.status(404).json({ message: 'Application not found.' });
+    
+    const { status, approved_amount } = grantRes.rows[0];
+    if (status !== 'SLRC_APPROVED') {
+      return res.status(400).json({ message: 'Grant disbursal can only be requested after SLRC Approval.' });
+    }
+
+    const approvedAmt = parseFloat(approved_amount) || 0;
+    if (approvedAmt <= 0) {
+      return res.status(400).json({ message: 'Approved grant amount is zero or invalid.' });
+    }
+
+    // Determine requested amount based on installment percentage
+    const pct = instNum === 1 ? 0.40 : 0.30;
+    const amount = approvedAmt * pct;
+
+    // Checks for prerequisites
+    if (instNum === 2) {
+      const prev = await db.query(
+        `SELECT status FROM research_grant_disbursals WHERE grant_id = $1 AND installment_num = 1`,
+        [id]
+      );
+      if (!prev.rows.length || prev.rows[0].status !== 'APPROVED') {
+        return res.status(400).json({ message: 'You must get approval for the 1st Installment before requesting the 2nd.' });
+      }
+      if (!utilization_certificate_path) {
+        return res.status(400).json({ message: 'Utilization Certificate is required for the 2nd Installment.' });
+      }
+    }
+
+    if (instNum === 3) {
+      const prev = await db.query(
+        `SELECT status FROM research_grant_disbursals WHERE grant_id = $1 AND installment_num = 2`,
+        [id]
+      );
+      if (!prev.rows.length || prev.rows[0].status !== 'APPROVED') {
+        return res.status(400).json({ message: 'You must get approval for the 2nd Installment before requesting the 3rd.' });
+      }
+      if (!utilization_certificate_path) {
+        return res.status(400).json({ message: 'Utilization Certificate is required for the 3rd Installment.' });
+      }
+    }
+
+    // Check for existing request of same installment number
+    const check = await db.query(
+      `SELECT id, status FROM research_grant_disbursals WHERE grant_id = $1 AND installment_num = $2`,
+      [id, instNum]
+    );
+    if (check.rows.length) {
+      const existingStatus = check.rows[0].status;
+      if (existingStatus === 'PENDING') {
+        return res.status(400).json({ message: `A request for Installment ${instNum} is already pending review.` });
+      }
+      if (existingStatus === 'APPROVED') {
+        return res.status(400).json({ message: `Installment ${instNum} has already been approved.` });
+      }
+      if (existingStatus === 'REVERTED') {
+        // Overwrite the reverted request
+        await db.query(
+          `DELETE FROM research_grant_disbursals WHERE grant_id = $1 AND installment_num = $2`,
+          [id, instNum]
+        );
+      }
+    }
+
+    // Save request
+    const result = await db.query(
+      `INSERT INTO research_grant_disbursals (
+        grant_id, installment_num, percentage, amount, progress_details,
+        slrc_approval_doc_path, milestone_chart_path, account_number,
+        account_holder_name, ifsc_code, bank_name, cancelled_cheque_path,
+        utilization_certificate_path, other_doc_path, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDING')
+       RETURNING *`,
+      [
+        id, instNum, pct * 100, amount, progress_details,
+        slrc_approval_doc_path, milestone_chart_path, account_number,
+        account_holder_name, ifsc_code, bank_name, cancelled_cheque_path,
+        utilization_certificate_path || null, other_doc_path || null
+      ]
+    );
+
+    // Log the request
+    await db.query(
+      `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments)
+       VALUES ($1, 'APPLICANT', $2, $3, $4, $5)`,
+      [id, req.user.userId, 'SLRC_APPROVED', `DISB_REQ_INSTALLMENT_${instNum}`, `Submitted request for installment #${instNum} (${pct*100}%).`]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('submitDisbursalRequest:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+async function reviewDisbursalRequest(req, res) {
+  try {
+    const { id, disbursalId } = req.params;
+    const { status, remarks } = req.body;
+
+    if (!['APPROVED', 'REVERTED'].includes(status)) {
+      return res.status(400).json({ message: 'Status must be APPROVED or REVERTED.' });
+    }
+
+    const disb = await db.query(
+      `SELECT installment_num, status FROM research_grant_disbursals WHERE id = $1 AND grant_id = $2`,
+      [disbursalId, id]
+    );
+    if (!disb.rows.length) return res.status(404).json({ message: 'Disbursal request not found.' });
+
+    const instNum = disb.rows[0].installment_num;
+    const fromStatus = disb.rows[0].status;
+
+    await db.query(
+      `UPDATE research_grant_disbursals
+       SET status = $1, directorate_remarks = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [status, remarks || null, disbursalId]
+    );
+
+    // Log the review
+    await db.query(
+      `INSERT INTO research_grant_logs (grant_id, action_by, action_by_user_id, from_status, to_status, comments)
+       VALUES ($1, 'DIRECTORATE', $2, $3, $4, $5)`,
+      [id, req.user.userId, `DISB_REQ_INSTALLMENT_${instNum}_${fromStatus}`, `DISB_REQ_INSTALLMENT_${instNum}_${status}`, remarks || null]
+    );
+
+    res.json({ success: true, message: `Disbursal request has been ${status.toLowerCase()}.` });
+  } catch (err) {
+    console.error('reviewDisbursalRequest:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 module.exports = {
   submitApplication,
   getMyApplications,
@@ -445,4 +703,9 @@ module.exports = {
   updateResearchOrgProfile,
   getSettings,
   updateSettings,
+  submitCompliance,
+  getGrantLogs,
+  getDisbursals,
+  submitDisbursalRequest,
+  reviewDisbursalRequest
 };
