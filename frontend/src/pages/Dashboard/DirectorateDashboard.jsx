@@ -24,11 +24,11 @@ const STATUS_META = {
   REVERTED_TO_APPLICANT:    { label: "Reverted (Compliance Required)", color: "bg-red-100 text-red-700" },
   RESUBMITTED:              { label: "Resubmitted to Directorate", color: "bg-cyan-100 text-cyan-700" },
   FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700" },
-  SLRC_APPROVED:            { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200" },
+  SLRC_APPROVED:            { label: "In-Principle Approval Granted for Research Proposal", color: "bg-teal-100 text-teal-800 border border-teal-200" },
   IN_PRINCIPLE_APPROVED:    { label: "In-principle Approval Given",   color: "bg-emerald-100 text-emerald-700" },
   DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700" },
   SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700" },
-  APPROVED:                 { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200" },
+  APPROVED:                 { label: "In-Principle Approval Granted for Research Proposal", color: "bg-teal-100 text-teal-800 border border-teal-200" },
   FORWARDED_TO_RPAC:        { label: "Forwarded to RPAC", color: "bg-purple-100 text-purple-700" },
   APPROVED_BY_RPAC:         { label: "Approved by RPAC", color: "bg-emerald-100 text-emerald-700" },
   REJECTED_BY_RPAC:         { label: "Rejected by RPAC", color: "bg-red-100 text-red-700" },
@@ -666,7 +666,9 @@ function ResearchGrantReview() {
         status,
         remarks: rem
       });
-      alert(`Disbursal request has been ${status.toLowerCase()} successfully.`);
+      let statusText = status.toLowerCase().replace(/_/g, " ");
+      if (status === 'APPROVED') statusText = 'released';
+      alert(`Disbursal request has been ${statusText} successfully.`);
       fetchDisbursals(appId);
       fetchLogs(appId);
     } catch (err) {
@@ -1082,7 +1084,7 @@ function ResearchGrantReview() {
                       </p>
 
                       {/* 1. Submitted / Resubmitted (Pre-RPAC Approval) */}
-                      {(app.status === 'SUBMITTED' || (app.status === 'RESUBMITTED' && !(parseFloat(app.approved_amount) > 0))) && (
+                      {(app.status === 'SUBMITTED' || (app.status === 'RESUBMITTED' && !(parseFloat(app.approved_amount) > 0 || (disbursals[app.id] && disbursals[app.id].length > 0)))) && (
                         <div className="space-y-2">
                           <p className="text-xs text-gray-400">Select initial review action:</p>
                           <div className="flex gap-3">
@@ -1091,7 +1093,7 @@ function ResearchGrantReview() {
                               <CheckCircle size={13} /> Forward to RPAC
                             </button>
                             <button onClick={() => openModal(app.id, "REVERTED_TO_APPLICANT")}
-                              className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
                               <AlertCircle size={13} /> Revert to Applicant (Ask Clarification)
                             </button>
                           </div>
@@ -1099,7 +1101,7 @@ function ResearchGrantReview() {
                       )}
 
                       {/* 1.5. Resubmitted (Post-RPAC Approval) */}
-                      {app.status === 'RESUBMITTED' && parseFloat(app.approved_amount) > 0 && (
+                      {app.status === 'RESUBMITTED' && (parseFloat(app.approved_amount) > 0 || (disbursals[app.id] && disbursals[app.id].length > 0)) && (
                         <div className="space-y-2">
                           <p className="text-xs text-gray-400">Select review action (Already Approved by RPAC):</p>
                           <div className="flex gap-3">
@@ -1108,7 +1110,7 @@ function ResearchGrantReview() {
                               <CheckCircle size={13} /> Forward to SLRC
                             </button>
                             <button onClick={() => openModal(app.id, "REVERTED_TO_APPLICANT")}
-                              className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
+                              className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition">
                               <AlertCircle size={13} /> Revert to Applicant (Ask Clarification)
                             </button>
                           </div>
@@ -1186,11 +1188,19 @@ function ResearchGrantReview() {
                               <div className="flex justify-between items-center border-b pb-1">
                                 <span className="font-bold text-gray-800">Installment #{disb.installment_num} ({disb.percentage}%)</span>
                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                  disb.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                  disb.status === 'REVERTED' ? 'bg-amber-100 text-amber-700' :
-                                  'bg-blue-100 text-blue-700'
+                                  disb.status === 'APPROVED' ? 'bg-teal-100 text-teal-700 border border-teal-200' :
+                                  disb.status === 'SLRC_APPROVED' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                                  disb.status === 'FORWARDED_TO_SLRC' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                                  disb.status === 'REVERTED' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                  disb.status === 'SLRC_REJECTED' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                  'bg-blue-100 text-blue-700 border border-blue-200'
                                 }`}>
-                                  {disb.status}
+                                  {disb.status === 'APPROVED' ? `${disb.installment_num === 1 ? '1st' : disb.installment_num === 2 ? '2nd' : '3rd'} Installment Release Approved` :
+                                   disb.status === 'SLRC_APPROVED' ? 'SLRC Approved' :
+                                   disb.status === 'FORWARDED_TO_SLRC' ? 'Forwarded to SLRC' :
+                                   disb.status === 'REVERTED' ? 'Reverted' :
+                                   disb.status === 'SLRC_REJECTED' ? 'SLRC Rejected' :
+                                   'Pending Directorate Review'}
                                 </span>
                               </div>
 
@@ -1248,11 +1258,11 @@ function ResearchGrantReview() {
                                   </div>
                                   <div className="flex gap-2">
                                     <button
-                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'APPROVED')}
+                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'FORWARDED_TO_SLRC')}
                                       disabled={disbSaving[disb.id]}
-                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
+                                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
                                     >
-                                      Approve Disbursal
+                                      Forward to SLRC
                                     </button>
                                     <button
                                       onClick={() => handleReviewDisbursal(app.id, disb.id, 'REVERTED')}
@@ -1260,6 +1270,45 @@ function ResearchGrantReview() {
                                       className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
                                     >
                                       Revert to Applicant
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Decision for Forwarded-to-SLRC Disbursals */}
+                              {disb.status === 'FORWARDED_TO_SLRC' && (
+                                <div className="space-y-2 pt-2 border-t flex flex-col gap-2">
+                                  <span className="text-[10px] font-bold text-indigo-700 uppercase">Forwarded to SLRC (Awaiting Decision)</span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'SLRC_APPROVED')}
+                                      disabled={disbSaving[disb.id]}
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
+                                    >
+                                      Approved by SLRC
+                                    </button>
+                                    <button
+                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'SLRC_REJECTED')}
+                                      disabled={disbSaving[disb.id]}
+                                      className="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50 text-[11px]"
+                                    >
+                                      Rejected by SLRC
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Release Option for SLRC Approved Disbursals */}
+                              {disb.status === 'SLRC_APPROVED' && (
+                                <div className="space-y-2 pt-2 border-t flex flex-col gap-2">
+                                  <span className="text-[10px] font-bold text-emerald-700 uppercase">SLRC Approved (Awaiting Release)</span>
+                                  <div>
+                                    <button
+                                      onClick={() => handleReviewDisbursal(app.id, disb.id, 'APPROVED')}
+                                      disabled={disbSaving[disb.id]}
+                                      className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-lg transition disabled:opacity-50 text-[11px] uppercase tracking-wider"
+                                    >
+                                      Release {disb.installment_num === 1 ? '1st' : disb.installment_num === 2 ? '2nd' : '3rd'} Installment
                                     </button>
                                   </div>
                                 </div>

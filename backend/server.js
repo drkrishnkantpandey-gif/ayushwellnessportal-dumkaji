@@ -357,6 +357,22 @@ async function runIncentiveApplicationsMigration() {
   }
 }
 
+async function runResearchGrantsCleanupMigration() {
+  try {
+    const res = await pool.query(`
+      UPDATE research_grants
+      SET approved_amount = requested_amount
+      WHERE (approved_amount IS NULL OR approved_amount = 0)
+        AND status IN ('APPROVED', 'SLRC_APPROVED', 'APPROVED_BY_RPAC', 'FORWARDED_TO_SLRC')
+    `);
+    if (res.rowCount > 0) {
+      console.log(`Database Migration: Cleaned up ${res.rowCount} legacy research grant approved amounts.`);
+    }
+  } catch (err) {
+    console.error("Database Migration: Failed to clean up legacy research grant approved amounts:", err);
+  }
+}
+
 pool.query('SELECT NOW()', (err) => {
   if (err) {
     console.error('Error connecting to the database:', err);
@@ -365,6 +381,7 @@ pool.query('SELECT NOW()', (err) => {
     bootstrapAdmin();
     runTrainingCentresMigration();
     runIncentiveApplicationsMigration();
+    runResearchGrantsCleanupMigration();
   }
 });
 

@@ -659,8 +659,9 @@ async function reviewDisbursalRequest(req, res) {
     const { id, disbursalId } = req.params;
     const { status, remarks } = req.body;
 
-    if (!['APPROVED', 'REVERTED'].includes(status)) {
-      return res.status(400).json({ message: 'Status must be APPROVED or REVERTED.' });
+    const validStatuses = ['APPROVED', 'REVERTED', 'FORWARDED_TO_SLRC', 'SLRC_APPROVED', 'SLRC_REJECTED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status transition for disbursal request.' });
     }
 
     const disb = await db.query(
@@ -678,6 +679,13 @@ async function reviewDisbursalRequest(req, res) {
        WHERE id = $3`,
       [status, remarks || null, disbursalId]
     );
+
+    if (status === 'SLRC_REJECTED') {
+      await db.query(
+        `UPDATE research_grants SET status = 'SLRC_REJECTED', updated_at = NOW() WHERE id = $1`,
+        [id]
+      );
+    }
 
     // Log the review
     await db.query(

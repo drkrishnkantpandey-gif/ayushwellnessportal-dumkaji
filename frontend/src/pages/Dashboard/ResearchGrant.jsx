@@ -46,9 +46,9 @@ const STATUS_META = {
   APPROVED_BY_RPAC:      { label: "Approved by RPAC",                 color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
   REJECTED_BY_RPAC:      { label: "Rejected by RPAC",                 color: "bg-red-100 text-red-700",         icon: XCircle },
   FORWARDED_TO_SLRC:     { label: "Forwarded to SLRC",                color: "bg-sky-100 text-sky-700",         icon: Clock },
-  SLRC_APPROVED:         { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200", icon: Award },
+  SLRC_APPROVED:         { label: "In-Principle Approval Granted for Research Proposal", color: "bg-teal-100 text-teal-800 border border-teal-200", icon: Award },
   SLRC_REJECTED:         { label: "Rejected by SLRC",                 color: "bg-rose-100 text-rose-700",       icon: XCircle },
-  APPROVED:              { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200", icon: Award },
+  APPROVED:              { label: "In-Principle Approval Granted for Research Proposal", color: "bg-teal-100 text-teal-800 border border-teal-200", icon: Award },
   REJECTED:              { label: "Rejected",                         color: "bg-red-100 text-red-700",         icon: XCircle },
 };
 
@@ -516,7 +516,7 @@ export function printInPrincipleCertificate(app, apiBaseUrl) {
               <tr>
                 <td class="label-col">Application Status:</td>
                 <td class="val-col">
-                  <span class="status-badge">In-Principle Application Granted</span>
+                  <span class="status-badge">In-Principle Approval Granted for Research Proposal</span>
                 </td>
               </tr>
             </table>
@@ -818,11 +818,19 @@ function DisbursalSection({ appId, approvedAmount, disbList, onReload, FileUploa
             <div>
               {record ? (
                 <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                  record.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                  record.status === 'REVERTED' ? 'bg-amber-100 text-amber-700' :
-                  'bg-blue-100 text-blue-700'
+                  record.status === 'APPROVED' ? 'bg-teal-100 text-teal-800 border border-teal-200' :
+                  record.status === 'SLRC_APPROVED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                  record.status === 'FORWARDED_TO_SLRC' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                  record.status === 'REVERTED' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                  record.status === 'SLRC_REJECTED' ? 'bg-red-100 text-red-800 border border-red-200' :
+                  'bg-blue-100 text-blue-800 border border-blue-200'
                 }`}>
-                  {record.status}
+                  {record.status === 'APPROVED' ? `${record.installment_num === 1 ? '1st' : record.installment_num === 2 ? '2nd' : '3rd'} Installment Release Approved` :
+                   record.status === 'SLRC_APPROVED' ? 'SLRC Approved (Awaiting Release)' :
+                   record.status === 'FORWARDED_TO_SLRC' ? 'Forwarded to SLRC' :
+                   record.status === 'REVERTED' ? 'Reverted' :
+                   record.status === 'SLRC_REJECTED' ? 'SLRC Rejected' :
+                   'Pending Review'}
                 </span>
               ) : (
                 <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-gray-100 text-gray-500 uppercase">
