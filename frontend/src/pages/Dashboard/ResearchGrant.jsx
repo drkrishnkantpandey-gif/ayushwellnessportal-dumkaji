@@ -6,7 +6,7 @@ import {
   PlusCircle, FileText, CheckCircle, Clock, XCircle,
   ChevronDown, ChevronUp, Upload, IndianRupee, AlertCircle,
   User, Users, Building2, Trash2, Landmark, BookOpen, Save, Lock,
-  Activity, AlertTriangle, Paperclip
+  Activity, AlertTriangle, Paperclip, Award
 } from "lucide-react";
 
 
@@ -38,10 +38,18 @@ const DISTRICT_OPTIONS = [
 ];
 
 const STATUS_META = {
-  SUBMITTED:    { label: "Submitted",     color: "bg-blue-100 text-blue-700",    icon: Clock        },
-  UNDER_REVIEW: { label: "Under Review",  color: "bg-yellow-100 text-yellow-700",icon: Clock        },
-  APPROVED:     { label: "Approved ✓",   color: "bg-emerald-100 text-emerald-700",icon: CheckCircle },
-  REJECTED:     { label: "Rejected",      color: "bg-red-100 text-red-700",      icon: XCircle      },
+  SUBMITTED:             { label: "Submitted",                        color: "bg-blue-100 text-blue-700",       icon: Clock },
+  RESUBMITTED:           { label: "Compliance Submitted",             color: "bg-indigo-100 text-indigo-700",   icon: Clock },
+  UNDER_REVIEW:          { label: "Under Review",                     color: "bg-yellow-100 text-yellow-700",   icon: Clock },
+  REVERTED_TO_APPLICANT: { label: "Reverted (Clarification Needed)",  color: "bg-amber-100 text-amber-700",     icon: AlertCircle },
+  FORWARDED_TO_RPAC:     { label: "Forwarded to RPAC",                color: "bg-purple-100 text-purple-700",   icon: Clock },
+  APPROVED_BY_RPAC:      { label: "Approved by RPAC",                 color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
+  REJECTED_BY_RPAC:      { label: "Rejected by RPAC",                 color: "bg-red-100 text-red-700",         icon: XCircle },
+  FORWARDED_TO_SLRC:     { label: "Forwarded to SLRC",                color: "bg-sky-100 text-sky-700",         icon: Clock },
+  SLRC_APPROVED:         { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200", icon: Award },
+  SLRC_REJECTED:         { label: "Rejected by SLRC",                 color: "bg-rose-100 text-rose-700",       icon: XCircle },
+  APPROVED:              { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200", icon: Award },
+  REJECTED:              { label: "Rejected",                         color: "bg-red-100 text-red-700",         icon: XCircle },
 };
 
 const WINDOW_INFO = {
@@ -303,6 +311,240 @@ export function printResearchApplication(app, apiBaseUrl) {
     </html>
   `;
   
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+export function printInPrincipleCertificate(app, apiBaseUrl) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return alert("Please allow popups to download/print the Certificate.");
+
+  const approvedAmt = parseFloat(app.approved_amount) || parseFloat(app.requested_amount) || 0;
+  const fmtAmt = approvedAmt > 0 
+    ? `₹${approvedAmt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` 
+    : "—";
+
+  const dateStr = app.directorate_reviewed_at 
+    ? new Date(app.directorate_reviewed_at).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' })
+    : new Date().toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const html = `
+    <html>
+      <head>
+        <title>In-Principle Approval Certificate - ${app.serial_number || "Not Available"}</title>
+        <style>
+          body {
+            font-family: "Georgia", "Times New Roman", Times, serif;
+            padding: 50px;
+            color: #1f2937;
+            background-color: #fcfbf7;
+            line-height: 1.6;
+          }
+          .border-outer {
+            border: 15px double #065f46;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+            background-color: #ffffff;
+            position: relative;
+          }
+          .border-inner {
+            border: 2px solid #047857;
+            padding: 40px;
+            text-align: center;
+          }
+          .header {
+            margin-bottom: 30px;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 26px;
+            color: #065f46;
+            font-family: "Cinzel", "Times New Roman", serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+          }
+          .header h2 {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+          }
+          .crest {
+            font-size: 32px;
+            color: #d97706;
+            margin-bottom: 15px;
+          }
+          .cert-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #b45309;
+            margin: 25px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #f59e0b;
+            display: inline-block;
+            padding-bottom: 5px;
+          }
+          .cert-text {
+            font-size: 16px;
+            margin: 20px auto;
+            max-width: 650px;
+            text-align: justify;
+            text-align-last: center;
+          }
+          .details-table {
+            width: 90%;
+            margin: 25px auto;
+            border-collapse: collapse;
+            font-size: 15px;
+          }
+          .details-table td {
+            padding: 10px;
+            border-bottom: 1px dashed #e5e7eb;
+            text-align: left;
+          }
+          .details-table td.label-col {
+            font-weight: bold;
+            color: #374151;
+            width: 35%;
+          }
+          .details-table td.val-col {
+            color: #111827;
+          }
+          .status-badge {
+            display: inline-block;
+            background-color: #ecfdf5;
+            color: #065f46;
+            font-weight: bold;
+            border: 1px solid #a7f3d0;
+            padding: 8px 20px;
+            border-radius: 9999px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 15px;
+          }
+          .footer-signs {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+          }
+          .sign-block {
+            text-align: center;
+            width: 200px;
+          }
+          .sign-line {
+            border-top: 1px solid #9ca3af;
+            margin-top: 40px;
+            padding-top: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #4b5563;
+            text-transform: uppercase;
+          }
+          .btn-container {
+            text-align: center;
+            margin-top: 40px;
+          }
+          .print-btn {
+            background-color: #065f46;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+          }
+          .print-btn:hover {
+            background-color: #047857;
+          }
+          @media print {
+            body { padding: 10px; background-color: #ffffff; }
+            .btn-container { display: none; }
+            .border-outer { box-shadow: none; border-color: #065f46 !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="border-outer">
+          <div class="border-inner">
+            <div class="header">
+              <div class="crest">🏛️</div>
+              <h1>DEPARTMENT OF AYUSH & AYUSH EDUCATION</h1>
+              <h2>Government of Uttarakhand</h2>
+            </div>
+
+            <div class="cert-title">In-Principle Approval Certificate</div>
+
+            <p class="cert-text">
+              This is to certify that the project proposal submitted under the Uttarakhand Yoga Policy 2025 has been reviewed by the <strong>State Level Sanctioning Committee (SLRC)</strong> and is hereby granted in-principle approval.
+            </p>
+
+            <table class="details-table">
+              <tr>
+                <td class="label-col">Application Serial No:</td>
+                <td class="val-col" style="font-weight: bold; color: #065f46;">${app.serial_number || "Not Available"}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Name of Institution:</td>
+                <td class="val-col">${app.organization_name || "—"}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Research Project Title:</td>
+                <td class="val-col" style="font-style: italic;">"${app.title || "—"}"</td>
+              </tr>
+              <tr>
+                <td class="label-col">Principal Investigator:</td>
+                <td class="val-col">${app.pi_name || "—"}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Approved Grant Amount:</td>
+                <td class="val-col" style="font-weight: bold;">${fmtAmt}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Date of Issue:</td>
+                <td class="val-col">${dateStr}</td>
+              </tr>
+              <tr>
+                <td class="label-col">Application Status:</td>
+                <td class="val-col">
+                  <span class="status-badge">In-Principle Application Granted</span>
+                </td>
+              </tr>
+            </table>
+
+            <p class="cert-text" style="font-size: 13px; color: #4b5563; margin-top: 30px;">
+              * Note: This is an In-Principle approval. Grant disbursal is subject to verification of submitted milestone reports, compliance details, utilization certificates, and bank account credentials.
+            </p>
+
+            <div class="footer-signs">
+              <div class="sign-block">
+                <div class="sign-line">Member Secretary<br/>RPAC Committee</div>
+              </div>
+              <div class="sign-block">
+                <div class="sign-line">Sanctioning Authority<br/>Uttarakhand SLRC</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-container" class="no-print">
+          <button onclick="window.print()" class="print-btn">
+            Print / Save as PDF
+          </button>
+        </div>
+      </body>
+    </html>
+  `;
+
   printWindow.document.open();
   printWindow.document.write(html);
   printWindow.document.close();
@@ -1755,14 +1997,23 @@ export default function ResearchGrant() {
                         </div>
                       </div>
 
-                      <div className="flex gap-3 pt-1">
+                      <div className="flex flex-col sm:flex-row gap-3 pt-1">
                         <button
                           type="button"
                           onClick={() => printResearchApplication(app, API)}
-                          className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
+                          className="flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
                         >
                           <FileText size={14} /> Download / Print Application PDF
                         </button>
+                        {["SLRC_APPROVED", "APPROVED"].includes(app.status) && (
+                          <button
+                            type="button"
+                            onClick={() => printInPrincipleCertificate(app, API)}
+                            className="flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
+                          >
+                            <Award size={14} /> Download In-Principle Approval Certificate
+                          </button>
+                        )}
                       </div>
 
                       {app.directorate_remarks && (

@@ -3,7 +3,7 @@ import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
 import { Building, Users, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Award, BarChart3, XCircle, ChevronDown, ChevronUp, Clock, BookOpen, IndianRupee, Paperclip, X, Calendar, Download, Activity, Landmark } from "lucide-react";
 import { toast } from "react-toastify";
-import { printResearchApplication } from "./ResearchGrant";
+import { printResearchApplication, printInPrincipleCertificate } from "./ResearchGrant";
 
 
 const fmt = (n) =>
@@ -24,10 +24,11 @@ const STATUS_META = {
   REVERTED_TO_APPLICANT:    { label: "Reverted (Compliance Required)", color: "bg-red-100 text-red-700" },
   RESUBMITTED:              { label: "Resubmitted to Directorate", color: "bg-cyan-100 text-cyan-700" },
   FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700" },
-  SLRC_APPROVED:            { label: "SLRC Approved", color: "bg-indigo-100 text-indigo-700" },
+  SLRC_APPROVED:            { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200" },
   IN_PRINCIPLE_APPROVED:    { label: "In-principle Approval Given",   color: "bg-emerald-100 text-emerald-700" },
   DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700" },
   SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700" },
+  APPROVED:                 { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200" },
 };
 
 function generateCertificatePDF(app) {
@@ -1054,13 +1055,21 @@ function ResearchGrantReview() {
                       { label: "Other Relevant Document", path: app.other_relevant_doc_path }
                     ]} />
 
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                       <button
                         onClick={() => printResearchApplication(app, API)}
-                        className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
+                        className="flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
                       >
                         <FileText size={14} /> Download / Print Application PDF
                       </button>
+                      {["SLRC_APPROVED", "APPROVED"].includes(app.status) && (
+                        <button
+                          onClick={() => printInPrincipleCertificate(app, API)}
+                          className="flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition"
+                        >
+                          <Award size={14} /> Download In-Principle Approval Certificate
+                        </button>
+                      )}
                     </div>
 
                     {/* Workflow Decisions */}
