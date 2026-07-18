@@ -63,6 +63,13 @@ function getNextWindowText() {
   if (m < 10) return "October";
   return "April (next year)";
 }
+function getDefaultWindow() {
+  const active = getActiveWindow();
+  if (active) return active;
+  const currentMonth = new Date().getMonth() + 1;
+  if (currentMonth > 5) return "OCT_NOV";
+  return "APR_MAY";
+}
 
 const STEPS = [
   { id: 1, label: "Organisation & Team" },
@@ -89,7 +96,7 @@ const BLANK_FORM = {
   organization_type: "",
   yoga_experience_years: "",
   doc_proof_path: "",
-  application_window: getActiveWindow() || "APR_MAY",
+  application_window: getDefaultWindow(),
   received_prior_grant: false,
   prior_grant_app_number: "",
   prior_grant_approval_doc_path: "",
@@ -695,12 +702,19 @@ export default function ResearchGrant() {
             <hr />
             <h3 className="font-semibold text-gray-700 text-sm border-b pb-1">Application Cycle</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <div>
+               <div>
                 <label className="label">Application Window <span className="text-red-500">*</span></label>
-                <select className="inp" value={form.application_window} onChange={(e) => setField("application_window", e.target.value)}>
-                  <option value="APR_MAY">April - May</option>
-                  <option value="OCT_NOV">October - November</option>
-                </select>
+                {(() => {
+                  const curMonth = new Date().getMonth() + 1;
+                  const isAprMayPassed = curMonth > 5;
+                  const isOctNovPassed = curMonth > 11;
+                  return (
+                    <select className="inp" value={form.application_window} onChange={(e) => setField("application_window", e.target.value)}>
+                      <option value="APR_MAY" disabled={isAprMayPassed}>April - May {isAprMayPassed ? "(Passed)" : ""}</option>
+                      <option value="OCT_NOV" disabled={isOctNovPassed}>October - November {isOctNovPassed ? "(Passed)" : ""}</option>
+                    </select>
+                  );
+                })()}
               </div>
               <div>
                 <label className="label">Financial Year</label>
