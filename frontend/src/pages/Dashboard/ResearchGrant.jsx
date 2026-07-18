@@ -643,7 +643,7 @@ function WorkflowLogs({ logsList }) {
                 <span>{new Date(log.created_at).toLocaleString("en-IN")}</span>
               </div>
               <p className="font-medium text-gray-700">
-                Transitioned {log.from_status ? `from ${log.from_status.replace(/_/g, " ")}` : ""} to <span className="text-emerald-700 font-semibold">{log.to_status.replace(/_/g, " ")}</span>
+                Transitioned {log.from_status ? `from ${STATUS_META[log.from_status]?.label || log.from_status.replace(/_/g, " ")}` : ""} to <span className="text-emerald-700 font-semibold">{STATUS_META[log.to_status]?.label || log.to_status.replace(/_/g, " ")}</span>
               </p>
               {log.comments && (
                 <p className="text-gray-600 italic bg-white p-2 rounded border leading-relaxed">

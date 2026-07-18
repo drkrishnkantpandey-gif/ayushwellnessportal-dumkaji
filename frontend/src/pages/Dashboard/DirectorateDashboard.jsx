@@ -29,6 +29,9 @@ const STATUS_META = {
   DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700" },
   SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700" },
   APPROVED:                 { label: "In-Principle Application Granted", color: "bg-teal-100 text-teal-800 border border-teal-200" },
+  FORWARDED_TO_RPAC:        { label: "Forwarded to RPAC", color: "bg-purple-100 text-purple-700" },
+  APPROVED_BY_RPAC:         { label: "Approved by RPAC", color: "bg-emerald-100 text-emerald-700" },
+  REJECTED_BY_RPAC:         { label: "Rejected by RPAC", color: "bg-red-100 text-red-700" },
 };
 
 function generateCertificatePDF(app) {
@@ -592,7 +595,7 @@ function WorkflowLogs({ logsList }) {
                 <span>{new Date(log.created_at).toLocaleString("en-IN")}</span>
               </div>
               <p className="font-medium text-gray-700">
-                Transitioned {log.from_status ? `from ${log.from_status.replace(/_/g, " ")}` : ""} to <span className="text-emerald-700 font-semibold">{log.to_status.replace(/_/g, " ")}</span>
+                Transitioned {log.from_status ? `from ${STATUS_META[log.from_status]?.label || log.from_status.replace(/_/g, " ")}` : ""} to <span className="text-emerald-700 font-semibold">{STATUS_META[log.to_status]?.label || log.to_status.replace(/_/g, " ")}</span>
               </p>
               {log.comments && (
                 <p className="text-gray-600 italic bg-white p-2 rounded border leading-relaxed">
@@ -1075,7 +1078,7 @@ function ResearchGrantReview() {
                     {/* Workflow Decisions */}
                     <div className="border-t pt-4 space-y-4">
                       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        Workflow Stage: <span className="text-emerald-700 font-extrabold">{app.status.replace(/_/g, " ")}</span>
+                        Workflow Stage: <span className="text-emerald-700 font-extrabold">{STATUS_META[app.status]?.label || app.status.replace(/_/g, " ")}</span>
                       </p>
 
                       {/* 1. Submitted / Resubmitted (Pre-RPAC Approval) */}
