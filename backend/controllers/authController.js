@@ -612,9 +612,8 @@ const getUserProfile = async (req, res) => {
                 u.phone,
                 w.contact_phone,
                 t.phone,
-                y.phone,
                 r.contact_number,
-                c.phone,
+                c.college_phone,
                 h.contact_mobile,
                 dop.contact_number,
                 dp.contact_number
@@ -698,19 +697,19 @@ const updateUserProfile = async (req, res) => {
     if (role === 'wellness_centre') {
       await client.query('UPDATE wellness_centres SET name = $1, contact_phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'yoga_centre') {
-      await client.query('UPDATE training_centres SET name = $1, phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+      await client.query('UPDATE training_centres SET centre_name = $1, phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'yoga_professional') {
-      await client.query('UPDATE yoga_professional_profile SET name = $1, phone = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+      // yoga_professional_profile does not have name or phone columns
     } else if (role === 'research_org') {
       await client.query('UPDATE research_org_profile SET applicant_name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'ayush_college') {
-      await client.query('UPDATE ayush_colleges SET college_name = $1, phone = $2 WHERE id = $3', [fullName.trim(), phone.trim(), userId]);
+      await client.query('UPDATE ayush_colleges SET college_name = $1, college_phone = $2, contact_phone = $2 WHERE id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'ayush_hospital') {
       await client.query('UPDATE ayush_hospitals SET hospital_name = $1, contact_mobile = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'district_officer') {
       await client.query('UPDATE district_officer_profile SET name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     } else if (role === 'directorate') {
-      await client.query('UPDATE directorate_profile SET name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
+      await client.query('UPDATE directorate_profile SET nodal_officer_name = $1, contact_number = $2 WHERE user_id = $3', [fullName.trim(), phone.trim(), userId]);
     }
 
     await client.query("COMMIT");
