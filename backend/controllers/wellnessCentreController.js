@@ -518,7 +518,12 @@ async function submitOperationalRegistration(req, res) {
     }
 
     const files = req.files || {};
-    const fp = (field) => (files[field] && files[field][0]) ? `/uploads/${files[field][0].filename}` : null;
+    const fp = (field) => {
+      if (files[field] && files[field][0]) {
+        return `/uploads/${files[field][0].filename}`;
+      }
+      return b[field] || null;
+    };
 
     const b = req.body;
     const servicesOffered = b.services_offered
@@ -894,6 +899,19 @@ async function actionWellnessCentreRegistration(req, res) {
   }
 }
 
+async function uploadSingleFile(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    const filePath = `/uploads/${req.file.filename}`;
+    return res.json({ success: true, filePath });
+  } catch (err) {
+    console.error('Error in uploadSingleFile:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+}
+
 module.exports = {
   getWellnessCentreDashboard,
   getPrograms,
@@ -918,6 +936,7 @@ module.exports = {
   getMyOperationalRegistration,
   downloadRegistrationCertificate,
   getPendingWellnessCentreRegistrations,
-  actionWellnessCentreRegistration
+  actionWellnessCentreRegistration,
+  uploadSingleFile
 };
 
