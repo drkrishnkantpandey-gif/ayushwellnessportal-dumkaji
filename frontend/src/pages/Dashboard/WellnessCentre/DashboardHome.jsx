@@ -48,22 +48,31 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(storedUser);
 
+        // Fetch operational registration status FIRST and independently using the correct path
+        try {
+          const regRes = await axiosInstance.get('/api/wellness/operational-registration');
+          setWcRegistration(regRes.data?.data || null);
+        } catch (e) {
+          setWcRegistration(null);
+        }
+
+        // Fetch other dashboard data safely
         const [dashRes, progRes, staffRes, sessRes, incRes, profRes, actionRes] = await Promise.all([
-          wellnessService.getDashboardData(),
-          wellnessService.getPrograms(),
-          wellnessService.getStaff(),
-          wellnessService.getSessions(),
-          wellnessService.getIncentives(),
-          wellnessService.getProfile(),
-          wellnessService.getPendingActions()
+          wellnessService.getDashboardData().catch(() => ({ success: false })),
+          wellnessService.getPrograms().catch(() => ({ success: false, data: [] })),
+          wellnessService.getStaff().catch(() => ({ success: false, data: [] })),
+          wellnessService.getSessions().catch(() => ({ success: false, data: [] })),
+          wellnessService.getIncentives().catch(() => ({ success: false, data: [] })),
+          wellnessService.getProfile().catch(() => ({ success: false })),
+          wellnessService.getPendingActions().catch(() => ({ success: false, data: [] }))
         ]);
 
-        if (dashRes.success) setStats(dashRes.data);
-        if (progRes.success) setPrograms(progRes.data.slice(0, 5));
-        if (staffRes.success) setStaff(staffRes.data.slice(0, 5));
-        if (sessRes.success) setSessions(sessRes.data.slice(0, 5));
-        if (incRes.success) setIncentives(incRes.data.slice(0, 5));
-        if (profRes.success) {
+        if (dashRes?.success) setStats(dashRes.data);
+        if (progRes?.success) setPrograms(progRes.data.slice(0, 5));
+        if (staffRes?.success) setStaff(staffRes.data.slice(0, 5));
+        if (sessRes?.success) setSessions(sessRes.data.slice(0, 5));
+        if (incRes?.success) setIncentives(incRes.data.slice(0, 5));
+        if (profRes?.success) {
           setProfile(profRes.data);
           setUpdateFormData({
             name: profRes.data.name || '',
@@ -75,15 +84,7 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
             registration_valid_to: profRes.data.registration_valid_to ? profRes.data.registration_valid_to.split('T')[0] : ''
           });
         }
-        if (actionRes.success) setPendingActions(actionRes.data);
-
-        // Fetch operational registration status
-        try {
-          const regRes = await axiosInstance.get('/wellness/operational-registration');
-          setWcRegistration(regRes.data?.data || null);
-        } catch (e) {
-          setWcRegistration(null);
-        }
+        if (actionRes?.success) setPendingActions(actionRes.data);
 
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
