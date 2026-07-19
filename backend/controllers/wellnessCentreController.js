@@ -492,7 +492,157 @@ async function getPublicProfile(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
+
+// GET /api/wellness-centre/centre-registration
+async function getCentreRegistration(req, res) {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const result = await db.query(
+      "SELECT * FROM wellness_centre_registrations WHERE user_id = $1",
+      [userId]
+    );
+    res.json({
+      success: true,
+      data: result.rows.length > 0 ? result.rows[0] : null
+    });
+  } catch (err) {
+    console.error("Error in getCentreRegistration:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /api/wellness-centre/centre-registration
+async function saveCentreRegistration(req, res) {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const {
+      already_registered,
+      prev_reg_reason,
+      prev_reg_number,
+      prev_reg_certificate,
+      centre_name,
+      district,
+      address,
+      latitude,
+      longitude,
+      map_link,
+      owner_name,
+      phone,
+      is_residential,
+      offers_clinical,
+      category,
+      services_offered,
+      doctor_appointed,
+      doctor_name,
+      doctor_qualification,
+      doctor_qualification_doc,
+      doctor_bcp_reg_number,
+      doctor_bcp_reg_doc,
+      declaration_a,
+      declaration_b,
+      cea_reg_number,
+      cea_valid_till,
+      cea_reg_doc,
+      cea_registered,
+      rooms_count,
+      therapy_beds_count,
+      covered_area,
+      equipment_details,
+      pharmacist_name,
+      pharmacist_reg_number,
+      pharmacist_bcp_doc,
+      male_therapists_count,
+      female_therapists_count
+    } = req.body;
+
+    // Check if registration already exists
+    const checkEx = await db.query("SELECT id FROM wellness_centre_registrations WHERE user_id = $1", [userId]);
+    
+    let result;
+    if (checkEx.rows.length > 0) {
+      // Update
+      result = await db.query(
+        `UPDATE wellness_centre_registrations
+         SET already_registered = $1, prev_reg_reason = $2, prev_reg_number = $3, prev_reg_certificate = $4,
+             centre_name = $5, district = $6, address = $7, latitude = $8, longitude = $9, map_link = $10,
+             owner_name = $11, phone = $12, is_residential = $13, offers_clinical = $14, category = $15,
+             services_offered = $16, doctor_appointed = $17, doctor_name = $18, doctor_qualification = $19,
+             doctor_qualification_doc = $20, doctor_bcp_reg_number = $21, doctor_bcp_reg_doc = $22,
+             declaration_a = $23, declaration_b = $24, cea_reg_number = $25, cea_valid_till = $26,
+             cea_reg_doc = $27, cea_registered = $28, rooms_count = $29, therapy_beds_count = $30,
+             covered_area = $31, equipment_details = $32, pharmacist_name = $33, pharmacist_reg_number = $34,
+             pharmacist_bcp_doc = $35, male_therapists_count = $36, female_therapists_count = $37,
+             registration_status = 'PENDING', updated_at = NOW()
+         WHERE user_id = $38
+         RETURNING *`,
+        [
+          already_registered, prev_reg_reason, prev_reg_number, prev_reg_certificate,
+          centre_name, district, address, latitude, longitude, map_link,
+          owner_name, phone, is_residential, offers_clinical, category,
+          services_offered, doctor_appointed, doctor_name, doctor_qualification,
+          doctor_qualification_doc, doctor_bcp_reg_number, doctor_bcp_reg_doc,
+          declaration_a === 'true' || declaration_a === true,
+          declaration_b === 'true' || declaration_b === true,
+          cea_reg_number, cea_valid_till || null, cea_reg_doc, cea_registered,
+          rooms_count ? parseInt(rooms_count) : null,
+          therapy_beds_count ? parseInt(therapy_beds_count) : null,
+          covered_area, equipment_details, pharmacist_name, pharmacist_reg_number,
+          pharmacist_bcp_doc,
+          male_therapists_count ? parseInt(male_therapists_count) : null,
+          female_therapists_count ? parseInt(female_therapists_count) : null,
+          userId
+        ]
+      );
+    } else {
+      // Insert
+      result = await db.query(
+        `INSERT INTO wellness_centre_registrations (
+          user_id, already_registered, prev_reg_reason, prev_reg_number, prev_reg_certificate,
+          centre_name, district, address, latitude, longitude, map_link,
+          owner_name, phone, is_residential, offers_clinical, category,
+          services_offered, doctor_appointed, doctor_name, doctor_qualification,
+          doctor_qualification_doc, doctor_bcp_reg_number, doctor_bcp_reg_doc,
+          declaration_a, declaration_b, cea_reg_number, cea_valid_till,
+          cea_reg_doc, cea_registered, rooms_count, therapy_beds_count,
+          covered_area, equipment_details, pharmacist_name, pharmacist_reg_number,
+          pharmacist_bcp_doc, male_therapists_count, female_therapists_count,
+          registration_status
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, 'PENDING'
+        ) RETURNING *`,
+        [
+          userId, already_registered, prev_reg_reason, prev_reg_number, prev_reg_certificate,
+          centre_name, district, address, latitude, longitude, map_link,
+          owner_name, phone, is_residential, offers_clinical, category,
+          services_offered, doctor_appointed, doctor_name, doctor_qualification,
+          doctor_qualification_doc, doctor_bcp_reg_number, doctor_bcp_reg_doc,
+          declaration_a === 'true' || declaration_a === true,
+          declaration_b === 'true' || declaration_b === true,
+          cea_reg_number, cea_valid_till || null, cea_reg_doc, cea_registered,
+          rooms_count ? parseInt(rooms_count) : null,
+          therapy_beds_count ? parseInt(therapy_beds_count) : null,
+          covered_area, equipment_details, pharmacist_name, pharmacist_reg_number,
+          pharmacist_bcp_doc,
+          male_therapists_count ? parseInt(male_therapists_count) : null,
+          female_therapists_count ? parseInt(female_therapists_count) : null
+        ]
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Wellness centre registered successfully. Status is PENDING review.",
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Error in saveCentreRegistration:", err);
+    res.status(500).json({ message: "Server error saving centre registration" });
+  }
+}
+
 module.exports = {
+  getCentreRegistration,
+  saveCentreRegistration,
   getWellnessCentreDashboard,
   getPrograms,
   addProgram,

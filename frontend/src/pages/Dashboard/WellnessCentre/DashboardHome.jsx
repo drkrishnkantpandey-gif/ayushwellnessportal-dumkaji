@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Heart, Users, Calendar, DollarSign, AlertCircle, Award, Loader2 } from "lucide-react";
+import { Heart, Users, Calendar, DollarSign, AlertCircle, Award, Loader2, Home, Landmark, ShieldCheck } from "lucide-react";
 import wellnessService from "../../../services/wellnessService";
+import RegisterCentreForm from "./RegisterCentreForm";
 
 const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,17 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
     accreditation_docs: null,
     other_docs: []
   });
+  const [centreRegistration, setCentreRegistration] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  const fetchCentreReg = async () => {
+    try {
+      const regRes = await wellnessService.getCentreRegistration();
+      if (regRes.success) setCentreRegistration(regRes.data);
+    } catch (err) {
+      console.error("Failed to fetch centre registration status:", err);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,14 +54,15 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
         const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
         setUser(storedUser);
 
-        const [dashRes, progRes, staffRes, sessRes, incRes, profRes, actionRes] = await Promise.all([
+        const [dashRes, progRes, staffRes, sessRes, incRes, profRes, actionRes, regRes] = await Promise.all([
           wellnessService.getDashboardData(),
           wellnessService.getPrograms(),
           wellnessService.getStaff(),
           wellnessService.getSessions(),
           wellnessService.getIncentives(),
           wellnessService.getProfile(),
-          wellnessService.getPendingActions()
+          wellnessService.getPendingActions(),
+          wellnessService.getCentreRegistration()
         ]);
 
         if (dashRes.success) setStats(dashRes.data);
@@ -70,6 +83,7 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
           });
         }
         if (actionRes.success) setPendingActions(actionRes.data);
+        if (regRes.success) setCentreRegistration(regRes.data);
 
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
@@ -160,6 +174,21 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
     );
   }
 
+  if (isRegistering) {
+    return (
+      <div className="p-6">
+        <RegisterCentreForm 
+          loginProfile={profile} 
+          onCancel={() => setIsRegistering(false)} 
+          onSuccess={() => {
+            setIsRegistering(false);
+            fetchCentreReg();
+          }} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
@@ -169,6 +198,56 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
         </h1>
         <p className="text-gray-500">Wellness Centre Dashboard</p>
       </div>
+
+      {/* Centre Registration Banner */}
+      {!centreRegistration ? (
+        <div className="bg-gradient-to-r from-teal-700 to-teal-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm border border-white/15">
+              <Landmark size={12} /> State Registry Action Required
+            </div>
+            <h2 className="text-xl font-bold">Register Your Wellness Centre</h2>
+            <p className="text-xs text-white/80 leading-relaxed">
+              Your account registration has been approved. Please submit your operational details (General Info, Clinical Details, Infrastructure, and Staff) to list programs and apply for state incentives.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsRegistering(true)}
+            className="shrink-0 bg-white text-teal-850 hover:bg-teal-50 px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+          >
+            <Landmark size={14} />
+            Register Wellness Centre
+          </button>
+        </div>
+      ) : centreRegistration.registration_status === "PENDING" ? (
+        <div className="bg-gradient-to-r from-amber-600 to-amber-700 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm border border-white/15">
+              <AlertCircle size={12} /> Under Review
+            </div>
+            <h2 className="text-xl font-bold">Registration Under Review</h2>
+            <p className="text-xs text-white/80 leading-relaxed">
+              Your wellness centre registration details for <strong>{centreRegistration.centre_name}</strong> have been submitted and are currently under review by concern District or Directorate. You will be notified once it is approved.
+            </p>
+          </div>
+          <button
+            disabled
+            className="shrink-0 bg-white/10 text-white border border-white/20 px-6 py-3 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
+          >
+            Pending Approval
+          </button>
+        </div>
+      ) : centreRegistration.registration_status === "APPROVED" ? (
+        <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-2xl p-4 text-white shadow-md flex items-center gap-3">
+          <ShieldCheck size={28} className="shrink-0 text-white" />
+          <div>
+            <h3 className="text-sm font-bold">Centre Registered & Verified</h3>
+            <p className="text-xs text-white/80">
+              Your operational centre <strong>{centreRegistration.centre_name}</strong> is fully verified in the State AYUSH Registry.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Top 3 cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

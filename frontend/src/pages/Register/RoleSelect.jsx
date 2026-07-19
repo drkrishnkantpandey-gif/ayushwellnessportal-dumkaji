@@ -12,15 +12,15 @@ import {
 
 const categories = [
   {
-    title: "Wellness Registry",
-    description: "Registry and enrollment for wellness practitioners and centers",
+    title: "Wellness & Yoga Account Approval",
+    description: "Account creation and login verification for wellness professionals and centers",
     bgClass: "bg-teal-50/30 border-teal-100",
     roles: [
       {
         id: "wellness_centre",
-        name: "Register Existing Centre",
+        name: "Wellness Centre Account Approval",
         icon: Heart,
-        description: "Register your existing Panchakarma, Yoga, Naturopathy Based Wellness Centre",
+        description: "Apply for login approval to register your centre details post-approval",
         color: "from-pink-500 to-pink-700",
         bg: "bg-pink-50 hover:border-pink-400",
       },

@@ -100,8 +100,13 @@ const uploadDocuments = async (formData) => {
     return response.data;
 };
 
-const getPublicProfile = async (id) => {
-    const response = await axiosInstance.get(`${API_URL}/public/profile/${id}`);
+const getCentreRegistration = async () => {
+    const response = await axiosInstance.get(`${API_URL}/centre-registration`, getAuthHeader());
+    return response.data;
+};
+
+const saveCentreRegistration = async (payload) => {
+    const response = await axiosInstance.post(`${API_URL}/centre-registration`, payload, getAuthHeader());
     return response.data;
 };
 
@@ -124,7 +129,9 @@ const wellnessService = {
     updateProfile,
     getPendingActions,
     uploadDocuments,
-    getPublicProfile
+    getPublicProfile,
+    getCentreRegistration,
+    saveCentreRegistration
 };
 
 export default wellnessService;

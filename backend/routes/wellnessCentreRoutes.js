@@ -21,7 +21,9 @@ const {
   updateCentreProfile,
   getPendingActions,
   uploadDocuments,
-  getPublicProfile
+  getPublicProfile,
+  getCentreRegistration,
+  saveCentreRegistration
 } = require("../controllers/wellnessCentreController");
 const { protect } = require("../middleware/authMiddleware");
 const multer = require("multer");
@@ -59,6 +61,8 @@ router.use(restrictToWellnessCentre);
 router.get("/dashboard", getWellnessCentreDashboard);
 router.get("/profile", getCentreProfile);
 router.put("/profile", updateCentreProfile);
+router.get("/centre-registration", getCentreRegistration);
+router.post("/centre-registration", saveCentreRegistration);
 router.get("/pending-actions", getPendingActions);
 router.post("/documents", upload.fields([
   { name: 'registration_certificate', maxCount: 1 },

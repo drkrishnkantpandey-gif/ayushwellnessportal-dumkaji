@@ -1,7 +1,7 @@
 import API from '../../config/api';
 import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
-import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X, Download, Award } from "lucide-react";
+import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X, Download, Award, Landmark } from "lucide-react";
 import { toast } from "react-toastify";
 
 
@@ -24,7 +24,7 @@ const STATUS_META = {
   REVERTED_TO_APPLICANT:    { label: "Reverted (Compliance Required)", color: "bg-red-100 text-red-700" },
   RESUBMITTED:              { label: "Resubmitted to Directorate", color: "bg-cyan-100 text-cyan-700" },
   FORWARDED_TO_SLRC:        { label: "Forwarded to SLRC", color: "bg-purple-100 text-purple-700" },
-  SLRC_APPROVED:            { label: "SLRC Approved", color: "bg-indigo-100 text-indigo-700" },
+  SLRC_APPROVED:            { label: "In-Principle Approval Given", color: "bg-emerald-100 text-emerald-700" },
   IN_PRINCIPLE_APPROVED:    { label: "In-principle Approval Given",   color: "bg-emerald-100 text-emerald-700" },
   DIRECTORATE_REJECTED:     { label: "Rejected by Directorate", color: "bg-red-100 text-red-700" },
   SLRC_REJECTED:            { label: "Rejected by SLRC", color: "bg-red-100 text-red-700" },
@@ -973,10 +973,8 @@ function YogaTCIncentiveReview() {
                   />
                 </label>
               </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-5 border-t pt-4">
-              <button onClick={() => { setModal(null); setVerificationFiles([]); }} className="px-4 py-2 text-xs border border-gray-300 rounded-lg text-gray-600 font-semibold">Cancel</button>
+              <div className="flex justify-end gap-3 mt-5 border-t pt-4">
+                <button onClick={() => { setModal(null); setVerificationFiles([]); }} className="px-4 py-2 text-xs border border-gray-300 rounded-lg text-gray-600 font-semibold">Cancel</button>
               <button
                 onClick={submitVerification}
                 disabled={saving || !remarks.trim() || verificationFiles.some(f => f.uploading)}
@@ -987,6 +985,7 @@ function YogaTCIncentiveReview() {
             </div>
           </div>
         </div>
+      </div>
       )}
     </div>
   );
@@ -999,6 +998,41 @@ const DistrictOfficer = ({ activeTab }) => {
   const [filterStatus, setFilterStatus] = useState("pending");
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [profile, setProfile] = useState(null);
+
+  // New operational center registration states for DO
+  const [pendingCentres, setPendingCentres] = useState([]);
+  const [loadingCentres, setLoadingCentres] = useState(false);
+  const [selectedCentre, setSelectedCentre] = useState(null);
+
+  const fetchPendingCentres = async () => {
+    setLoadingCentres(true);
+    try {
+      const res = await axiosInstance.get(`${API}/api/admin/wellness-centre-registrations/pending`);
+      if (res.data.success) {
+        setPendingCentres(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching pending wellness centres for DO:", err);
+    } finally {
+      setLoadingCentres(false);
+    }
+  };
+
+  const handleCentreAction = async (centreId, decision) => {
+    if (!window.confirm(`Are you sure you want to ${decision} this centre registry application?`)) return;
+    try {
+      const res = await axiosInstance.put(`${API}/api/admin/wellness-centre-registrations/${centreId}/action`, {
+        decision
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || `Centre registration successfully ${decision}`);
+        fetchPendingCentres();
+      }
+    } catch (err) {
+      console.error("Error during centre approval decision:", err);
+      toast.error(err.response?.data?.message || "Action failed.");
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -1031,6 +1065,7 @@ const DistrictOfficer = ({ activeTab }) => {
   useEffect(() => {
     if (activeTab === "entity_approvals") {
       fetchPendingUsers(filterStatus);
+      fetchPendingCentres();
     }
   }, [activeTab, filterStatus]);
 
@@ -1227,6 +1262,354 @@ const DistrictOfficer = ({ activeTab }) => {
             </div>
           )}
         </div>
+
+        {/* Wellness Centre Registry Applications */}
+        {filterStatus === "pending" && (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 space-y-6 mt-8">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Landmark className="text-teal-600" size={24} />
+                Wellness Centre Operational Registry Applications
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">Review operational details submitted by approved wellness centre accounts</p>
+            </div>
+
+            {loadingCentres ? (
+              <div className="p-8 text-center text-teal-600 font-medium">Loading centre registries...</div>
+            ) : pendingCentres.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 font-medium bg-gray-50 rounded-xl">
+                No pending wellness centre operational registry applications found.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Centre Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">District</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Owner & Mobile</th>
+                      <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {pendingCentres.map((c) => (
+                      <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-800">{c.centre_name}</td>
+                        <td className="px-6 py-4 text-xs font-bold text-teal-700 uppercase tracking-wider">{c.category}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700 font-semibold">{c.district}</td>
+                        <td className="px-6 py-4 text-xs text-gray-500">
+                          <div>{c.owner_name}</div>
+                          <div className="mt-0.5">{c.phone}</div>
+                        </td>
+                        <td className="px-6 py-4 text-right space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCentre(c)}
+                            className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg text-xs transition"
+                          >
+                            Review Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- Wellness Centre Operational Registry Details Modal --- */}
+        {selectedCentre && (
+          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl overflow-hidden transform transition-all border border-slate-100 text-left">
+              <div className="bg-gradient-to-r from-teal-700 to-teal-800 px-6 py-4 flex items-center justify-between text-white">
+                <div>
+                  <h3 className="text-lg font-bold">Review Wellness Centre Registry details</h3>
+                  <span className="text-xs text-white/80 font-semibold">{selectedCentre.category}</span>
+                </div>
+                <button
+                  onClick={() => setSelectedCentre(null)}
+                  className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto">
+                {/* Section 1 */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-teal-600 uppercase tracking-wider border-b pb-1">1. General Information</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-gray-600">
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Name of Centre</span>
+                      <span>{selectedCentre.centre_name}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">District</span>
+                      <span>{selectedCentre.district}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Owner Name</span>
+                      <span>{selectedCentre.owner_name}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Contact Phone</span>
+                      <span>{selectedCentre.phone}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Is Residential Type?</span>
+                      <span>{selectedCentre.is_residential}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Offers Clinical Services?</span>
+                      <span>{selectedCentre.offers_clinical}</span>
+                    </div>
+                    <div className="col-span-2 md:col-span-3">
+                      <span className="font-semibold text-gray-800 block">Full Address</span>
+                      <span className="block bg-slate-50 p-2.5 rounded border">{selectedCentre.address}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">GPS Coordinates (Lat / Lng)</span>
+                      <span>{selectedCentre.latitude} , {selectedCentre.longitude}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Google Map Link</span>
+                      {selectedCentre.map_link ? (
+                        <a href={selectedCentre.map_link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                          🔗 View on Maps
+                        </a>
+                      ) : <span>N/A</span>}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Already Registered on Apuni Sarkar/AYUSH Setu?</span>
+                      <span>{selectedCentre.already_registered}</span>
+                    </div>
+
+                    {selectedCentre.already_registered === "Yes" && (
+                      <div className="col-span-2 md:col-span-3 grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border">
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Previous Reg Reason / Number</span>
+                          <span>{selectedCentre.prev_reg_reason} - {selectedCentre.prev_reg_number}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Previous Reg Certificate</span>
+                          {selectedCentre.prev_reg_certificate ? (
+                            <a href={`${API}/${selectedCentre.prev_reg_certificate}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-bold">
+                              📄 View Certificate
+                            </a>
+                          ) : <span className="text-gray-400 italic">Not Uploaded</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="col-span-2 md:col-span-3">
+                      <span className="font-semibold text-gray-800 block">Services Offered</span>
+                      <div className="flex gap-2 mt-1">
+                        {selectedCentre.services_offered?.map((s) => (
+                          <span key={s} className="bg-teal-50 text-teal-700 font-bold px-2 py-1 rounded border border-teal-100">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2 */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="text-xs font-bold text-teal-600 uppercase tracking-wider border-b pb-1">2. Clinical Information</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs text-gray-600">
+                    
+                    {/* Doctor Info */}
+                    {(selectedCentre.doctor_appointed === "Yes" || selectedCentre.category !== "AYUSH Wellness Therapy Centre") && (
+                      <>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Name of Doctor</span>
+                          <span>{selectedCentre.doctor_name || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Qualification</span>
+                          <span>{selectedCentre.doctor_qualification || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Qualification Doc</span>
+                          {selectedCentre.doctor_qualification_doc ? (
+                            <a href={`${API}/${selectedCentre.doctor_qualification_doc}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-bold">
+                              📄 View Document
+                            </a>
+                          ) : <span className="text-gray-400 italic">Not Uploaded</span>}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">BCP Registration Number</span>
+                          <span>{selectedCentre.doctor_bcp_reg_number || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">BCP Registration Doc</span>
+                          {selectedCentre.doctor_bcp_reg_doc ? (
+                            <a href={`${API}/${selectedCentre.doctor_bcp_reg_doc}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-bold">
+                              📄 View Document
+                            </a>
+                          ) : <span className="text-gray-400 italic">Not Uploaded</span>}
+                        </div>
+                      </>
+                    )}
+
+                    {selectedCentre.category === "AYUSH Wellness Therapy Centre" && selectedCentre.doctor_appointed === "No" && (
+                      <div className="col-span-2">
+                        <span className="font-semibold text-gray-800 block">Doctor Appointed?</span>
+                        <span>No</span>
+                      </div>
+                    )}
+
+                    {/* CEA Info */}
+                    {selectedCentre.category === "AYUSH Wellness Centre & Hospital" && (
+                      <>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">CEA Registration Number</span>
+                          <span>{selectedCentre.cea_reg_number || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">CEA Validity Date</span>
+                          <span>{selectedCentre.cea_valid_till ? new Date(selectedCentre.cea_valid_till).toLocaleDateString() : "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">CEA Certificate</span>
+                          {selectedCentre.cea_reg_doc ? (
+                            <a href={`${API}/${selectedCentre.cea_reg_doc}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-bold">
+                              📄 View Certificate
+                            </a>
+                          ) : <span className="text-gray-400 italic">Not Uploaded</span>}
+                        </div>
+                      </>
+                    )}
+
+                    {selectedCentre.category === "AYUSH Gram or AYUSH Resort" && (
+                      <div>
+                        <span className="font-semibold text-gray-800 block">Registered under Clinical Establishment Act?</span>
+                        <span>{selectedCentre.cea_registered}</span>
+                      </div>
+                    )}
+
+                    {/* Declarations */}
+                    {selectedCentre.category === "AYUSH Wellness Therapy Centre" && (
+                      <div className="col-span-2 md:col-span-3 bg-red-50/40 p-3 rounded-lg border border-red-100 space-y-1.5">
+                        <div className="font-bold text-red-800">Therapy Centre Declarations:</div>
+                        <div className="flex gap-2 items-center">
+                          <span className="text-emerald-600 font-bold">✓</span>
+                          <span>I have installed a board in reception stating: &quot;We Don't Provide any Treatment, Only Wellness Services are being Provided&quot;.</span>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <span className="text-emerald-600 font-bold">✓</span>
+                          <span>I have clearly mentioned in FRONT Signboard in bold text with font size at least half the size of Centre's Name that: &quot;WELLNESS SERVICES ONLY, NO TREATMENT OFFERED&quot;.</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Section 3 */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="text-xs font-bold text-teal-600 uppercase tracking-wider border-b pb-1">3. Details of Infrastructure</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Number of Rooms</span>
+                      <span>{selectedCentre.rooms_count || 0}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Number of Therapy Beds</span>
+                      <span>{selectedCentre.therapy_beds_count || 0}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-800 block">Covered Area (sq. ft.)</span>
+                      <span>{selectedCentre.covered_area || "N/A"}</span>
+                    </div>
+                    <div className="col-span-2 md:col-span-4">
+                      <span className="font-semibold text-gray-800 block">Details of Equipment available</span>
+                      <span className="block bg-slate-50 p-2 rounded">{selectedCentre.equipment_details || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 4 */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="text-xs font-bold text-teal-600 uppercase tracking-wider border-b pb-1">4. Details of Additional Staff</h4>
+                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
+                    
+                    {/* Pharmacist Details */}
+                    {selectedCentre.services_offered?.includes("Ayurveda") && (
+                      <div className="col-span-2 grid grid-cols-3 gap-4 bg-slate-50 p-3 rounded-lg border">
+                        <div className="col-span-3 font-bold text-teal-800">Ayurveda Pharmacist details:</div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Pharmacist Name</span>
+                          <span>{selectedCentre.pharmacist_name || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Registration Number</span>
+                          <span>{selectedCentre.pharmacist_reg_number || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">BCP Registration Document</span>
+                          {selectedCentre.pharmacist_bcp_doc ? (
+                            <a href={`${API}/${selectedCentre.pharmacist_bcp_doc}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-bold">
+                              📄 View Document
+                            </a>
+                          ) : <span className="text-gray-400 italic">Not Uploaded</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Panchakarma Therapist counts */}
+                    {selectedCentre.services_offered?.includes("Panchakarma") && (
+                      <>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Male Panchakarma Therapists</span>
+                          <span>{selectedCentre.male_therapists_count || 0}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-800 block">Female Panchakarma Therapists</span>
+                          <span>{selectedCentre.female_therapists_count || 0}</span>
+                        </div>
+                      </>
+                    )}
+
+                    {!selectedCentre.services_offered?.includes("Ayurveda") && !selectedCentre.services_offered?.includes("Panchakarma") && (
+                      <div className="col-span-2 text-gray-400 italic font-medium">No additional staff required for the services offered.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                <button
+                  onClick={() => setSelectedCentre(null)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition text-sm"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    handleCentreAction(selectedCentre.id, "approved");
+                    setSelectedCentre(null);
+                  }}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition text-sm animate-pulse"
+                >
+                  Approve Registry
+                </button>
+                <button
+                  onClick={() => {
+                    handleCentreAction(selectedCentre.id, "rejected");
+                    setSelectedCentre(null);
+                  }}
+                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg transition text-sm"
+                >
+                  Reject Registry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* --- Entity Profile Details Modal --- */}
         {selectedEntity && (

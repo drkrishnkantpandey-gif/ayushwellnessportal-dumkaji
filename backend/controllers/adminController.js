@@ -570,4 +570,96 @@ const fixNullRegistrationStatuses = async (req, res) => {
   }
 };
 
-module.exports = { getUserByModule, updateUserApproval, toggleCentreOperational, getDashboardStats, getPendingRegistrations, approveUserRegistration, fixNullRegistrationStatuses };
+// GET /api/admin/wellness-centre-registrations/pending
+async function getPendingWellnessCentreRegistrations(req, res) {
+  try {
+    const requesterId = req.user.id || req.user.userId;
+    const requesterRole = req.user.role;
+    
+    let query = "";
+    let params = [];
+    
+    if (requesterRole === 'directorate' || requesterRole === 'admin') {
+      query = `
+        SELECT w.*, u.email as user_email, u.full_name as user_full_name
+        FROM wellness_centre_registrations w
+        JOIN users u ON u.id = w.user_id
+        WHERE w.registration_status = 'PENDING'
+        ORDER BY w.created_at DESC
+      `;
+    } else if (requesterRole === 'district_officer') {
+      const officerCheck = await db.query('SELECT district FROM district_officer_profile WHERE user_id = $1', [requesterId]);
+      if (officerCheck.rows.length === 0) {
+        return res.status(400).json({ success: false, message: 'District Officer profile not found' });
+      }
+      const officerDistrict = officerCheck.rows[0].district;
+      query = `
+        SELECT w.*, u.email as user_email, u.full_name as user_full_name
+        FROM wellness_centre_registrations w
+        JOIN users u ON u.id = w.user_id
+        WHERE w.registration_status = 'PENDING' AND w.district = $1
+        ORDER BY w.created_at DESC
+      `;
+      params = [officerDistrict];
+    } else {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    
+    const { rows } = await db.query(query, params);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("Error in getPendingWellnessCentreRegistrations:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+}
+
+// POST /api/admin/wellness-centre-registrations/:id/action
+async function actionWellnessCentreRegistration(req, res) {
+  try {
+    const { id } = req.params;
+    const { decision } = req.body; // 'approved' or 'rejected'
+    
+    if (!['approved', 'rejected'].includes(decision)) {
+      return res.status(400).json({ success: false, message: "Invalid decision value" });
+    }
+    
+    const statusVal = decision === 'approved' ? 'APPROVED' : 'REJECTED';
+    
+    const result = await db.query(
+      `UPDATE wellness_centre_registrations
+       SET registration_status = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [statusVal, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Registration not found" });
+    }
+
+    const reg = result.rows[0];
+    await db.query(
+      `UPDATE wellness_centres
+       SET registration_status = $1, name = $2, address = $3
+       WHERE user_id = $4`,
+      [statusVal.toLowerCase(), reg.centre_name, reg.address, reg.user_id]
+    );
+    
+    res.json({ success: true, message: `Registration successfully ${statusVal}` });
+  } catch (err) {
+    console.error("Error in actionWellnessCentreRegistration:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+}
+
+module.exports = { 
+  getUserByModule, 
+  updateUserApproval, 
+  toggleCentreOperational, 
+  getDashboardStats, 
+  getPendingRegistrations, 
+  approveUserRegistration, 
+  fixNullRegistrationStatuses,
+  getPendingWellnessCentreRegistrations,
+  actionWellnessCentreRegistration
+};
