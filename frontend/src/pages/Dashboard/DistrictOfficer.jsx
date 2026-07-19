@@ -2122,9 +2122,10 @@ const DistrictOfficer = ({ activeTab }) => {
                             ['Naturopathy Attendants BCP Doc', wcSelectedReg.naturopathy_staff_bcp_doc],
                             ['Fee Deposit Receipt', wcSelectedReg.fee_receipt_doc],
                             ['Declaration Affidavit', wcSelectedReg.declaration_affidavit],
+                            ['Compliance Supporting Document', wcSelectedReg.compliance_document],
                           ].map(([label, path]) => (
                             path && (
-                              <div key={label} style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90 }}>
+                              <div key={label} style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, display: 'flex', flexDirection: 'column', justifycontent: 'space-between', minHeight: 90 }}>
                                 <span style={{ fontWeight: 700, color: '#334155', fontSize: 12 }}>{label}</span>
                                 <DocLink path={path} label="View Uploaded Document" />
                               </div>
@@ -2142,7 +2143,7 @@ const DistrictOfficer = ({ activeTab }) => {
                             <div key={event.id || idx} style={{ position: 'relative' }}>
                               <div style={{ position: 'absolute', left: -25, top: 4, width: 8, height: 8, borderRadius: '50%', background: '#166534', border: '2px solid #fff' }}></div>
                               <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                                <div style={{ display: 'flex', justifycontent: 'space-between', gap: 10 }}>
                                   <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{event.event_type}</span>
                                   <span style={{ fontSize: 11, color: '#94a3b8' }}>
                                     {new Date(event.created_at).toLocaleString('en-IN', {
@@ -2177,6 +2178,30 @@ const DistrictOfficer = ({ activeTab }) => {
                     <strong style={{ color: '#c2410c', fontSize: 13 }}>District Comment:</strong> <span style={{ fontSize: 13, color: '#4b5563', fontWeight: 500 }}>{wcSelectedReg.district_comment}</span>
                   </div>
                 )}
+
+                {/* Compliance response if submitted */}
+                {wcSelectedReg.compliance_comment && (
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '12px 16px', marginTop: 16 }}>
+                    <strong style={{ color: '#047857', fontSize: 13 }}>Applicant Compliance Reply:</strong>
+                    <div style={{ fontSize: 13, color: '#065f46', fontWeight: 500, marginTop: 4 }}>
+                      {wcSelectedReg.compliance_comment}
+                    </div>
+                    {wcSelectedReg.compliance_document && (
+                      <div style={{ marginTop: 8 }}>
+                        <a
+                          href={`${API}${wcSelectedReg.compliance_document}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: '#047857', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
+                        >
+                          View Compliance Document
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
 
                 {/* Action Buttons */}
                 {(wcSelectedReg.status === 'SUBMITTED' || wcSelectedReg.status === 'RESUBMITTED') && (

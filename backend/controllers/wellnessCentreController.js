@@ -914,6 +914,53 @@ async function uploadSingleFile(req, res) {
   }
 }
 
+async function submitCompliance(req, res) {
+  const userId = req.user.userId;
+  const { comment } = req.body;
+  const file = req.file;
+
+  if (!comment || !comment.trim()) {
+    return res.status(400).json({ success: false, message: 'Compliance comment is required' });
+  }
+
+  try {
+    const regRes = await db.query(
+      'SELECT id, status, registration_number FROM wellness_centre_registrations WHERE user_id = $1',
+      [userId]
+    );
+    if (regRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Registration not found' });
+    }
+
+    const reg = regRes.rows[0];
+    if (reg.status !== 'REVERTED') {
+      return res.status(400).json({ success: false, message: 'Compliance can only be submitted for a reverted registration' });
+    }
+
+    const docPath = file ? `/uploads/${file.filename}` : null;
+
+    // Fetch user info for actor_name
+    const userRes = await db.query('SELECT full_name FROM users WHERE id = $1', [userId]);
+    const actorName = userRes.rows[0]?.full_name || 'Wellness Centre User';
+
+    await db.query(`
+      UPDATE wellness_centre_registrations
+      SET status = 'SUBMITTED', compliance_comment = $1, compliance_document = $2, updated_at = NOW()
+      WHERE id = $3
+    `, [comment, docPath, reg.id]);
+
+    await db.query(`
+      INSERT INTO wellness_centre_reg_events (registration_id, event_type, actor_role, actor_id, actor_name, comment)
+      VALUES ($1, 'COMPLIANCE_SUBMITTED', 'wellness_centre', $2, $3, $4)
+    `, [reg.id, userId, actorName, `Compliance Submitted: ${comment}`]);
+
+    return res.json({ success: true, message: 'Compliance submitted successfully' });
+  } catch (err) {
+    console.error('Error in submitCompliance:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+}
+
 module.exports = {
   getWellnessCentreDashboard,
   getPrograms,
@@ -939,6 +986,7 @@ module.exports = {
   downloadRegistrationCertificate,
   getPendingWellnessCentreRegistrations,
   actionWellnessCentreRegistration,
-  uploadSingleFile
+  uploadSingleFile,
+  submitCompliance
 };
 

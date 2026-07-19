@@ -25,7 +25,8 @@ const {
   submitOperationalRegistration,
   getMyOperationalRegistration,
   downloadRegistrationCertificate,
-  uploadSingleFile
+  uploadSingleFile,
+  submitCompliance
 } = require("../controllers/wellnessCentreController");
 const { protect } = require("../middleware/authMiddleware");
 const multer = require("multer");
@@ -90,6 +91,7 @@ router.get("/operational-registration/certificate", downloadRegistrationCertific
 router.get("/operational-registration", getMyOperationalRegistration);
 router.post("/operational-registration", opRegFields, submitOperationalRegistration);
 router.post("/upload-single-file", upload.single('file'), uploadSingleFile);
+router.post("/submit-compliance", upload.single('compliance_document'), submitCompliance);
 
 router.get("/programs", getPrograms);
 router.post("/programs", addProgram);

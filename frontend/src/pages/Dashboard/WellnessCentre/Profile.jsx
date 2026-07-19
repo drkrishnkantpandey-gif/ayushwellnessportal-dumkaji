@@ -504,6 +504,31 @@ export default function WellnessCentreProfile() {
             </button>
           </div>
 
+          {/* District Comment or Compliance display */}
+          {(opReg.district_comment || opReg.compliance_comment) && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+              {opReg.district_comment && (
+                <div className="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl">
+                  <strong className="text-amber-800 text-sm block">District Officer Query Remarks:</strong>
+                  <p className="text-sm text-amber-700 mt-1 font-medium">{opReg.district_comment}</p>
+                </div>
+              )}
+              {opReg.compliance_comment && (
+                <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-r-xl">
+                  <strong className="text-green-800 text-sm block">Your Compliance Response:</strong>
+                  <p className="text-sm text-green-700 mt-1 font-medium">{opReg.compliance_comment}</p>
+                  {opReg.compliance_document && (
+                    <div className="mt-2">
+                      <a href={`${API}${opReg.compliance_document}`} target="_blank" rel="noreferrer" className="text-green-700 font-bold hover:underline inline-flex items-center gap-1 text-xs">
+                        <FileText size={14} /> View Supporting Document
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Details Tabs and Sections */}
           <div className="grid md:grid-cols-4 gap-6">
             {/* Sidebar Tabs */}
@@ -1031,6 +1056,14 @@ export default function WellnessCentreProfile() {
                       <div className="p-4 bg-gray-50 border rounded-xl flex flex-col justify-between h-28">
                         <span className="font-bold text-gray-700">Declaration Affidavit</span>
                         <a href={`${API}${opReg.declaration_affidavit}`} target="_blank" rel="noreferrer" className="text-teal-600 font-bold hover:underline inline-flex items-center gap-1">
+                          <FileText size={16} /> View Document
+                        </a>
+                      </div>
+                    )}
+                    {opReg.compliance_document && (
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col justify-between h-28">
+                        <span className="font-bold text-amber-850">Compliance Supporting Document</span>
+                        <a href={`${API}${opReg.compliance_document}`} target="_blank" rel="noreferrer" className="text-amber-700 font-bold hover:underline inline-flex items-center gap-1">
                           <FileText size={16} /> View Document
                         </a>
                       </div>
