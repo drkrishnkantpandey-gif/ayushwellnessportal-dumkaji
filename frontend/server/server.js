@@ -178,44 +178,6 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login',    authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-app.get('/api/debug-profile/:email', async (req, res) => {
-  try {
-    const email = req.params.email;
-    const userRes = await pool.query('SELECT id, email, role FROM users WHERE LOWER(email) = LOWER($1)', [email]);
-    if (userRes.rows.length === 0) {
-      return res.json({ success: false, message: 'User not found in users table' });
-    }
-    const user = userRes.rows[0];
-    const profileRes = await pool.query(
-      `SELECT u.id, u.email, u.full_name, u.role, dop.district,
-              COALESCE(
-                u.phone,
-                w.contact_phone,
-                t.phone,
-                r.contact_number,
-                c.college_phone,
-                h.contact_mobile,
-                dop.contact_number,
-                dp.contact_number
-              ) as phone
-       FROM users u
-       LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
-       LEFT JOIN wellness_centres w ON w.user_id = u.id
-       LEFT JOIN training_centres t ON t.user_id = u.id
-       LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
-       LEFT JOIN research_org_profile r ON r.user_id = u.id
-       LEFT JOIN ayush_colleges c ON c.id = u.id
-       LEFT JOIN ayush_hospitals h ON h.user_id = u.id
-       LEFT JOIN directorate_profile dp ON dp.user_id = u.id
-       WHERE u.id = $1`,
-      [user.id]
-    );
-    return res.json({ success: true, user, data: profileRes.rows[0] });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message, stack: err.stack });
-  }
-});
-
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',              authRoutes);
 app.use('/api/register',          registerRoutes);
