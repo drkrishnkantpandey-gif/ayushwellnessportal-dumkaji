@@ -3418,12 +3418,16 @@ const Directorate = ({ activeTab }) => {
           <div class="corner-decoration bottom-right"></div>
           
           <div class="header">
-            <img class="govt-logo-uk" src="/images/uk_ayush_logo.png" alt="Uttarakhand Govt Logo" />
+            <div style="width: 150px; display: flex; justify-content: flex-start;">
+              <img class="govt-logo-uk" src="/images/uk_ayush_logo.png" alt="Uttarakhand Govt Logo" />
+            </div>
             <div style="text-align: center; flex: 1;">
               <h2 class="dept-title">DEPARTMENT OF AYUSH & AYUSH EDUCATION</h2>
               <div class="state-title">GOVERNMENT OF UTTARAKHAND</div>
             </div>
-            <img class="govt-logo-setu" src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" />
+            <div style="width: 150px; display: flex; justify-content: flex-end;">
+              <img class="govt-logo-setu" src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" />
+            </div>
           </div>
           
           <div class="body-content">
