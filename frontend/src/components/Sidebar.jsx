@@ -36,8 +36,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "home", icon: Home, label: "Dashboard Home", badge: 3 },
     { id: "profile", icon: Users, label: "Centre Profile" },
     { id: "programs", icon: Heart, label: "Wellness Programs & Packages" },
-    { id: "sessions", icon: Calendar, label: "Session Tracker" },
-    { id: "incentives", icon: DollarSign, label: "Incentives & Grants" },
     { id: "therapists", icon: Users, label: "Therapists & Staff" },
     { id: "settings", icon: Lock, label: "Account Settings" },
   ];

@@ -607,9 +607,27 @@ const getUserProfile = async (req, res) => {
   const client = await pool.connect();
   try {
     const userRes = await client.query(
-      `SELECT u.id, u.email, u.full_name, u.phone, u.role, dop.district 
+      `SELECT u.id, u.email, u.full_name, u.role, dop.district,
+              COALESCE(
+                u.phone,
+                w.contact_phone,
+                t.phone,
+                y.phone,
+                r.contact_number,
+                c.phone,
+                h.contact_mobile,
+                dop.contact_number,
+                dp.contact_number
+              ) as phone
        FROM users u
        LEFT JOIN district_officer_profile dop ON dop.user_id = u.id
+       LEFT JOIN wellness_centres w ON w.user_id = u.id
+       LEFT JOIN training_centres t ON t.user_id = u.id
+       LEFT JOIN yoga_professional_profile y ON y.user_id = u.id
+       LEFT JOIN research_org_profile r ON r.user_id = u.id
+       LEFT JOIN ayush_colleges c ON c.id = u.id
+       LEFT JOIN ayush_hospitals h ON h.user_id = u.id
+       LEFT JOIN directorate_profile dp ON dp.user_id = u.id
        WHERE u.id = $1`,
       [userId]
     );

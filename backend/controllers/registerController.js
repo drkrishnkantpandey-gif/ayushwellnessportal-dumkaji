@@ -89,18 +89,18 @@ async function registerWellnessCentre(req, res) {
       userId = userRecord.id;
       const passwordHash = await bcrypt.hash(password, 10);
       await client.query(
-        `UPDATE users SET full_name = $1, password_hash = $2, registration_status = 'pending', is_verified = true WHERE id = $3`,
-        [contactPerson, passwordHash, userId]
+        `UPDATE users SET full_name = $1, phone = $2, password_hash = $3, registration_status = 'pending', is_verified = true WHERE id = $4`,
+        [contactPerson, contactPhone, passwordHash, userId]
       );
       // Clean up previous registration attempts
       await client.query(`DELETE FROM wellness_centres WHERE user_id = $1`, [userId]);
     } else {
       const passwordHash = await bcrypt.hash(password, 10);
       const userResult = await client.query(
-        `INSERT INTO users (full_name, email, password_hash, role, is_verified, registration_status)
-         VALUES ($1, LOWER($2), $3, $4, true, 'pending')
+        `INSERT INTO users (full_name, email, phone, password_hash, role, is_verified, registration_status)
+         VALUES ($1, LOWER($2), $3, $4, 'wellness_centre', true, 'pending')
          RETURNING id`,
-         [contactPerson, contactEmail, passwordHash, "wellness_centre"]
+         [contactPerson, contactEmail, contactPhone, passwordHash]
       );
       userId = userResult.rows[0].id;
     }
