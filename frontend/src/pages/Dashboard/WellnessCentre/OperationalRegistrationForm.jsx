@@ -150,10 +150,28 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
     const isPanchakarma = formData.services_offered.includes('Panchakarma');
     const isNaturopathy = formData.services_offered.includes('Naturopathy');
     const isTherapyOrGram = formData.category === 'AYUSH Wellness Therapy Centre' || formData.category === 'AYUSH Gram or AYUSH Resort';
+    const isHospitalOrGram = formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort';
 
     setFormData(prev => {
       const updates = {};
       
+      if (isHospitalOrGram) {
+        const minMpw = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
+        if (!prev.mpw_count || parseInt(prev.mpw_count) < minMpw) {
+          updates.mpw_count = minMpw.toString();
+        }
+        if (!prev.cook_count || parseInt(prev.cook_count) < 1) {
+          updates.cook_count = '1';
+        }
+        if (!prev.watchman_count || parseInt(prev.watchman_count) < 1) {
+          updates.watchman_count = '1';
+        }
+      } else {
+        updates.mpw_count = '';
+        updates.cook_count = '';
+        updates.watchman_count = '';
+      }
+
       if (isTherapyOrGram && isAyurveda) {
         if (prev.is_residential) {
           // Wellness Centre Attendant & Ayurveda Nurse: minimum 02 for every 10 Bed
@@ -308,18 +326,20 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
     }
 
     if (currentStep === 4) {
-      if (parseInt(formData.receptionist_count) < 1) return 'At least 1 Receptionist is required.';
-      if (parseInt(formData.sanitation_worker_count) < 1) return 'At least 1 Sanitation Worker is required.';
+      if (parseInt(formData.receptionist_count || 0) < 1) return 'At least 1 Receptionist is required.';
+      if (parseInt(formData.sanitation_worker_count || 0) < 1) return 'At least 1 Sanitation Worker is required.';
 
       const isAyurveda = formData.services_offered.includes('Ayurveda');
       const isPanchakarma = formData.services_offered.includes('Panchakarma');
       const isNaturopathy = formData.services_offered.includes('Naturopathy');
       const isTherapyOrGram = formData.category === 'AYUSH Wellness Therapy Centre' || formData.category === 'AYUSH Gram or AYUSH Resort';
+      const isHospitalOrGram = formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort';
 
-      if (isTherapyOrGram) {
-        if (parseInt(formData.mpw_count) < 1) return 'At least 1 MPW worker is required.';
-        if (parseInt(formData.cook_count) < 1) return 'At least 1 Cook is required.';
-        if (parseInt(formData.watchman_count) < 1) return 'At least 1 Watchman is required.';
+      if (isHospitalOrGram) {
+        const minMpw = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
+        if (parseInt(formData.mpw_count || 0) < minMpw) return `At least ${minMpw} MPW worker(s) are required (min 1 per 10 beds).`;
+        if (parseInt(formData.cook_count || 0) < 1) return 'At least 1 Cook is required.';
+        if (parseInt(formData.watchman_count || 0) < 1) return 'At least 1 Watchman is required.';
       }
 
       if (isTherapyOrGram && isAyurveda) {
@@ -329,22 +349,22 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
 
         if (formData.is_residential) {
           const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-          if (parseInt(formData.wc_attendant_count) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
+          if (parseInt(formData.wc_attendant_count || 0) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
           
           const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-          if (parseInt(formData.ayurveda_nurse_count) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
+          if (parseInt(formData.ayurveda_nurse_count || 0) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
         }
       }
 
       if (isPanchakarma) {
         const minPanch = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
-        if (parseInt(formData.male_panchakarma_therapist) < minPanch) return `At least ${minPanch} Male Panchakarma Therapist is required (min 1 per 10 beds).`;
-        if (parseInt(formData.female_panchakarma_therapist) < minPanch) return `At least ${minPanch} Female Panchakarma Therapist is required (min 1 per 10 beds).`;
+        if (parseInt(formData.male_panchakarma_therapist || 0) < minPanch) return `At least ${minPanch} Male Panchakarma Therapist is required (min 1 per 10 beds).`;
+        if (parseInt(formData.female_panchakarma_therapist || 0) < minPanch) return `At least ${minPanch} Female Panchakarma Therapist is required (min 1 per 10 beds).`;
         if (!formData.panchakarma_staff_bcp_doc) return 'Please upload Panchakarma Staff BCP Registrations.';
       }
 
       if (formData.services_offered.includes('Yoga')) {
-        if (parseInt(formData.yoga_instructor_count) < 1) return 'At least 1 Yoga Instructor is required.';
+        if (parseInt(formData.yoga_instructor_count || 0) < 1) return 'At least 1 Yoga Instructor is required.';
         if (!formData.yoga_instructor_qual_doc) return 'Please upload Yoga Instructor Qualification Doc.';
       }
 
@@ -352,8 +372,8 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
         const minNat = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
         if (!formData.bnys_doctor_name.trim()) return 'Naturopathy BNYS Doctor Name is required.';
         if (!formData.bnys_reg_certificate) return 'Please upload BNYS Registration Certificate.';
-        if (parseInt(formData.male_naturopathy_attendant) < minNat) return `At least ${minNat} Male Yog & Naturopathy Attendants are required (min 1 per 10 beds).`;
-        if (parseInt(formData.female_naturopathy_attendant) < minNat) return `At least ${minNat} Female Yog & Naturopathy Attendants are required (min 1 per 10 beds).`;
+        if (parseInt(formData.male_naturopathy_attendant || 0) < minNat) return `At least ${minNat} Male Yog & Naturopathy Attendants are required (min 1 per 10 beds).`;
+        if (parseInt(formData.female_naturopathy_attendant || 0) < minNat) return `At least ${minNat} Female Yog & Naturopathy Attendants are required (min 1 per 10 beds).`;
         if (!formData.naturopathy_staff_bcp_doc) return 'Please upload Naturopathy Attendants BCP Registrations.';
       }
     }
@@ -1456,11 +1476,12 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                   <input type="number" name="sanitation_worker_count" placeholder="Min. 1" className="wcr-input" value={formData.sanitation_worker_count} onChange={handleChange} required />
                 </div>
 
-                {(formData.category === 'AYUSH Wellness Therapy Centre' || formData.category === 'AYUSH Gram or AYUSH Resort') && (
+                {(formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort') && (
                   <>
                     <div className="wcr-field-group">
                       <label className="wcr-label">Multi-Purpose Workers (MPW) *</label>
                       <input type="number" name="mpw_count" placeholder="Min. 1 per 10 beds" className="wcr-input" value={formData.mpw_count} onChange={handleChange} required />
+                      <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(1, Math.ceil(parseInt(formData.num_beds) / 10)) : 1}</span>
                     </div>
                     <div className="wcr-field-group">
                       <label className="wcr-label">Cook Count *</label>
