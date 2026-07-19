@@ -155,14 +155,20 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
       const updates = {};
       
       if (isTherapyOrGram && isAyurveda) {
-        // Wellness Centre Attendant & Ayurveda Nurse: minimum 02 for every 10 Bed
-        const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-        if (!prev.wc_attendant_count || parseInt(prev.wc_attendant_count) < minAtt) {
-          updates.wc_attendant_count = minAtt.toString();
-        }
-        const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-        if (!prev.ayurveda_nurse_count || parseInt(prev.ayurveda_nurse_count) < minNurse) {
-          updates.ayurveda_nurse_count = minNurse.toString();
+        if (prev.is_residential) {
+          // Wellness Centre Attendant & Ayurveda Nurse: minimum 02 for every 10 Bed
+          const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+          if (!prev.wc_attendant_count || parseInt(prev.wc_attendant_count) < minAtt) {
+            updates.wc_attendant_count = minAtt.toString();
+          }
+          const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+          if (!prev.ayurveda_nurse_count || parseInt(prev.ayurveda_nurse_count) < minNurse) {
+            updates.ayurveda_nurse_count = minNurse.toString();
+          }
+        } else {
+          // Reset or do not enforce if not residential
+          updates.wc_attendant_count = '';
+          updates.ayurveda_nurse_count = '';
         }
       }
 
@@ -317,15 +323,17 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
       }
 
       if (isTherapyOrGram && isAyurveda) {
-        const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-        if (parseInt(formData.wc_attendant_count) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
-        
-        const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-        if (parseInt(formData.ayurveda_nurse_count) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
-
         if (!formData.pharmacist_name.trim()) return 'Pharmacist Name is required.';
         if (!formData.pharmacist_reg_number.trim()) return 'Pharmacist BCP Registration Number is required.';
         if (!formData.pharmacist_bcp_doc) return 'Please upload Pharmacist BCP License Doc.';
+
+        if (formData.is_residential) {
+          const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+          if (parseInt(formData.wc_attendant_count) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
+          
+          const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+          if (parseInt(formData.ayurveda_nurse_count) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
+        }
       }
 
       if (isPanchakarma) {
@@ -1421,16 +1429,20 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                         <input type="text" name="pharmacist_reg_number" className="wcr-input" value={formData.pharmacist_reg_number} onChange={handleChange} required />
                       </div>
                       {renderUploadControl('pharmacist_bcp_doc', 'Pharmacist BCP License Doc *', 'Upload valid BCP registration license')}
-                      <div className="wcr-field-group">
-                        <label className="wcr-label">Wellness Centre Attendant Count *</label>
-                        <input type="number" name="wc_attendant_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.wc_attendant_count} onChange={handleChange} required />
-                        <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
-                      </div>
-                      <div className="wcr-field-group">
-                        <label className="wcr-label">Ayurveda Nurse Count *</label>
-                        <input type="number" name="ayurveda_nurse_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.ayurveda_nurse_count} onChange={handleChange} required />
-                        <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
-                      </div>
+                      {formData.is_residential && (
+                        <>
+                          <div className="wcr-field-group">
+                            <label className="wcr-label">Wellness Centre Attendant Count *</label>
+                            <input type="number" name="wc_attendant_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.wc_attendant_count} onChange={handleChange} required />
+                            <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
+                          </div>
+                          <div className="wcr-field-group">
+                            <label className="wcr-label">Ayurveda Nurse Count *</label>
+                            <input type="number" name="ayurveda_nurse_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.ayurveda_nurse_count} onChange={handleChange} required />
+                            <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
+                          </div>
+                        </>
+                      )}
                     </>
                 )}
 
