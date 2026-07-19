@@ -1193,6 +1193,18 @@ export default function WellnessCentreProfile() {
                               {event.comment}
                             </div>
                           )}
+                          {event.document_path && (
+                            <div className="mt-2 text-xs">
+                              <a
+                                href={`${API}${event.document_path}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-teal-600 font-bold hover:underline inline-flex items-center gap-1"
+                              >
+                                <FileText size={14} /> View Submitted Document
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

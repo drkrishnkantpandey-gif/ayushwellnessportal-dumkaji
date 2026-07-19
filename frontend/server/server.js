@@ -575,6 +575,7 @@ async function runWellnessCentreOperationalMigration() {
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS compliance_comment TEXT;
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS compliance_document TEXT;
+      ALTER TABLE wellness_centre_reg_events ADD COLUMN IF NOT EXISTS document_path TEXT;
     `);
 
     // Check if there is only 1 registration and its registration_number doesn't end with -0001

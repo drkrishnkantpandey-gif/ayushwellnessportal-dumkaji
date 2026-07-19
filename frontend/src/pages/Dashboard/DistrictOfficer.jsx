@@ -2160,6 +2160,18 @@ const DistrictOfficer = ({ activeTab }) => {
                                     "{event.comment}"
                                   </div>
                                 )}
+                                {event.document_path && (
+                                  <div style={{ marginTop: 6 }}>
+                                    <a
+                                      href={`${API}${event.document_path}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ color: '#0f766e', fontWeight: 700, fontSize: 11, textDecoration: 'underline' }}
+                                    >
+                                      View Submitted Document
+                                    </a>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}

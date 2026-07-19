@@ -420,10 +420,6 @@ async function getPendingActions(req, res) {
     if (parseInt(docRes.rows[0].count) === 0) {
       pendingActions.push({ id: 'upload_docs', title: "Upload required registration documents", priority: 'medium' });
     }
-
-    // Static placeholder for now as requested
-    pendingActions.push({ id: 'report_pending', title: "Wellness program report pending submission", priority: 'low' });
-
     res.json({ success: true, data: pendingActions });
   } catch (err) {
     console.error("Error in getPendingActions:", err);
@@ -950,9 +946,9 @@ async function submitCompliance(req, res) {
     `, [comment, docPath, reg.id]);
 
     await db.query(`
-      INSERT INTO wellness_centre_reg_events (registration_id, event_type, actor_role, actor_id, actor_name, comment)
-      VALUES ($1, 'COMPLIANCE_SUBMITTED', 'wellness_centre', $2, $3, $4)
-    `, [reg.id, userId, actorName, `Compliance Submitted: ${comment}`]);
+      INSERT INTO wellness_centre_reg_events (registration_id, event_type, actor_role, actor_id, actor_name, comment, document_path)
+      VALUES ($1, 'COMPLIANCE_SUBMITTED', 'wellness_centre', $2, $3, $4, $5)
+    `, [reg.id, userId, actorName, `Compliance Submitted: ${comment}`, docPath]);
 
     return res.json({ success: true, message: 'Compliance submitted successfully' });
   } catch (err) {

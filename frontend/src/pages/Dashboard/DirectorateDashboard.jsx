@@ -4106,6 +4106,18 @@ const Directorate = ({ activeTab }) => {
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{ev.event_type} <span style={{ fontWeight: 400, color: '#64748b' }}>by {ev.actor_name || ev.actor_role}</span></div>
                           {ev.comment && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 2 }}>"{ev.comment}"</div>}
+                          {ev.document_path && (
+                            <div style={{ marginTop: 4 }}>
+                              <a
+                                href={`${API}${ev.document_path}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ color: '#166534', fontWeight: 700, fontSize: 11, textDecoration: 'underline' }}
+                              >
+                                View Submitted Document
+                              </a>
+                            </div>
+                          )}
                           <div style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(ev.created_at).toLocaleString('en-IN')}</div>
                         </div>
                       </div>

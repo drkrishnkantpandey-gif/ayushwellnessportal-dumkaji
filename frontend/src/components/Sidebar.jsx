@@ -33,7 +33,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
 
   // Wellness Centre menu items
   const wellnessCentreMenu = [
-    { id: "home", icon: Home, label: "Dashboard Home", badge: 3 },
+    { id: "home", icon: Home, label: "Dashboard Home" },
     { id: "profile", icon: Users, label: "Centre Profile" },
     { id: "programs", icon: Heart, label: "Wellness Programs & Packages" },
     { id: "therapists", icon: Users, label: "Therapists & Staff" },
