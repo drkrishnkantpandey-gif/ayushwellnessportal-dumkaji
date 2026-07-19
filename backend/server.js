@@ -184,6 +184,7 @@ app.use('/api/register',          registerRoutes);
 app.use('/api/training-centre',   trainingCentreRoutes);
 app.use('/api/yoga-professional', yogaProfessionalRoutes);
 app.use('/api/wellness',          wellnessCentreRoutes);
+app.use('/api/wellness-centre',   wellnessCentreRoutes);
 app.use('/api/ayush-hospital',    ayushHospitalRoutes);
 app.use('/api/admin',             adminRoutes);
 app.use('/api/research-grants',   researchGrantRoutes);

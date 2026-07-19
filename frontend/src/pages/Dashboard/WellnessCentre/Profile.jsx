@@ -38,7 +38,7 @@ export default function WellnessCentreProfile() {
   const fetchProfile = async () => {
     try {
       const [profileRes, opRegRes] = await Promise.all([
-        axiosInstance.get(`${API}/api/wellness-centre/profile`),
+        axiosInstance.get(`${API}/api/wellness/profile`),
         axiosInstance.get(`${API}/api/wellness/operational-registration`)
       ]);
       if (profileRes.data.success) {
@@ -64,7 +64,7 @@ export default function WellnessCentreProfile() {
     e.preventDefault();
     setSaving(true);
     try {
-      await axiosInstance.put(`${API}/api/wellness-centre/profile`, profile);
+      await axiosInstance.put(`${API}/api/wellness/profile`, profile);
       toast.success("Profile updated successfully!");
       fetchProfile();
     } catch (err) {
