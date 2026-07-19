@@ -3220,6 +3220,242 @@ const Directorate = ({ activeTab }) => {
   const [wcRegsLoading, setWcRegsLoading] = useState(false);
   const [wcSelectedReg, setWcSelectedReg] = useState(null);
 
+  const handlePrintCertificate = (reg) => {
+    if (!reg || reg.status !== 'APPROVED') return;
+    const printWindow = window.open("", "_blank");
+    
+    const htmlContent = `
+      <html>
+      <head>
+        <title>Registration Certificate - ${reg.registration_number}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Montserrat:wght@400;500;600;700&display=swap');
+          body {
+            font-family: 'Montserrat', sans-serif;
+            color: #1e293b;
+            padding: 0;
+            margin: 0;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+          }
+          .certificate-container {
+            width: 850px;
+            height: 600px;
+            padding: 40px;
+            border: 20px solid #0f766e;
+            border-style: double;
+            border-width: 15px;
+            box-sizing: border-box;
+            position: relative;
+            background: radial-gradient(circle, #fcfdfd 0%, #f0fdfa 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .corner-decoration {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #0d9488;
+          }
+          .top-left { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+          .top-right { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+          .bottom-left { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+          .bottom-right { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+          
+          .header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          .govt-logo {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 10px;
+            object-fit: contain;
+          }
+          .dept-title {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f766e;
+            letter-spacing: 0.1em;
+            margin: 0;
+          }
+          .state-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.2em;
+            margin-top: 3px;
+            text-transform: uppercase;
+          }
+          
+          .body-content {
+            text-align: center;
+            margin: 25px 0;
+          }
+          .cert-title {
+            font-family: 'Cinzel', serif;
+            font-size: 26px;
+            font-weight: 800;
+            color: #115e59;
+            margin: 0 0 15px 0;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #99f6e4;
+            display: inline-block;
+            padding-bottom: 5px;
+          }
+          .cert-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #334155;
+            max-width: 700px;
+            margin: 0 auto;
+          }
+          .highlight {
+            font-weight: 700;
+            color: #0f766e;
+          }
+          
+          .meta-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            font-size: 13px;
+            margin: 15px auto;
+            max-width: 650px;
+            background-color: rgba(20, 184, 166, 0.04);
+            border: 1px solid #ccfbf1;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: left;
+            box-sizing: border-box;
+            width: 100%;
+          }
+          .meta-item {
+            display: flex;
+            justify-content: space-between;
+          }
+          .meta-label {
+            font-weight: 600;
+            color: #475569;
+          }
+          .meta-val {
+            font-weight: 700;
+            color: #0f766e;
+          }
+
+          .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 10px;
+          }
+          .validity-block {
+            text-align: left;
+            font-size: 12px;
+            color: #475569;
+          }
+          .validity-block p {
+            margin: 3px 0;
+          }
+          .signature-block {
+            text-align: center;
+            border-top: 1px dashed #94a3b8;
+            padding-top: 8px;
+            width: 250px;
+          }
+          .signature-block p {
+            margin: 2px 0;
+          }
+          .sig-title {
+            font-weight: 700;
+            color: #0f766e;
+            font-size: 13px;
+          }
+          .sig-subtitle {
+            font-size: 11px;
+            color: #64748b;
+          }
+          .sig-verify {
+            font-size: 9px;
+            color: #10b981;
+            font-weight: 600;
+            margin-top: 5px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+          }
+          
+          @media print {
+            body { background: none; }
+            .certificate-container {
+              box-shadow: none;
+              page-break-inside: avoid;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="certificate-container">
+          <div class="corner-decoration top-left"></div>
+          <div class="corner-decoration top-right"></div>
+          <div class="corner-decoration bottom-left"></div>
+          <div class="corner-decoration bottom-right"></div>
+          
+          <div class="header">
+            <img class="govt-logo" src="/images/ayush_setu_logo.png" alt="Govt Logo" />
+            <h2 class="dept-title">DEPARTMENT OF AYUSH</h2>
+            <div class="state-title">GOVERNMENT OF UTTARAKHAND</div>
+          </div>
+          
+          <div class="body-content">
+            <h1 class="cert-title">CERTIFICATE OF REGISTRATION</h1>
+            <p class="cert-text">
+              This is to certify that the AYUSH Wellness Centre named <span class="highlight">${reg.centre_name}</span>, 
+              located at <span class="highlight">${reg.address}</span>, District <span class="highlight">${reg.district}</span>, 
+              owned and managed by <span class="highlight">${reg.owner_name}</span> (Entity Type: <span class="highlight">${reg.entity_type || 'N/A'}</span>), 
+              under Category <span class="highlight">${reg.category || 'N/A'}</span>, has been registered and verified under the operational standards of Department of AYUSH.
+            </p>
+          </div>
+          
+          <div class="meta-info">
+            <div class="meta-item"><span class="meta-label">Registration No:</span> <span class="meta-val">${reg.registration_number}</span></div>
+            <div class="meta-item"><span class="meta-label">Accreditation:</span> <span class="meta-val">${reg.acreditation_level || 'N/A'}</span></div>
+            <div class="meta-item" style="grid-column: span 2;"><span class="meta-label">Services Offered:</span> <span class="meta-val">${(reg.services_offered || []).join(", ") || 'N/A'}</span></div>
+          </div>
+          
+          <div class="footer">
+            <div class="validity-block">
+              <p><strong>Date of Approval:</strong> ${new Date(reg.approved_at || Date.now()).toLocaleDateString('en-IN')}</p>
+              <p><strong>Certificate Validity:</strong> ${reg.certificate_valid_till ? new Date(reg.certificate_valid_till).toLocaleDateString('en-IN') : 'N/A'}</p>
+            </div>
+            
+            <div class="signature-block">
+              <p class="sig-title">District Officer (${reg.district})</p>
+              <p class="sig-subtitle">Department of AYUSH, Uttarakhand</p>
+              <p class="sig-verify">✓ DIGITALLY SIGNED & VERIFIED</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -4042,7 +4278,17 @@ const Directorate = ({ activeTab }) => {
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{wcSelectedReg.centre_name}</div>
                   <div style={{ fontSize: 13, opacity: 0.85 }}>Reg No: {wcSelectedReg.registration_number} | {wcSelectedReg.district}</div>
                 </div>
-                <button onClick={() => setWcSelectedReg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20 }}>✕</button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  {wcSelectedReg.status === 'APPROVED' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handlePrintCertificate(wcSelectedReg); }}
+                      style={{ background: '#fff', color: '#166534', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Award size={14} /> Download Certificate (PDF)
+                    </button>
+                  )}
+                  <button onClick={() => setWcSelectedReg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20 }}>✕</button>
+                </div>
               </div>
               <div style={{ overflowY: 'auto', padding: 24, flex: 1 }}>
                 {/* General Info */}
