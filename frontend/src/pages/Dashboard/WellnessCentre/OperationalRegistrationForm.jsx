@@ -137,7 +137,13 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
       let currentServices = [...prev.services_offered];
       if (newCat !== 'AYUSH Wellness Centre & Hospital') {
         const hospitalOnly = ['Ayurveda', 'Kshar Sutra', 'Kshar Karma', 'Siravedha & Leech Therapy', 'Agni Karma', 'Marma Chikitsa'];
-        currentServices = currentServices.filter(s => !hospitalOnly.includes(s));
+        if (newCat === 'AYUSH Gram or AYUSH Resort') {
+          // Allow Ayurveda for AYUSH Gram or AYUSH Resort, but filter out others
+          const otherHospitalOnly = hospitalOnly.filter(s => s !== 'Ayurveda');
+          currentServices = currentServices.filter(s => !otherHospitalOnly.includes(s));
+        } else {
+          currentServices = currentServices.filter(s => !hospitalOnly.includes(s));
+        }
       }
       return { ...prev, category: newCat, services_offered: currentServices };
     });
@@ -172,19 +178,29 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
         updates.watchman_count = '';
       }
 
-      if (isTherapyOrGram && isAyurveda) {
-        if (prev.is_residential) {
-          // Wellness Centre Attendant & Ayurveda Nurse: minimum 02 for every 10 Bed
-          const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-          if (!prev.wc_attendant_count || parseInt(prev.wc_attendant_count) < minAtt) {
-            updates.wc_attendant_count = minAtt.toString();
-          }
-          const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-          if (!prev.ayurveda_nurse_count || parseInt(prev.ayurveda_nurse_count) < minNurse) {
-            updates.ayurveda_nurse_count = minNurse.toString();
-          }
-        } else {
-          // Reset or do not enforce if not residential
+      // Pharmacist fields reset if not showing
+      const showPharmacist = (prev.category === 'AYUSH Wellness Centre & Hospital' || prev.category === 'AYUSH Gram or AYUSH Resort') && isAyurveda;
+      if (!showPharmacist) {
+        if (prev.pharmacist_name !== '' || prev.pharmacist_reg_number !== '' || prev.pharmacist_bcp_doc !== '') {
+          updates.pharmacist_name = '';
+          updates.pharmacist_reg_number = '';
+          updates.pharmacist_bcp_doc = '';
+        }
+      }
+
+      // Wellness Centre Attendant & Ayurveda Nurse
+      const showNurseAndAttendant = prev.is_residential && (prev.category === 'AYUSH Wellness Centre & Hospital' || prev.category === 'AYUSH Gram or AYUSH Resort') && isAyurveda;
+      if (showNurseAndAttendant) {
+        const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (!prev.wc_attendant_count || parseInt(prev.wc_attendant_count) < minAtt) {
+          updates.wc_attendant_count = minAtt.toString();
+        }
+        const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (!prev.ayurveda_nurse_count || parseInt(prev.ayurveda_nurse_count) < minNurse) {
+          updates.ayurveda_nurse_count = minNurse.toString();
+        }
+      } else {
+        if (prev.wc_attendant_count !== '' || prev.ayurveda_nurse_count !== '') {
           updates.wc_attendant_count = '';
           updates.ayurveda_nurse_count = '';
         }
@@ -342,18 +358,20 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
         if (parseInt(formData.watchman_count || 0) < 1) return 'At least 1 Watchman is required.';
       }
 
-      if (isTherapyOrGram && isAyurveda) {
+      const showPharmacist = (formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort') && isAyurveda;
+      if (showPharmacist) {
         if (!formData.pharmacist_name.trim()) return 'Pharmacist Name is required.';
         if (!formData.pharmacist_reg_number.trim()) return 'Pharmacist BCP Registration Number is required.';
         if (!formData.pharmacist_bcp_doc) return 'Please upload Pharmacist BCP License Doc.';
+      }
 
-        if (formData.is_residential) {
-          const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-          if (parseInt(formData.wc_attendant_count || 0) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
-          
-          const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
-          if (parseInt(formData.ayurveda_nurse_count || 0) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
-        }
+      const showNurseAndAttendant = formData.is_residential && (formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort') && isAyurveda;
+      if (showNurseAndAttendant) {
+        const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (parseInt(formData.wc_attendant_count || 0) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
+        
+        const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (parseInt(formData.ayurveda_nurse_count || 0) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
       }
 
       if (isPanchakarma) {
@@ -1093,7 +1111,11 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                 <div className="wcr-chip-group">
                   {allServices.map(service => {
                     const isHospitalOnly = hospitalServices.includes(service);
-                    const isLocked = isHospitalOnly && formData.category !== 'AYUSH Wellness Centre & Hospital';
+                    const isLocked = isHospitalOnly && (
+                      service === 'Ayurveda'
+                        ? (formData.category !== 'AYUSH Wellness Centre & Hospital' && formData.category !== 'AYUSH Gram or AYUSH Resort')
+                        : (formData.category !== 'AYUSH Wellness Centre & Hospital')
+                    );
 
                     if (isLocked) return null;
 
@@ -1495,8 +1517,8 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                 )}
 
                 {/* Conditional Staff based on services */}
-                {(formData.category === 'AYUSH Wellness Therapy Centre' || formData.category === 'AYUSH Gram or AYUSH Resort') &&
-                  formData.services_offered.includes('Ayurveda') && (
+                {((formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort') &&
+                  formData.services_offered.includes('Ayurveda')) && (
                     <>
                       <div className="wcr-field-group">
                         <label className="wcr-label">Pharmacist Name *</label>
@@ -1507,20 +1529,23 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                         <input type="text" name="pharmacist_reg_number" className="wcr-input" value={formData.pharmacist_reg_number} onChange={handleChange} required />
                       </div>
                       {renderUploadControl('pharmacist_bcp_doc', 'Pharmacist BCP License Doc *', 'Upload valid BCP registration license')}
-                      {formData.is_residential && (
-                        <>
-                          <div className="wcr-field-group">
-                            <label className="wcr-label">Wellness Centre Attendant Count *</label>
-                            <input type="number" name="wc_attendant_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.wc_attendant_count} onChange={handleChange} required />
-                            <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
-                          </div>
-                          <div className="wcr-field-group">
-                            <label className="wcr-label">Ayurveda Nurse Count *</label>
-                            <input type="number" name="ayurveda_nurse_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.ayurveda_nurse_count} onChange={handleChange} required />
-                            <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
-                          </div>
-                        </>
-                      )}
+                    </>
+                )}
+
+                {(formData.is_residential &&
+                  (formData.category === 'AYUSH Wellness Centre & Hospital' || formData.category === 'AYUSH Gram or AYUSH Resort') &&
+                  formData.services_offered.includes('Ayurveda')) && (
+                    <>
+                      <div className="wcr-field-group">
+                        <label className="wcr-label">Wellness Centre Attendant Count *</label>
+                        <input type="number" name="wc_attendant_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.wc_attendant_count} onChange={handleChange} required />
+                        <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
+                      </div>
+                      <div className="wcr-field-group">
+                        <label className="wcr-label">Ayurveda Nurse Count *</label>
+                        <input type="number" name="ayurveda_nurse_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.ayurveda_nurse_count} onChange={handleChange} required />
+                        <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
+                      </div>
                     </>
                 )}
 
