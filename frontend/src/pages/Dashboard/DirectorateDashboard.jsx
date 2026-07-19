@@ -4125,10 +4125,58 @@ const Directorate = ({ activeTab }) => {
                   </div>
                 )}
 
-                {/* District comment if reverted */}
-                {wcSelectedReg.district_comment && (
-                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '12px 16px', marginTop: 12 }}>
-                    <strong style={{ color: '#c2410c' }}>District Comment:</strong> {wcSelectedReg.district_comment}
+                {/* Query & Compliance History */}
+                {((wcSelectedReg.events || []).some(e => e.event_type === 'REVERTED' || e.event_type === 'COMPLIANCE_SUBMITTED')) && (
+                  <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, marginTop: 16 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: '#0f766e', borderBottom: '1px solid #e2e8f0', paddingBottom: 6, marginBottom: 12 }}>
+                      Query & Compliance History
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 250, overflowY: 'auto' }}>
+                      {(wcSelectedReg.events || [])
+                        .filter(e => e.event_type === 'REVERTED' || e.event_type === 'COMPLIANCE_SUBMITTED')
+                        .map((ev, index) => {
+                          const isRevert = ev.event_type === 'REVERTED';
+                          return (
+                            <div 
+                              key={ev.id || index} 
+                              style={{
+                                padding: 12,
+                                borderRadius: 8,
+                                border: '1px solid ' + (isRevert ? '#fed7aa' : '#a7f3d0'),
+                                borderLeft: '4px solid ' + (isRevert ? '#ea580c' : '#10b981'),
+                                background: isRevert ? '#fff7ed' : '#ecfdf5'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: isRevert ? '#9a3412' : '#065f46' }}>
+                                  {isRevert ? 'District Officer Query / Revert' : 'Wellness Centre Compliance Response'}
+                                </span>
+                                <span style={{ fontSize: 10, color: '#94a3b8' }}>
+                                  {new Date(ev.created_at).toLocaleString('en-IN', {
+                                    day: '2-digit', month: 'short', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 13, fontWeight: 500, color: isRevert ? '#7c2d12' : '#064e3b' }}>
+                                {isRevert ? ev.comment : ev.comment?.replace(/^Compliance Submitted:\s*/i, '')}
+                              </div>
+                              {!isRevert && ev.document_path && (
+                                <div style={{ marginTop: 6 }}>
+                                  <a 
+                                    href={`${API}${ev.document_path}`} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    style={{ color: '#047857', fontWeight: 700, fontSize: 11, textDecoration: 'underline' }}
+                                  >
+                                    View Attached Supporting Document
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
                   </div>
                 )}
               </div>

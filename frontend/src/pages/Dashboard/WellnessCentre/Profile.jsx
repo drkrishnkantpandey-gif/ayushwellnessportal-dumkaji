@@ -541,28 +541,57 @@ export default function WellnessCentreProfile() {
             </button>
           </div>
 
-          {/* District Comment or Compliance display */}
-          {(opReg.district_comment || opReg.compliance_comment) && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-              {opReg.district_comment && (
-                <div className="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-xl">
-                  <strong className="text-amber-800 text-sm block">District Officer Query Remarks:</strong>
-                  <p className="text-sm text-amber-700 mt-1 font-medium">{opReg.district_comment}</p>
-                </div>
-              )}
-              {opReg.compliance_comment && (
-                <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-r-xl">
-                  <strong className="text-green-800 text-sm block">Your Compliance Response:</strong>
-                  <p className="text-sm text-green-700 mt-1 font-medium">{opReg.compliance_comment}</p>
-                  {opReg.compliance_document && (
-                    <div className="mt-2">
-                      <a href={`${API}${opReg.compliance_document}`} target="_blank" rel="noreferrer" className="text-green-700 font-bold hover:underline inline-flex items-center gap-1 text-xs">
-                        <FileText size={14} /> View Supporting Document
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Query & Compliance History */}
+          {((opReg.events || []).some(e => e.event_type === 'REVERTED' || e.event_type === 'COMPLIANCE_SUBMITTED')) && (
+            <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-6 space-y-4">
+              <h3 className="text-base font-bold text-amber-900 border-b pb-2 flex items-center gap-2">
+                <Clock size={18} className="text-amber-600" />
+                Query & Compliance History
+              </h3>
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                {(opReg.events || [])
+                  .filter(e => e.event_type === 'REVERTED' || e.event_type === 'COMPLIANCE_SUBMITTED')
+                  .map((ev, index) => {
+                    const isRevert = ev.event_type === 'REVERTED';
+                    return (
+                      <div 
+                        key={ev.id || index} 
+                        className={`p-4 rounded-xl border ${
+                          isRevert 
+                            ? 'bg-amber-50 border-amber-100 border-l-4 border-l-amber-500' 
+                            : 'bg-green-50 border-green-100 border-l-4 border-l-green-500'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className={`text-xs font-bold uppercase tracking-wider ${isRevert ? 'text-amber-800' : 'text-green-800'}`}>
+                            {isRevert ? 'District Officer Query / Revert' : 'Wellness Centre Compliance Response'}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {new Date(ev.created_at).toLocaleString('en-IN', {
+                              day: '2-digit', month: 'short', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <div className={`text-sm font-medium ${isRevert ? 'text-amber-900' : 'text-green-950'}`}>
+                          {isRevert ? ev.comment : ev.comment?.replace(/^Compliance Submitted:\s*/i, '')}
+                        </div>
+                        {!isRevert && ev.document_path && (
+                          <div className="mt-2">
+                            <a 
+                              href={`${API}${ev.document_path}`} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="text-green-700 font-bold hover:underline inline-flex items-center gap-1 text-xs"
+                            >
+                              <FileText size={14} /> View Attached Supporting Document
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           )}
 
