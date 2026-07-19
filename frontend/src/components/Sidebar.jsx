@@ -98,6 +98,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "profile", icon: Users, label: "Profile Management" },
     { id: "approvals", icon: UserCheck, label: "District Officer Approvals" },
     { id: "entity_approvals", icon: Award, label: "Entity Approvals" },
+    { id: "wc_registrations", icon: Building2, label: "Wellness Centre Registrations" },
     { id: "trainer_fee_review", icon: DollarSign, label: "Trainer Fee Reimbursements" },
     { id: "nabh_reimbursement_review", icon: CreditCard, label: "NABH Reimbursements" },
     { id: "naac_reimbursement_review", icon: Award, label: "NAAC Reimbursements" },
@@ -111,6 +112,7 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "home", icon: Home, label: "Dashboard Home" },
     { id: "profile", icon: Users, label: "Profile Management" },
     { id: "entity_approvals", icon: Award, label: "Entity Approvals" },
+    { id: "wc_registrations", icon: Building2, label: "Wellness Centre Registrations" },
   ];
 
   // Select menu items based on user role

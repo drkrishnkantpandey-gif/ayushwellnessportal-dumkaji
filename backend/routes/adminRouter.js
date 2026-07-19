@@ -104,4 +104,20 @@ router.put('/trainer-fee/:id',     protect, directorateOnly, trainerFeeDecision)
 router.get('/nabh-reimbursement/pending', protect, directorateOnly, nabhPending);
 router.put('/nabh-reimbursement/:id',     protect, directorateOnly, nabhDecision);
 
+// ── Wellness Centre Operational Registrations (District: action; Directorate: view) ─
+const {
+  getPendingWellnessCentreRegistrations,
+  actionWellnessCentreRegistration
+} = require('../controllers/wellnessCentreController');
+
+router.get('/wellness-centre-operational-registrations',
+  protect, requireRole('district_officer', 'directorate', 'admin'),
+  getPendingWellnessCentreRegistrations
+);
+router.put('/wellness-centre-operational-registrations/:id',
+  protect, requireRole('district_officer', 'admin'),
+  actionWellnessCentreRegistration
+);
+
 module.exports = router;
+

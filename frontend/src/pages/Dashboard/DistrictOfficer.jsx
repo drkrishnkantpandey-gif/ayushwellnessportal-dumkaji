@@ -999,6 +999,12 @@ const DistrictOfficer = ({ activeTab }) => {
   const [filterStatus, setFilterStatus] = useState("pending");
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [profile, setProfile] = useState(null);
+  // WC operational registrations
+  const [wcRegs, setWcRegs] = useState([]);
+  const [wcRegsLoading, setWcRegsLoading] = useState(false);
+  const [wcSelectedReg, setWcSelectedReg] = useState(null);
+  const [wcActionModal, setWcActionModal] = useState(null); // { reg, action }
+  const [wcComment, setWcComment] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -1032,6 +1038,9 @@ const DistrictOfficer = ({ activeTab }) => {
     if (activeTab === "entity_approvals") {
       fetchPendingUsers(filterStatus);
     }
+    if (activeTab === "wc_registrations") {
+      fetchWcRegistrations();
+    }
   }, [activeTab, filterStatus]);
 
   const handleAction = async (targetUserId, decision) => {
@@ -1047,6 +1056,42 @@ const DistrictOfficer = ({ activeTab }) => {
     } catch (err) {
       console.error("Error during approval decision:", err);
       toast.error(err.response?.data?.message || "Action failed.");
+    }
+  };
+
+  const fetchWcRegistrations = async () => {
+    setWcRegsLoading(true);
+    try {
+      const res = await axiosInstance.get(`${API}/api/admin/wellness-centre-operational-registrations`);
+      if (res.data.success) setWcRegs(res.data.data);
+    } catch (err) {
+      console.error('Error fetching WC registrations:', err);
+    } finally {
+      setWcRegsLoading(false);
+    }
+  };
+
+  const handleWcAction = async () => {
+    if (!wcActionModal) return;
+    const { reg, action } = wcActionModal;
+    if ((action === 'REVERT' || action === 'REJECT') && !wcComment.trim()) {
+      toast.error('Please provide a comment for this action.');
+      return;
+    }
+    try {
+      const res = await axiosInstance.put(`${API}/api/admin/wellness-centre-operational-registrations/${reg.id}`, {
+        action,
+        comment: wcComment
+      });
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setWcActionModal(null);
+        setWcComment('');
+        setWcSelectedReg(null);
+        fetchWcRegistrations();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Action failed.');
     }
   };
 
@@ -1478,6 +1523,231 @@ const DistrictOfficer = ({ activeTab }) => {
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Wellness Centre Operational Registrations Tab ─────────────────────────────
+  if (activeTab === "wc_registrations") {
+    const wcStatusColors = {
+      SUBMITTED: { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', label: 'Submitted' },
+      REVERTED: { bg: '#fff7ed', border: '#fed7aa', text: '#c2410c', label: 'Reverted' },
+      APPROVED: { bg: '#f0fdf4', border: '#86efac', text: '#166534', label: 'Approved' },
+      REJECTED: { bg: '#fef2f2', border: '#fecaca', text: '#dc2626', label: 'Rejected' },
+      RESUBMITTED: { bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', label: 'Resubmitted' }
+    };
+
+    const DocLink = ({ path, label }) => {
+      if (!path) return <span style={{ color: '#9ca3af', fontSize: 12 }}>Not uploaded</span>;
+      const url = path.startsWith('http') ? path : `${API}/${path.replace(/^\//, '')}`;
+      return <a href={url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, textDecoration: 'underline' }}>{label || 'View Document'}</a>;
+    };
+
+    return (
+      <div style={{ padding: 24, minHeight: '100vh', background: '#f8fafc' }}>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1e293b', margin: 0 }}>Wellness Centre Registrations</h1>
+          <p style={{ color: '#64748b', marginTop: 4 }}>Review and approve operational registration applications from Wellness Centre users in your district.</p>
+        </div>
+
+        {wcRegsLoading ? (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#166534', fontWeight: 600 }}>Loading registrations...</div>
+        ) : wcRegs.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px', background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', color: '#64748b' }}>
+            No wellness centre registration applications found for your district.
+          </div>
+        ) : (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead style={{ background: '#f1f5f9' }}>
+                <tr>
+                  {['Reg. No.', 'Centre Name', 'Category', 'District', 'Owner', 'Services', 'Submitted', 'Status', 'Actions'].map(h => (
+                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', fontWeight: 700, color: '#475569', fontSize: 11, textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {wcRegs.map((reg) => {
+                  const s = wcStatusColors[reg.status] || wcStatusColors.SUBMITTED;
+                  return (
+                    <tr key={reg.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#166534', fontFamily: 'monospace' }}>{reg.registration_number || '—'}</td>
+                      <td style={{ padding: '12px 14px', fontWeight: 600 }}>{reg.centre_name}</td>
+                      <td style={{ padding: '12px 14px', fontSize: 11, color: '#475569' }}>{reg.category || '—'}</td>
+                      <td style={{ padding: '12px 14px' }}>{reg.district}</td>
+                      <td style={{ padding: '12px 14px' }}>{reg.owner_name || reg.applicant_user_name || '—'}</td>
+                      <td style={{ padding: '12px 14px', fontSize: 11 }}>{(reg.services_offered || []).join(', ') || '—'}</td>
+                      <td style={{ padding: '12px 14px', fontSize: 11, color: '#64748b' }}>{reg.submitted_at ? new Date(reg.submitted_at).toLocaleDateString('en-IN') : '—'}</td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text, borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: 11 }}>{s.label}</span>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => setWcSelectedReg(reg)}
+                            style={{ background: '#475569', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                          >View</button>
+                          {(reg.status === 'SUBMITTED' || reg.status === 'RESUBMITTED') && (
+                            <>
+                              <button
+                                onClick={() => { setWcActionModal({ reg, action: 'APPROVE' }); setWcComment(''); }}
+                                style={{ background: '#166534', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                              >Approve</button>
+                              <button
+                                onClick={() => { setWcActionModal({ reg, action: 'REVERT' }); setWcComment(''); }}
+                                style={{ background: '#c2410c', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                              >Revert</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* View Details Modal */}
+        {wcSelectedReg && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setWcSelectedReg(null)}>
+            <div style={{ background: '#fff', borderRadius: 16, maxWidth: 800, width: '100%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+              <div style={{ background: 'linear-gradient(135deg,#166534,#15803d)', color: '#fff', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 16 }}>{wcSelectedReg.centre_name}</div>
+                  <div style={{ fontSize: 13, opacity: 0.85 }}>Reg No: {wcSelectedReg.registration_number} | {wcSelectedReg.district}</div>
+                </div>
+                <button onClick={() => setWcSelectedReg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20 }}>✕</button>
+              </div>
+              <div style={{ overflowY: 'auto', padding: 24, flex: 1 }}>
+                {/* General Info */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>General Information</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    {[['Category', wcSelectedReg.category],['Address', wcSelectedReg.address],['GPS', `${wcSelectedReg.gps_lat || '—'}, ${wcSelectedReg.gps_lng || '—'}`],['Owner', wcSelectedReg.owner_name],['Mobile', wcSelectedReg.mobile],['Residential', wcSelectedReg.is_residential ? 'Yes' : 'No'],['Clinical', wcSelectedReg.offers_clinical ? 'Yes' : 'No'],['Services', (wcSelectedReg.services_offered || []).join(', ')],['Portal Registered Before', wcSelectedReg.already_on_portal ? `Yes — ${wcSelectedReg.portal_reg_reason || ''}` : 'No']].map(([k,v]) => (
+                      <div key={k} style={{ fontSize: 13 }}><span style={{ fontWeight: 600, color: '#374151' }}>{k}: </span><span style={{ color: '#4b5563' }}>{v || '—'}</span></div>
+                    ))}
+                  </div>
+                  {wcSelectedReg.previous_reg_certificate && <div style={{ marginTop: 8 }}><DocLink path={wcSelectedReg.previous_reg_certificate} label="Previous Registration Certificate" /></div>}
+                </div>
+
+                {/* Clinical Info */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Clinical Information</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    {[['Doctor', wcSelectedReg.doctor_name],['Qualification', wcSelectedReg.doctor_qualification],['BCP Reg. No.', wcSelectedReg.bcp_reg_number],['CEA Reg. No.', wcSelectedReg.cea_reg_number],['CEA Valid Till', wcSelectedReg.cea_valid_till ? new Date(wcSelectedReg.cea_valid_till).toLocaleDateString('en-IN') : '—']].map(([k,v]) => (
+                      <div key={k} style={{ fontSize: 13 }}><span style={{ fontWeight: 600, color: '#374151' }}>{k}: </span><span style={{ color: '#4b5563' }}>{v || '—'}</span></div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <DocLink path={wcSelectedReg.bcp_reg_doc} label="BCP Registration Doc" />
+                    <DocLink path={wcSelectedReg.cea_reg_certificate} label="CEA Certificate" />
+                    <DocLink path={wcSelectedReg.clinical_affidavit} label="Clinical Affidavit" />
+                  </div>
+                </div>
+
+                {/* Infrastructure */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Infrastructure</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                    {[['Reception (sqft)', wcSelectedReg.reception_area_sqft],['Waiting Capacity', wcSelectedReg.waiting_capacity],['Consultation Rooms', wcSelectedReg.consultation_rooms],['Incharge', wcSelectedReg.incharge_name],['Incharge Mobile', wcSelectedReg.incharge_mobile],['Emergency Centre', wcSelectedReg.emergency_centre_name],['Emergency Distance', wcSelectedReg.emergency_distance_m && `${wcSelectedReg.emergency_distance_m}m`],['Beds', wcSelectedReg.num_beds],['Parking (Cars)', wcSelectedReg.parking_cars],['CCTV', wcSelectedReg.cctv_supervised ? 'Yes' : 'No'],['Kitchen', wcSelectedReg.kitchen_available ? 'Yes' : 'No']].map(([k,v]) => (
+                      <div key={k} style={{ fontSize: 12 }}><span style={{ fontWeight: 600, color: '#374151' }}>{k}: </span><span style={{ color: '#4b5563' }}>{v ?? '—'}</span></div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Documents */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Uploaded Documents</div>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <DocLink path={wcSelectedReg.service_charges_doc} label="Service Charges List" />
+                    <DocLink path={wcSelectedReg.brochure_doc} label="Brochure" />
+                    <DocLink path={wcSelectedReg.fee_receipt_doc} label="Fee Receipt" />
+                    <DocLink path={wcSelectedReg.declaration_affidavit} label="Affidavit" />
+                    <DocLink path={wcSelectedReg.yoga_instructor_qual_doc} label="Yoga Instructor Qual." />
+                    <DocLink path={wcSelectedReg.bnys_reg_certificate} label="BNYS Certificate" />
+                    <DocLink path={wcSelectedReg.panchakarma_staff_bcp_doc} label="Panchakarma Staff BCP" />
+                  </div>
+                </div>
+
+                {/* Events Log */}
+                {wcSelectedReg.events && wcSelectedReg.events.length > 0 && (
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Activity Log</div>
+                    {wcSelectedReg.events.map((ev, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#166534', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11, flexShrink: 0 }}>{ev.event_type.charAt(0)}</div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{ev.event_type} <span style={{ fontWeight: 400, color: '#64748b' }}>by {ev.actor_name || ev.actor_role}</span></div>
+                          {ev.comment && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 2 }}>"{ev.comment}"</div>}
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(ev.created_at).toLocaleString('en-IN')}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* District comment if reverted */}
+                {wcSelectedReg.district_comment && (
+                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '12px 16px', marginTop: 12 }}>
+                    <strong style={{ color: '#c2410c' }}>District Comment:</strong> {wcSelectedReg.district_comment}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                {(wcSelectedReg.status === 'SUBMITTED' || wcSelectedReg.status === 'RESUBMITTED') && (
+                  <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                    <button
+                      onClick={() => { setWcActionModal({ reg: wcSelectedReg, action: 'APPROVE' }); setWcComment(''); }}
+                      style={{ background: '#166534', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: 'pointer' }}
+                    >✓ Approve Registration</button>
+                    <button
+                      onClick={() => { setWcActionModal({ reg: wcSelectedReg, action: 'REVERT' }); setWcComment(''); }}
+                      style={{ background: '#c2410c', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: 'pointer' }}
+                    >↩ Revert with Comment</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Confirm Modal */}
+        {wcActionModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 14, maxWidth: 480, width: '100%', padding: 28 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
+                {wcActionModal.action === 'APPROVE' ? '✓ Approve Registration?' : '↩ Revert Registration'}
+              </h3>
+              <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
+                Centre: <strong>{wcActionModal.reg.centre_name}</strong> | Reg: {wcActionModal.reg.registration_number}
+              </p>
+              {(wcActionModal.action === 'REVERT' || wcActionModal.action === 'REJECT') && (
+                <textarea
+                  value={wcComment}
+                  onChange={e => setWcComment(e.target.value)}
+                  placeholder="Enter the reason / query for the applicant... (required)"
+                  style={{ width: '100%', minHeight: 90, border: '1px solid #e2e8f0', borderRadius: 8, padding: 10, fontSize: 13, resize: 'vertical', marginBottom: 16 }}
+                />
+              )}
+              {wcActionModal.action === 'APPROVE' && (
+                <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#166534' }}>
+                  Registration will be approved and a 3-year certificate will be issued to the applicant.
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button onClick={() => setWcActionModal(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button
+                  onClick={handleWcAction}
+                  style={{ background: wcActionModal.action === 'APPROVE' ? '#166534' : '#c2410c', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Confirm {wcActionModal.action === 'APPROVE' ? 'Approval' : 'Revert'}
+                </button>
               </div>
             </div>
           </div>

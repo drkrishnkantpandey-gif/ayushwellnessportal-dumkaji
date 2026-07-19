@@ -21,13 +21,15 @@ const {
   updateCentreProfile,
   getPendingActions,
   uploadDocuments,
-  getPublicProfile
+  getPublicProfile,
+  submitOperationalRegistration,
+  getMyOperationalRegistration,
+  downloadRegistrationCertificate
 } = require("../controllers/wellnessCentreController");
 const { protect } = require("../middleware/authMiddleware");
 const multer = require("multer");
 const path = require("path");
 
-// Configure Multer for document uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, "..", "uploads"));
@@ -39,7 +41,23 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Middleware to restrict access to Wellness Centres only
+// Multer fields for the 5-section operational registration form
+const opRegFields = upload.fields([
+  { name: 'previous_reg_certificate', maxCount: 1 },
+  { name: 'doctor_qual_doc', maxCount: 1 },
+  { name: 'bcp_reg_doc', maxCount: 1 },
+  { name: 'cea_reg_certificate', maxCount: 1 },
+  { name: 'clinical_affidavit', maxCount: 1 },
+  { name: 'service_charges_doc', maxCount: 1 },
+  { name: 'brochure_doc', maxCount: 1 },
+  { name: 'pharmacist_bcp_doc', maxCount: 1 },
+  { name: 'panchakarma_staff_bcp_doc', maxCount: 1 },
+  { name: 'yoga_instructor_qual_doc', maxCount: 1 },
+  { name: 'bnys_reg_certificate', maxCount: 1 },
+  { name: 'fee_receipt_doc', maxCount: 1 },
+  { name: 'declaration_affidavit', maxCount: 1 }
+]);
+
 const restrictToWellnessCentre = (req, res, next) => {
   const role = req.user.role ? req.user.role.toUpperCase() : '';
   if (role !== 'WELLNESS_CENTRE') {
@@ -48,14 +66,13 @@ const restrictToWellnessCentre = (req, res, next) => {
   next();
 };
 
-// Public routes (No login required)
+// Public routes
 router.get("/public/profile/:id", getPublicProfile);
 
-// Apply protection to all other routes
+// Protected routes
 router.use(protect);
 router.use(restrictToWellnessCentre);
 
-// Dashboard & Profile
 router.get("/dashboard", getWellnessCentreDashboard);
 router.get("/profile", getCentreProfile);
 router.put("/profile", updateCentreProfile);
@@ -66,24 +83,25 @@ router.post("/documents", upload.fields([
   { name: 'other_docs', maxCount: 5 }
 ]), uploadDocuments);
 
-// Programs
+// Operational Registration (5-section form)
+router.get("/operational-registration/certificate", downloadRegistrationCertificate);
+router.get("/operational-registration", getMyOperationalRegistration);
+router.post("/operational-registration", opRegFields, submitOperationalRegistration);
+
 router.get("/programs", getPrograms);
 router.post("/programs", addProgram);
 router.put("/programs/:id", updateProgram);
 router.delete("/programs/:id", deleteProgram);
 
-// Staff
 router.get("/staff", getStaff);
 router.post("/staff", addStaff);
 router.put("/staff/:id", updateStaff);
 router.delete("/staff/:id", deleteStaff);
 
-// Sessions
 router.get("/sessions", getSessions);
 router.post("/sessions", addSession);
 router.delete("/sessions/:id", deleteSession);
 
-// Incentives
 router.get("/incentives", getIncentives);
 router.post("/incentives", addIncentive);
 

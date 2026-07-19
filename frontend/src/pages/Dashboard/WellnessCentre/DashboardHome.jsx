@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Heart, Users, Calendar, DollarSign, AlertCircle, Award, Loader2 } from "lucide-react";
+import { Heart, Users, Calendar, DollarSign, AlertCircle, Award, Loader2, Building2, CheckCircle, Clock, RefreshCcw, Download, X } from "lucide-react";
 import wellnessService from "../../../services/wellnessService";
+import axiosInstance from "../../../config/axiosInstance";
+import OperationalRegistrationForm from "./OperationalRegistrationForm";
 
 const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
   const [loading, setLoading] = useState(true);
@@ -20,6 +22,10 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  // Operational Registration states
+  const [wcRegistration, setWcRegistration] = useState(undefined); // undefined = loading
+  const [showRegForm, setShowRegForm] = useState(false);
+  const [regSuccess, setRegSuccess] = useState(null);
   const [updateFormData, setUpdateFormData] = useState({
     name: '',
     address: '',
@@ -70,6 +76,14 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
           });
         }
         if (actionRes.success) setPendingActions(actionRes.data);
+
+        // Fetch operational registration status
+        try {
+          const regRes = await axiosInstance.get('/wellness/operational-registration');
+          setWcRegistration(regRes.data?.data || null);
+        } catch (e) {
+          setWcRegistration(null);
+        }
 
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
@@ -162,13 +176,132 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
 
   return (
     <div className="p-6 space-y-8">
+      {/* Operational Registration Form Modal */}
+      {showRegForm && (
+        <OperationalRegistrationForm
+          isOpen={showRegForm}
+          onClose={() => setShowRegForm(false)}
+          user={user}
+          onSuccess={(regNum) => {
+            setRegSuccess(regNum);
+            setShowRegForm(false);
+            axiosInstance.get('/wellness/operational-registration')
+              .then(r => setWcRegistration(r.data?.data || null))
+              .catch(() => {});
+          }}
+        />
+      )}
+
+      {/* Registration Success Banner */}
+      {regSuccess && (
+        <div style={{ background: 'linear-gradient(135deg,#166534,#15803d)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff', boxShadow: '0 4px 20px rgba(22,101,52,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <CheckCircle size={32} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>Wellness Centre Registration Submitted Successfully!</div>
+              <div style={{ fontSize: 13, opacity: 0.9 }}>Registration No: <strong>{regSuccess}</strong> — Your application has been sent to the District Officer for review.</div>
+            </div>
+          </div>
+          <button onClick={() => setRegSuccess(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
+        </div>
+      )}
+
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Welcome Back, {profile?.name || user.full_name || 'Wellness Centre'}!
-        </h1>
-        <p className="text-gray-500">Wellness Centre Dashboard</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Welcome Back, {profile?.name || user.full_name || 'Wellness Centre'}!
+          </h1>
+          <p className="text-gray-500">Wellness Centre Dashboard</p>
+        </div>
+        {/* Register Wellness Centre Button — show only if no registration yet */}
+        {wcRegistration === null && (
+          <button
+            onClick={() => setShowRegForm(true)}
+            style={{ background: 'linear-gradient(135deg,#166534,#15803d)', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 22px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(22,101,52,0.35)', transition: 'opacity 0.2s' }}
+            onMouseOver={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={e => e.currentTarget.style.opacity = '1'}
+          >
+            <Building2 size={18} />
+            Register Wellness Centre
+          </button>
+        )}
       </div>
+
+      {/* Operational Registration Status Banner */}
+      {wcRegistration && wcRegistration.status === 'SUBMITTED' && (
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderLeft: '4px solid #3b82f6', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Clock size={20} style={{ color: '#2563eb' }} />
+            <div>
+              <div style={{ fontWeight: 700, color: '#1e3a8a', fontSize: 14 }}>Wellness Centre Registration — Under Review</div>
+              <div style={{ color: '#3b82f6', fontSize: 13 }}>Registration No: <strong>{wcRegistration.registration_number}</strong> &bull; Submitted on {new Date(wcRegistration.submitted_at).toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {wcRegistration && wcRegistration.status === 'REVERTED' && (
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #f97316', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <RefreshCcw size={20} style={{ color: '#ea580c', marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 700, color: '#9a3412', fontSize: 14 }}>Registration Reverted by District Officer</div>
+                <div style={{ color: '#c2410c', fontSize: 13 }}>Reg No: {wcRegistration.registration_number}</div>
+                {wcRegistration.district_comment && (
+                  <div style={{ marginTop: 6, fontSize: 13, color: '#7c2d12', background: '#ffedd5', padding: '8px 12px', borderRadius: 6 }}>
+                    <strong>District Comment:</strong> {wcRegistration.district_comment}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowRegForm(true)}
+              style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <RefreshCcw size={14} /> Respond / Resubmit
+            </button>
+          </div>
+        </div>
+      )}
+
+      {wcRegistration && wcRegistration.status === 'APPROVED' && (
+        <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #86efac', borderLeft: '4px solid #16a34a', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <CheckCircle size={22} style={{ color: '#16a34a' }} />
+              <div>
+                <div style={{ fontWeight: 700, color: '#166534', fontSize: 14 }}>Wellness Centre Registered ✓</div>
+                <div style={{ color: '#15803d', fontSize: 13 }}>
+                  Reg No: <strong>{wcRegistration.registration_number}</strong> &bull; Category: {wcRegistration.category} &bull;
+                  Valid till: {wcRegistration.certificate_valid_till ? new Date(wcRegistration.certificate_valid_till).toLocaleDateString('en-IN') : 'N/A'}
+                </div>
+              </div>
+            </div>
+            <a
+              href="/api/wellness/operational-registration/certificate"
+              target="_blank"
+              rel="noreferrer"
+              style={{ background: '#166534', color: '#fff', borderRadius: 8, padding: '10px 18px', fontWeight: 700, fontSize: 13, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <Download size={14} /> Download Certificate
+            </a>
+          </div>
+        </div>
+      )}
+
+      {wcRegistration && wcRegistration.status === 'REJECTED' && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderLeft: '4px solid #ef4444', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <AlertCircle size={20} style={{ color: '#dc2626' }} />
+            <div>
+              <div style={{ fontWeight: 700, color: '#991b1b', fontSize: 14 }}>Registration Rejected</div>
+              <div style={{ color: '#dc2626', fontSize: 13 }}>{wcRegistration.district_comment}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top 3 cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
