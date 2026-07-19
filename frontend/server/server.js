@@ -490,6 +490,9 @@ async function runWellnessCentreOperationalMigration() {
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS portal_reg_reason VARCHAR(50);
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS previous_reg_number VARCHAR(100);
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS previous_reg_certificate TEXT;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS gps_lat VARCHAR(50);
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS gps_lng VARCHAR(50);
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS google_map_link TEXT;
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS owner_name VARCHAR(255);
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS mobile VARCHAR(20);
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS is_residential BOOLEAN DEFAULT FALSE;
