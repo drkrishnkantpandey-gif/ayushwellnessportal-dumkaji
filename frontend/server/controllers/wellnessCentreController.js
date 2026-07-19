@@ -559,7 +559,7 @@ async function submitOperationalRegistration(req, res) {
         male_panchakarma_therapist, female_panchakarma_therapist, panchakarma_staff_bcp_doc,
         yoga_instructor_count, yoga_instructor_qual_doc,
         bnys_doctor_name, bnys_reg_certificate,
-        male_naturopathy_attendant, female_naturopathy_attendant,
+        male_naturopathy_attendant, female_naturopathy_attendant, naturopathy_staff_bcp_doc,
         fee_deposited, fee_receipt_doc, all_declarations_accepted, declaration_affidavit,
         status, submitted_at, updated_at
       ) VALUES (
@@ -568,7 +568,7 @@ async function submitOperationalRegistration(req, res) {
         $35,$36,$37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
         $51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63,$64,$65,$66,
         $67,$68,$69,$70,$71,$72,$73,$74,$75,$76,$77,$78,$79,$80,$81,$82,
-        $83, 'SUBMITTED', NOW(), NOW()
+        $83,$84, 'SUBMITTED', NOW(), NOW()
       )
       ON CONFLICT (user_id) DO UPDATE SET
         registration_number = EXCLUDED.registration_number,
@@ -622,6 +622,7 @@ async function submitOperationalRegistration(req, res) {
         bnys_reg_certificate = COALESCE(EXCLUDED.bnys_reg_certificate, wellness_centre_registrations.bnys_reg_certificate),
         male_naturopathy_attendant = EXCLUDED.male_naturopathy_attendant,
         female_naturopathy_attendant = EXCLUDED.female_naturopathy_attendant,
+        naturopathy_staff_bcp_doc = COALESCE(EXCLUDED.naturopathy_staff_bcp_doc, wellness_centre_registrations.naturopathy_staff_bcp_doc),
         fee_deposited = EXCLUDED.fee_deposited,
         fee_receipt_doc = COALESCE(EXCLUDED.fee_receipt_doc, wellness_centre_registrations.fee_receipt_doc),
         all_declarations_accepted = EXCLUDED.all_declarations_accepted,
@@ -666,6 +667,7 @@ async function submitOperationalRegistration(req, res) {
       b.yoga_instructor_count || null, fp('yoga_instructor_qual_doc'),
       b.bnys_doctor_name || null, fp('bnys_reg_certificate'),
       b.male_naturopathy_attendant || null, b.female_naturopathy_attendant || null,
+      fp('naturopathy_staff_bcp_doc'),
       b.fee_deposited === 'true', fp('fee_receipt_doc'),
       b.all_declarations_accepted === 'true', fp('declaration_affidavit')
     ]);

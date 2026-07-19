@@ -4092,6 +4092,7 @@ const Directorate = ({ activeTab }) => {
                     <DocLink path={wcSelectedReg.yoga_instructor_qual_doc} label="Yoga Instructor Qual." />
                     <DocLink path={wcSelectedReg.bnys_reg_certificate} label="BNYS Certificate" />
                     <DocLink path={wcSelectedReg.panchakarma_staff_bcp_doc} label="Panchakarma Staff BCP" />
+                    <DocLink path={wcSelectedReg.naturopathy_staff_bcp_doc} label="Naturopathy Attendants BCP" />
                   </div>
                 </div>
 

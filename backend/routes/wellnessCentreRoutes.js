@@ -55,6 +55,7 @@ const opRegFields = upload.fields([
   { name: 'panchakarma_staff_bcp_doc', maxCount: 1 },
   { name: 'yoga_instructor_qual_doc', maxCount: 1 },
   { name: 'bnys_reg_certificate', maxCount: 1 },
+  { name: 'naturopathy_staff_bcp_doc', maxCount: 1 },
   { name: 'fee_receipt_doc', maxCount: 1 },
   { name: 'declaration_affidavit', maxCount: 1 }
 ]);

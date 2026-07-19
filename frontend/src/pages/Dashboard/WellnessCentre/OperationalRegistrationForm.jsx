@@ -6,7 +6,6 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
 
   // Track upload progress per field: { [fieldName]: percent | 'done' | 'error' }
   const [uploadProgress, setUploadProgress] = useState({});
@@ -99,6 +98,7 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
     bnys_reg_certificate: '', // path string
     male_naturopathy_attendant: '',
     female_naturopathy_attendant: '',
+    naturopathy_staff_bcp_doc: '', // path string
 
     // Section 5: Declarations
     fee_deposited: false,
@@ -142,6 +142,228 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
       return { ...prev, category: newCat, services_offered: currentServices };
     });
   }, [formData.is_residential, formData.offers_clinical]);
+
+  // Auto-calculate minimum staff counts based on no of beds filled in section 3
+  useEffect(() => {
+    const beds = parseInt(formData.num_beds) || 0;
+    const isAyurveda = formData.services_offered.includes('Ayurveda');
+    const isPanchakarma = formData.services_offered.includes('Panchakarma');
+    const isNaturopathy = formData.services_offered.includes('Naturopathy');
+    const isTherapyOrGram = formData.category === 'AYUSH Wellness Therapy Centre' || formData.category === 'AYUSH Gram or AYUSH Resort';
+
+    setFormData(prev => {
+      const updates = {};
+      
+      if (isTherapyOrGram && isAyurveda) {
+        // Wellness Centre Attendant & Ayurveda Nurse: minimum 02 for every 10 Bed
+        const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (!prev.wc_attendant_count || parseInt(prev.wc_attendant_count) < minAtt) {
+          updates.wc_attendant_count = minAtt.toString();
+        }
+        const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (!prev.ayurveda_nurse_count || parseInt(prev.ayurveda_nurse_count) < minNurse) {
+          updates.ayurveda_nurse_count = minNurse.toString();
+        }
+      }
+
+      if (isPanchakarma) {
+        // Male & Female Panchakarma Therapist: minimum 1 for every 10 Bed
+        const minPanch = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
+        if (!prev.male_panchakarma_therapist || parseInt(prev.male_panchakarma_therapist) < minPanch) {
+          updates.male_panchakarma_therapist = minPanch.toString();
+        }
+        if (!prev.female_panchakarma_therapist || parseInt(prev.female_panchakarma_therapist) < minPanch) {
+          updates.female_panchakarma_therapist = minPanch.toString();
+        }
+      }
+
+      if (isNaturopathy) {
+        // Male & Female Yog & Naturopathy Attendant: minimum 1 for every 10 Bed
+        const minNat = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
+        if (!prev.male_naturopathy_attendant || parseInt(prev.male_naturopathy_attendant) < minNat) {
+          updates.male_naturopathy_attendant = minNat.toString();
+        }
+        if (!prev.female_naturopathy_attendant || parseInt(prev.female_naturopathy_attendant) < minNat) {
+          updates.female_naturopathy_attendant = minNat.toString();
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        return { ...prev, ...updates };
+      }
+      return prev;
+    });
+  }, [formData.num_beds, formData.services_offered, formData.category]);
+
+  const validateSection = (currentStep) => {
+    setError(null);
+    const beds = parseInt(formData.num_beds) || 0;
+
+    if (currentStep === 1) {
+      if (!formData.centre_name.trim()) return 'Centre Name is required.';
+      if (!formData.district) return 'District is required.';
+      if (!formData.address.trim()) return 'Address is required.';
+      if (formData.already_on_portal) {
+        if (!formData.portal_reg_reason) return 'Reason for previous registration is required.';
+        if (!formData.previous_reg_number.trim()) return 'Previous registration number is required.';
+        if (!formData.previous_reg_certificate) return 'Please upload previous registration certificate.';
+      }
+      if (formData.services_offered.length === 0) return 'Please select at least one service offered.';
+    }
+
+    if (currentStep === 2) {
+      if (formData.category === 'AYUSH Wellness Therapy Centre') {
+        if (formData.doctor_appointed) {
+          if (!formData.doctor_name.trim()) return 'Doctor Name is required.';
+          if (!formData.doctor_qualification) return 'Doctor Qualification is required.';
+          if (!formData.doctor_qual_doc) return 'Please upload Doctor Qualification Document.';
+          if (!formData.bcp_reg_number.trim()) return 'BCP Registration Number is required.';
+          if (!formData.bcp_reg_doc) return 'Please upload BCP Registration Document.';
+        }
+        if (!formData.declaration_board || !formData.declaration_signboard) {
+          return 'Please accept the mandatory declarations for Therapy Centres.';
+        }
+        if (!formData.clinical_affidavit) return 'Please upload Affidavit regarding clinical declaration.';
+      }
+      if (formData.category === 'AYUSH Wellness Centre & Hospital') {
+        if (!formData.doctor_name.trim()) return 'Doctor Name is required.';
+        if (!formData.doctor_qualification) return 'Doctor Qualification is required.';
+        if (!formData.doctor_qual_doc) return 'Please upload Doctor Qualification Document.';
+        if (!formData.bcp_reg_number.trim()) return 'BCP Registration Number is required.';
+        if (!formData.bcp_reg_doc) return 'Please upload BCP Registration Document.';
+        if (!formData.cea_reg_number.trim()) return 'CEA Registration Number is required.';
+        if (!formData.cea_valid_till) return 'CEA Validity Date is required.';
+        if (!formData.cea_reg_certificate) return 'Please upload CEA Registration Certificate.';
+      }
+      if (formData.category === 'AYUSH Gram or AYUSH Resort') {
+        if (formData.doctor_name.trim()) {
+          if (!formData.doctor_qualification) return 'Doctor Qualification is required.';
+          if (!formData.doctor_qual_doc) return 'Please upload Doctor Qualification Document.';
+          if (!formData.bcp_reg_number.trim()) return 'BCP Registration Number is required.';
+          if (!formData.bcp_reg_doc) return 'Please upload BCP Registration Document.';
+        }
+        if (formData.cea_registered) {
+          if (!formData.cea_reg_number.trim()) return 'CEA Registration Number is required.';
+          if (!formData.cea_valid_till) return 'CEA Validity Date is required.';
+          if (!formData.cea_reg_certificate) return 'Please upload CEA Registration Certificate.';
+        } else {
+          if (!formData.declaration_board || !formData.declaration_signboard) {
+            return 'Please accept the mandatory declarations.';
+          }
+          if (!formData.clinical_affidavit) return 'Please upload Affidavit regarding declaration.';
+        }
+      }
+    }
+
+    if (currentStep === 3) {
+      if (!formData.reception_area_sqft) return 'Reception Area size is required.';
+      if (!formData.waiting_capacity) return 'Waiting Capacity is required.';
+      if (!formData.consultation_rooms) return 'Consultation Rooms count is required.';
+      if (!formData.incharge_name.trim()) return 'Incharge Name is required.';
+      if (!formData.incharge_mobile.trim()) return 'Incharge Mobile is required.';
+      if (!formData.emergency_centre_name.trim()) return 'Emergency Referral Centre Name is required.';
+      if (!formData.emergency_distance_m) return 'Emergency Referral Centre Distance is required.';
+      if (!formData.service_charges_doc) return 'Please upload the Service Charges List Document.';
+
+      // Service-specific room checks
+      if (formData.services_offered.includes('Panchakarma')) {
+        if (parseInt(formData.abhyanga_rooms) < 2) return 'At least 2 Abhyanga Rooms are required for Panchakarma.';
+        if (parseInt(formData.vasti_rooms) < 1) return 'At least 1 Vasti Room is required for Panchakarma.';
+        if (parseInt(formData.post_therapy_waiting_rooms) < 1) return 'At least 1 Post Therapy Waiting Room is required for Panchakarma.';
+      }
+      if (formData.services_offered.includes('Ayurveda')) {
+        if (parseInt(formData.medicine_dispensing_rooms) < 1) return 'At least 1 Medicine Dispensing Room is required for Ayurveda.';
+      }
+      if (formData.services_offered.includes('Marma Chikitsa')) {
+        if (parseInt(formData.marma_rooms) < 1) return 'At least 1 Marma Chikitsa Room is required.';
+      }
+      if (formData.services_offered.includes('Siravedha & Leech Therapy') || formData.services_offered.includes('Agni Karma') || formData.services_offered.includes('Kshar Karma')) {
+        if (parseInt(formData.para_surgical_rooms) < 1) return 'At least 1 Para Surgical Therapy Room is required.';
+      }
+      if (formData.services_offered.includes('Kshar Sutra')) {
+        if (parseInt(formData.kshar_sutra_ot) < 1) return 'At least 1 Kshar Sutra OT is required.';
+      }
+      if (formData.services_offered.includes('Yoga')) {
+        if (parseInt(formData.yoga_halls) < 1) return 'At least 1 Yoga Hall (Min 350 sqft) is required.';
+        if (parseInt(formData.meditation_halls) < 1) return 'At least 1 Meditation Hall is required.';
+        if (parseInt(formData.shatkarma_rooms) < 1) return 'At least 1 Shatkarma Room is required.';
+      }
+      if (formData.services_offered.includes('Naturopathy')) {
+        if (parseInt(formData.massage_rooms) < 2) return 'At least 2 Naturopathy Massage Rooms are required.';
+        if (parseInt(formData.enema_rooms) < 1) return 'At least 1 Enema Room is required.';
+        if (parseInt(formData.hydrotherapy_rooms) < 1) return 'At least 1 Hydrotherapy Room is required.';
+      }
+
+      if (formData.offers_clinical && formData.category !== 'AYUSH Wellness Therapy Centre') {
+        if (!formData.num_beds || parseInt(formData.num_beds) <= 0) {
+          return 'Number of Beds must be greater than 0 since clinical services are offered.';
+        }
+      }
+    }
+
+    if (currentStep === 4) {
+      if (parseInt(formData.receptionist_count) < 1) return 'At least 1 Receptionist is required.';
+      if (parseInt(formData.sanitation_worker_count) < 1) return 'At least 1 Sanitation Worker is required.';
+
+      const isAyurveda = formData.services_offered.includes('Ayurveda');
+      const isPanchakarma = formData.services_offered.includes('Panchakarma');
+      const isNaturopathy = formData.services_offered.includes('Naturopathy');
+      const isTherapyOrGram = formData.category === 'AYUSH Wellness Therapy Centre' || formData.category === 'AYUSH Gram or AYUSH Resort';
+
+      if (isTherapyOrGram) {
+        if (parseInt(formData.mpw_count) < 1) return 'At least 1 MPW worker is required.';
+        if (parseInt(formData.cook_count) < 1) return 'At least 1 Cook is required.';
+        if (parseInt(formData.watchman_count) < 1) return 'At least 1 Watchman is required.';
+      }
+
+      if (isTherapyOrGram && isAyurveda) {
+        const minAtt = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (parseInt(formData.wc_attendant_count) < minAtt) return `At least ${minAtt} Wellness Centre Attendants are required (min 2 per 10 beds).`;
+        
+        const minNurse = beds > 0 ? Math.max(2, Math.ceil(beds / 10) * 2) : 2;
+        if (parseInt(formData.ayurveda_nurse_count) < minNurse) return `At least ${minNurse} Ayurveda Nurses are required (min 2 per 10 beds).`;
+
+        if (!formData.pharmacist_name.trim()) return 'Pharmacist Name is required.';
+        if (!formData.pharmacist_reg_number.trim()) return 'Pharmacist BCP Registration Number is required.';
+        if (!formData.pharmacist_bcp_doc) return 'Please upload Pharmacist BCP License Doc.';
+      }
+
+      if (isPanchakarma) {
+        const minPanch = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
+        if (parseInt(formData.male_panchakarma_therapist) < minPanch) return `At least ${minPanch} Male Panchakarma Therapist is required (min 1 per 10 beds).`;
+        if (parseInt(formData.female_panchakarma_therapist) < minPanch) return `At least ${minPanch} Female Panchakarma Therapist is required (min 1 per 10 beds).`;
+        if (!formData.panchakarma_staff_bcp_doc) return 'Please upload Panchakarma Staff BCP Registrations.';
+      }
+
+      if (formData.services_offered.includes('Yoga')) {
+        if (parseInt(formData.yoga_instructor_count) < 1) return 'At least 1 Yoga Instructor is required.';
+        if (!formData.yoga_instructor_qual_doc) return 'Please upload Yoga Instructor Qualification Doc.';
+      }
+
+      if (isNaturopathy) {
+        const minNat = beds > 0 ? Math.max(1, Math.ceil(beds / 10)) : 1;
+        if (!formData.bnys_doctor_name.trim()) return 'Naturopathy BNYS Doctor Name is required.';
+        if (!formData.bnys_reg_certificate) return 'Please upload BNYS Registration Certificate.';
+        if (parseInt(formData.male_naturopathy_attendant) < minNat) return `At least ${minNat} Male Yog & Naturopathy Attendants are required (min 1 per 10 beds).`;
+        if (parseInt(formData.female_naturopathy_attendant) < minNat) return `At least ${minNat} Female Yog & Naturopathy Attendants are required (min 1 per 10 beds).`;
+        if (!formData.naturopathy_staff_bcp_doc) return 'Please upload Naturopathy Attendants BCP Registrations.';
+      }
+    }
+
+    return null;
+  };
+
+  const handleNext = () => {
+    const errorMsg = validateSection(step);
+    if (errorMsg) {
+      setError(errorMsg);
+      const scrollArea = document.querySelector('.wcr-scroll-area');
+      if (scrollArea) scrollArea.scrollTop = 0;
+    } else {
+      setError(null);
+      setStep(step + 1);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -196,9 +418,16 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
   const hospitalServices = ['Ayurveda', 'Kshar Sutra', 'Kshar Karma', 'Siravedha & Leech Therapy', 'Agni Karma', 'Marma Chikitsa'];
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
     setError(null);
+    const errorMsg = validateSection(5);
+    if (errorMsg) {
+      setError(errorMsg);
+      const scrollArea = document.querySelector('.wcr-scroll-area');
+      if (scrollArea) scrollArea.scrollTop = 0;
+      return;
+    }
 
+    setIsSubmitting(true);
     try {
       const res = await axiosInstance.post('/api/wellness/operational-registration', formData);
       setIsSubmitting(false);
@@ -1195,10 +1424,12 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                       <div className="wcr-field-group">
                         <label className="wcr-label">Wellness Centre Attendant Count *</label>
                         <input type="number" name="wc_attendant_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.wc_attendant_count} onChange={handleChange} required />
+                        <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
                       </div>
                       <div className="wcr-field-group">
                         <label className="wcr-label">Ayurveda Nurse Count *</label>
                         <input type="number" name="ayurveda_nurse_count" placeholder="Min. 2 per 10 beds" className="wcr-input" value={formData.ayurveda_nurse_count} onChange={handleChange} required />
+                        <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(2, Math.ceil(parseInt(formData.num_beds) / 10) * 2) : 2}</span>
                       </div>
                     </>
                 )}
@@ -1208,10 +1439,12 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                     <div className="wcr-field-group">
                       <label className="wcr-label">Male Panchakarma Therapists *</label>
                       <input type="number" name="male_panchakarma_therapist" placeholder="Min. 1" className="wcr-input" value={formData.male_panchakarma_therapist} onChange={handleChange} required />
+                      <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(1, Math.ceil(parseInt(formData.num_beds) / 10)) : 1}</span>
                     </div>
                     <div className="wcr-field-group">
                       <label className="wcr-label">Female Panchakarma Therapists *</label>
                       <input type="number" name="female_panchakarma_therapist" placeholder="Min. 1" className="wcr-input" value={formData.female_panchakarma_therapist} onChange={handleChange} required />
+                      <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(1, Math.ceil(parseInt(formData.num_beds) / 10)) : 1}</span>
                     </div>
                     {renderUploadControl('panchakarma_staff_bcp_doc', 'Panchakarma Staff BCP Registrations *', 'Upload combined BCP documents of all therapists')}
                   </>
@@ -1235,13 +1468,16 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
                     </div>
                     {renderUploadControl('bnys_reg_certificate', 'BNYS Registration Certificate *', 'Upload valid BNYS degree certificate')}
                     <div className="wcr-field-group">
-                      <label className="wcr-label">Male Naturopathy Attendants *</label>
+                      <label className="wcr-label">Male Yog & Naturopathy Attendants *</label>
                       <input type="number" name="male_naturopathy_attendant" placeholder="Min. 1" className="wcr-input" value={formData.male_naturopathy_attendant} onChange={handleChange} required />
+                      <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(1, Math.ceil(parseInt(formData.num_beds) / 10)) : 1}</span>
                     </div>
                     <div className="wcr-field-group">
-                      <label className="wcr-label">Female Naturopathy Attendants *</label>
+                      <label className="wcr-label">Female Yog & Naturopathy Attendants *</label>
                       <input type="number" name="female_naturopathy_attendant" placeholder="Min. 1" className="wcr-input" value={formData.female_naturopathy_attendant} onChange={handleChange} required />
+                      <span className="wcr-field-hint">Auto-calculated minimum: {formData.num_beds ? Math.max(1, Math.ceil(parseInt(formData.num_beds) / 10)) : 1}</span>
                     </div>
+                    {renderUploadControl('naturopathy_staff_bcp_doc', 'Upload Naturopathy Attendants BCP Registrations *', 'Upload combined BCP documents of all Naturopathy staff')}
                   </>
                 )}
               </div>
@@ -1337,7 +1573,7 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
 
           <div style={{ display: 'flex', gap: '10px' }}>
             {step < 5 ? (
-              <button className="wcr-btn wcr-btn-primary" onClick={() => setStep(step + 1)}>
+              <button className="wcr-btn wcr-btn-primary" onClick={handleNext}>
                 Next <ChevronRight size={16} />
               </button>
             ) : (

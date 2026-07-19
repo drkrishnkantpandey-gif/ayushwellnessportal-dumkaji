@@ -484,6 +484,8 @@ async function runWellnessCentreOperationalMigration() {
         comment          TEXT,
         created_at       TIMESTAMP DEFAULT NOW()
       );
+
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS naturopathy_staff_bcp_doc TEXT;
     `);
     console.log('Database Migration: wellness_centre_registrations tables created/verified successfully');
   } catch (err) {
