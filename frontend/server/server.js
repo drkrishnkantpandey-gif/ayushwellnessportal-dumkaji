@@ -491,6 +491,13 @@ async function runWellnessCentreOperationalMigration() {
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS pharmacist_bcp_doc TEXT;
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS wc_attendant_count INTEGER;
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS ayurveda_nurse_count INTEGER;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'SUBMITTED';
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS district_comment TEXT;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS certificate_valid_till DATE;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS approved_by_user_id INTEGER REFERENCES users(id);
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
     `);
     console.log('Database Migration: wellness_centre_registrations tables created/verified successfully');
   } catch (err) {
