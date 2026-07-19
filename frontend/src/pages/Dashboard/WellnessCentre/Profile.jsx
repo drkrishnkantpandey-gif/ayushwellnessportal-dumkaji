@@ -34,6 +34,9 @@ export default function WellnessCentreProfile() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile"); // "profile" or "op_reg"
   const [opRegSectionTab, setOpRegSectionTab] = useState("section1");
+  const [complianceComment, setComplianceComment] = useState("");
+  const [complianceFile, setComplianceFile] = useState(null);
+  const [submittingCompliance, setSubmittingCompliance] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -71,6 +74,39 @@ export default function WellnessCentreProfile() {
       toast.error(err.response?.data?.message || "Failed to update profile.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSubmitCompliance = async () => {
+    if (!complianceComment.trim()) {
+      alert("Compliance comment is required.");
+      return;
+    }
+    setSubmittingCompliance(true);
+    try {
+      const formData = new FormData();
+      formData.append("comment", complianceComment);
+      if (complianceFile) {
+        formData.append("compliance_document", complianceFile);
+      }
+
+      const res = await axiosInstance.post(`${API}/api/wellness/submit-compliance`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (res.data.success) {
+        toast.success("Compliance submitted successfully!");
+        setComplianceComment("");
+        setComplianceFile(null);
+        await fetchProfile();
+      }
+    } catch (err) {
+      console.error("Error submitting compliance:", err);
+      toast.error(err.response?.data?.message || "Failed to submit compliance.");
+    } finally {
+      setSubmittingCompliance(false);
     }
   };
 
@@ -526,6 +562,58 @@ export default function WellnessCentreProfile() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Compliance Response Form (when reverted) */}
+          {opReg.status === 'REVERTED' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-6 space-y-4">
+              <h3 className="text-base font-bold text-amber-800 flex items-center gap-2">
+                <RefreshCcw size={18} className="text-amber-600 animate-spin" />
+                Submit Compliance Response
+              </h3>
+              <p className="text-xs text-gray-500">Provide your reply comment/justification and upload any requested document here to send back to the District Officer.</p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Reply Comment / Explanation <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    placeholder="Enter details of compliance reply..."
+                    value={complianceComment}
+                    onChange={(e) => setComplianceComment(e.target.value)}
+                    rows={4}
+                    className="w-full p-4 border rounded-xl outline-none focus:border-amber-500 bg-gray-50 focus:bg-white transition-all text-sm font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Upload Supporting Document (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    onChange={(e) => setComplianceFile(e.target.files[0])}
+                    className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-2">Only PDF, JPG, PNG accepted (Max 10MB)</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSubmitCompliance}
+                  disabled={submittingCompliance}
+                  className="bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition flex items-center gap-2"
+                >
+                  {submittingCompliance ? (
+                    <>Submitting Response...</>
+                  ) : (
+                    <>Submit Compliance Response</>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 

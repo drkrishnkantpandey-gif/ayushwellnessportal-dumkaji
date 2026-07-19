@@ -26,9 +26,6 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
   const [wcRegistration, setWcRegistration] = useState(undefined); // undefined = loading
   const [showRegForm, setShowRegForm] = useState(false);
   const [regSuccess, setRegSuccess] = useState(null);
-  const [complianceComment, setComplianceComment] = useState("");
-  const [complianceFile, setComplianceFile] = useState(null);
-  const [submittingCompliance, setSubmittingCompliance] = useState(false);
   const [updateFormData, setUpdateFormData] = useState({
     name: '',
     address: '',
@@ -99,38 +96,7 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
     fetchData();
   }, []);
 
-  const handleSubmitCompliance = async () => {
-    if (!complianceComment.trim()) {
-      alert("Compliance comment is required.");
-      return;
-    }
-    setSubmittingCompliance(true);
-    try {
-      const formData = new FormData();
-      formData.append("comment", complianceComment);
-      if (complianceFile) {
-        formData.append("compliance_document", complianceFile);
-      }
 
-      const res = await axiosInstance.post('/api/wellness/submit-compliance', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (res.data.success) {
-        alert("Compliance submitted successfully!");
-        setComplianceComment("");
-        setComplianceFile(null);
-        await fetchData();
-      }
-    } catch (err) {
-      console.error("Error submitting compliance:", err);
-      alert(err.response?.data?.message || "Failed to submit compliance.");
-    } finally {
-      setSubmittingCompliance(false);
-    }
-  };
 
   const topCards = [
     {
@@ -279,93 +245,26 @@ const DashboardHome = ({ setActiveTab, onViewPublicProfile }) => {
       )}
 
       {wcRegistration && wcRegistration.status === 'REVERTED' && (
-        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #f97316', borderRadius: 10, padding: '20px', marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <RefreshCcw size={22} style={{ color: '#ea580c', marginTop: 2 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: '#9a3412', fontSize: 16 }}>Registration Reverted by District Officer</div>
-              <div style={{ color: '#c2410c', fontSize: 13, marginTop: 2 }}>Reg No: {wcRegistration.registration_number}</div>
-              
-              {wcRegistration.district_comment && (
-                <div style={{ marginTop: 10, fontSize: 14, color: '#7c2d12', background: '#ffedd5', padding: '12px 16px', borderRadius: 8, borderLeft: '3px solid #ea580c' }}>
-                  <strong>District Officer Query/Remarks:</strong>
-                  <p style={{ marginTop: 4, whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{wcRegistration.district_comment}</p>
-                </div>
-              )}
-
-              {/* Compliance Response Form */}
-              <div style={{ marginTop: 20, background: '#fff', border: '1px solid #fed7aa', borderRadius: 8, padding: '16px 20px' }}>
-                <h4 style={{ margin: '0 0 12px 0', color: '#9a3412', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Submit Compliance Response
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#4a5568', marginBottom: 4 }}>
-                      Reply Comment / Justification <span style={{ color: '#e53e3e' }}>*</span>
-                    </label>
-                    <textarea
-                      placeholder="Write your compliance response or justification here..."
-                      value={complianceComment}
-                      onChange={(e) => setComplianceComment(e.target.value)}
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #cbd5e0',
-                        borderRadius: 6,
-                        fontSize: 13,
-                        outline: 'none',
-                        resize: 'vertical'
-                      }}
-                      required
-                    />
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #f97316', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <RefreshCcw size={20} style={{ color: '#ea580c', marginTop: 2 }} />
+              <div>
+                <div style={{ fontWeight: 700, color: '#9a3412', fontSize: 14 }}>Registration Reverted by District Officer</div>
+                <div style={{ color: '#c2410c', fontSize: 13 }}>Reg No: {wcRegistration.registration_number} &bull; Reverted on {new Date(wcRegistration.updated_at).toLocaleDateString('en-IN')}</div>
+                {wcRegistration.district_comment && (
+                  <div style={{ marginTop: 6, fontSize: 13, color: '#7c2d12', background: '#ffedd5', padding: '8px 12px', borderRadius: 6 }}>
+                    <strong>District Comment:</strong> {wcRegistration.district_comment}
                   </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#4a5568', marginBottom: 4 }}>
-                      Upload Supporting Document (Optional)
-                    </label>
-                    <input
-                      type="file"
-                      onChange={(e) => setComplianceFile(e.target.files[0])}
-                      style={{
-                        fontSize: 13,
-                        color: '#4a5568'
-                      }}
-                    />
-                    <span style={{ display: 'block', fontSize: 11, color: '#718096', marginTop: 4 }}>
-                      PDF, JPG, or PNG up to 10MB
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={handleSubmitCompliance}
-                    disabled={submittingCompliance}
-                    style={{
-                      background: '#ea580c',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '10px 16px',
-                      fontWeight: 700,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      alignSelf: 'flex-start',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6
-                    }}
-                  >
-                    {submittingCompliance ? (
-                      <>Submitting...</>
-                    ) : (
-                      <>Submit Compliance Response</>
-                    )}
-                  </button>
-                </div>
+                )}
               </div>
-
             </div>
+            <button
+              onClick={() => setActiveTab('profile')}
+              style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <RefreshCcw size={14} /> Respond on Profile
+            </button>
           </div>
         </div>
       )}
