@@ -11,19 +11,21 @@ exports.getRegistryList = async (req, res) => {
         const { district, type } = req.query;
         let wellnessQuery = `
             SELECT 
-                id, 
-                centre_name as "name", 
-                registration_number as "registrationNumber", 
-                category as "entityType", 
-                services_offered as "services", 
-                owner_name as "contactPerson", 
-                mobile as "contactPhone", 
-                district, 
-                address,
-                status,
+                wcr.id, 
+                wcr.centre_name as "name", 
+                wcr.registration_number as "registrationNumber", 
+                wcr.category as "entityType", 
+                wcr.services_offered as "services", 
+                wcr.owner_name as "contactPerson", 
+                wc.contact_phone as "contactPhone", 
+                wc.contact_email as "contactEmail",
+                wcr.district, 
+                wcr.address,
+                wcr.status,
                 'wellness_centre' as "type"
-            FROM wellness_centre_registrations
-            WHERE status = 'APPROVED'
+            FROM wellness_centre_registrations wcr
+            LEFT JOIN wellness_centres wc ON wc.user_id = wcr.user_id
+            WHERE wcr.status = 'APPROVED'
         `;
         let yogaQuery = `
             SELECT 

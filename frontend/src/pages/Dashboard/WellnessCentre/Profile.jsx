@@ -522,7 +522,6 @@ export default function WellnessCentreProfile() {
             <div class="signature-block">
               <p class="sig-title">District Officer (${opReg.district})</p>
               <p class="sig-subtitle">Ayurvedic & Unani Services, Uttarakhand</p>
-              <p class="sig-verify">✓ DIGITALLY SIGNED & VERIFIED</p>
             </div>
           </div>
         </div>
