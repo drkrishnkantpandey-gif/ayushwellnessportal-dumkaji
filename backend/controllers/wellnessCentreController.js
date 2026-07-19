@@ -692,7 +692,7 @@ async function getMyOperationalRegistration(req, res) {
   const userId = req.user.userId;
   try {
     const regRes = await db.query(
-      'SELECT * FROM wellness_centre_registrations WHERE user_id = $1',
+      'SELECT wcr.*, wc.entity_type FROM wellness_centre_registrations wcr LEFT JOIN wellness_centres wc ON wc.user_id = wcr.user_id WHERE wcr.user_id = $1',
       [userId]
     );
     if (regRes.rows.length === 0) {
@@ -798,9 +798,10 @@ async function getPendingWellnessCentreRegistrations(req, res) {
       }
       const officerDistrict = officerCheck.rows[0].district;
       query = `
-        SELECT wcr.*, u.full_name as applicant_user_name, u.email as applicant_email, u.phone as applicant_phone
+        SELECT wcr.*, u.full_name as applicant_user_name, u.email as applicant_email, u.phone as applicant_phone, wc.entity_type
         FROM wellness_centre_registrations wcr
         JOIN users u ON u.id = wcr.user_id
+        LEFT JOIN wellness_centres wc ON wc.user_id = wcr.user_id
         WHERE wcr.district = $1
         ORDER BY wcr.submitted_at DESC
       `;
@@ -808,9 +809,10 @@ async function getPendingWellnessCentreRegistrations(req, res) {
     } else {
       // Directorate / admin — see all
       query = `
-        SELECT wcr.*, u.full_name as applicant_user_name, u.email as applicant_email, u.phone as applicant_phone
+        SELECT wcr.*, u.full_name as applicant_user_name, u.email as applicant_email, u.phone as applicant_phone, wc.entity_type
         FROM wellness_centre_registrations wcr
         JOIN users u ON u.id = wcr.user_id
+        LEFT JOIN wellness_centres wc ON wc.user_id = wcr.user_id
         ORDER BY wcr.submitted_at DESC
       `;
     }

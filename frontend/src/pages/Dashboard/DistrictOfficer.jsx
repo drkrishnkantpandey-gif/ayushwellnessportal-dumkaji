@@ -1243,20 +1243,19 @@ const DistrictOfficer = ({ activeTab }) => {
           .bottom-right { bottom: 10px; right: 10px; border-left: none; border-top: none; }
           
           .header {
-            text-align: center;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
+            width: 100%;
           }
           .govt-logo {
-            width: 70px;
-            height: 70px;
-            margin-bottom: 10px;
+            width: 75px;
+            height: 75px;
             object-fit: contain;
           }
           .dept-title {
             font-family: 'Cinzel', serif;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 800;
             color: #0f766e;
             letter-spacing: 0.1em;
@@ -1386,9 +1385,12 @@ const DistrictOfficer = ({ activeTab }) => {
           <div class="corner-decoration bottom-right"></div>
           
           <div class="header">
-            <img class="govt-logo" src="/images/ayush_setu_logo.png" alt="Govt Logo" />
-            <h2 class="dept-title">DEPARTMENT OF AYUSH</h2>
-            <div class="state-title">GOVERNMENT OF UTTARAKHAND</div>
+            <img class="govt-logo" src="/images/uk_ayush_logo.png" alt="Uttarakhand Govt Logo" />
+            <div style="text-align: center; flex: 1;">
+              <h2 class="dept-title">DEPARTMENT OF AYUSH</h2>
+              <div class="state-title">GOVERNMENT OF UTTARAKHAND</div>
+            </div>
+            <img class="govt-logo" src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" />
           </div>
           
           <div class="body-content">
