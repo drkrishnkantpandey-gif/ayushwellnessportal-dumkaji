@@ -576,6 +576,14 @@ async function runWellnessCentreOperationalMigration() {
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS compliance_comment TEXT;
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS compliance_document TEXT;
       ALTER TABLE wellness_centre_reg_events ADD COLUMN IF NOT EXISTS document_path TEXT;
+      
+      UPDATE wellness_centre_reg_events e
+      SET document_path = r.compliance_document
+      FROM wellness_centre_registrations r
+      WHERE e.registration_id = r.id
+        AND e.event_type = 'COMPLIANCE_SUBMITTED'
+        AND e.document_path IS NULL
+        AND r.compliance_document IS NOT NULL;
     `);
 
     // Check if there is only 1 registration and its registration_number doesn't end with -0001
