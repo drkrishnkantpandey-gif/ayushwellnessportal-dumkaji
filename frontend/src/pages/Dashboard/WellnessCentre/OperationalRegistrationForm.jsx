@@ -1004,10 +1004,67 @@ export default function OperationalRegistrationForm({ isOpen, onClose, onSuccess
 
               <div style={{ margin: '24px 0', borderTop: '1px solid #f1f5f9' }}></div>
 
-              <div className="wcr-category-banner">
-                <div style={{ fontWeight: 800, color: '#1e3a8a', fontSize: '14px', marginBottom: '4px' }}>Auto-determined Category: <span style={{ textDecoration: 'underline' }}>{formData.category}</span></div>
-                <div style={{ color: '#3b82f6', fontSize: '12px', lineHeight: 1.4 }}>
-                  Based on your selections for **Residential** and **Clinical** offerings, your category has been locked automatically.
+              <div className="wcr-category-banner" style={{
+                background: formData.category === 'AYUSH Wellness Centre & Hospital'
+                  ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                  : formData.category === 'AYUSH Gram or AYUSH Resort'
+                    ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+                    : 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                border: '1px solid',
+                borderColor: formData.category === 'AYUSH Wellness Centre & Hospital'
+                  ? '#86efac'
+                  : formData.category === 'AYUSH Gram or AYUSH Resort'
+                    ? '#fde68a'
+                    : '#bfdbfe',
+                borderLeft: '6px solid',
+                borderLeftColor: formData.category === 'AYUSH Wellness Centre & Hospital'
+                  ? '#16a34a'
+                  : formData.category === 'AYUSH Gram or AYUSH Resort'
+                    ? '#d97706'
+                    : '#2563eb',
+                padding: '20px',
+                borderRadius: '16px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                margin: '24px 0'
+              }}>
+                <div style={{
+                  fontWeight: 700,
+                  color: formData.category === 'AYUSH Wellness Centre & Hospital'
+                    ? '#14532d'
+                    : formData.category === 'AYUSH Gram or AYUSH Resort'
+                      ? '#78350f'
+                      : '#1e3a8a',
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '6px'
+                }}>
+                  Auto-determined Category:
+                </div>
+                <div style={{
+                  fontWeight: 900,
+                  color: formData.category === 'AYUSH Wellness Centre & Hospital'
+                    ? '#15803d'
+                    : formData.category === 'AYUSH Gram or AYUSH Resort'
+                      ? '#b45309'
+                      : '#1d4ed8',
+                  fontSize: '24px',
+                  lineHeight: '1.2',
+                  marginBottom: '10px',
+                  fontFamily: "'Outfit', 'Inter', sans-serif"
+                }}>
+                  {formData.category}
+                </div>
+                <div style={{
+                  color: formData.category === 'AYUSH Wellness Centre & Hospital'
+                    ? '#166534'
+                    : formData.category === 'AYUSH Gram or AYUSH Resort'
+                      ? '#92400e'
+                      : '#1e40af',
+                  fontSize: '12px',
+                  lineHeight: 1.4
+                }}>
+                  Based on your selections for <strong>Residential</strong> and <strong>Clinical</strong> offerings, your category has been locked automatically.
                 </div>
               </div>
 
