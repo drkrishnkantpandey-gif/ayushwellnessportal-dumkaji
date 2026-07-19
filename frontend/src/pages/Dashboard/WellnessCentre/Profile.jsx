@@ -338,10 +338,19 @@ export default function WellnessCentreProfile() {
             align-items: center;
             width: 100%;
           }
-          .govt-logo {
+          .govt-logo-uk {
             width: 75px;
             height: 75px;
             object-fit: contain;
+            background: transparent;
+            mix-blend-mode: multiply;
+          }
+          .govt-logo-setu {
+            width: 150px;
+            height: 75px;
+            object-fit: contain;
+            background: transparent;
+            mix-blend-mode: multiply;
           }
           .dept-title {
             font-family: 'Cinzel', serif;
@@ -475,12 +484,12 @@ export default function WellnessCentreProfile() {
           <div class="corner-decoration bottom-right"></div>
           
           <div class="header">
-            <img class="govt-logo" src="/images/uk_ayush_logo.png" alt="Uttarakhand Govt Logo" />
+            <img class="govt-logo-uk" src="/images/uk_ayush_logo.png" alt="Uttarakhand Govt Logo" />
             <div style="text-align: center; flex: 1;">
-              <h2 class="dept-title">DEPARTMENT OF AYUSH</h2>
+              <h2 class="dept-title">DEPARTMENT OF AYUSH & AYUSH EDUCATION</h2>
               <div class="state-title">GOVERNMENT OF UTTARAKHAND</div>
             </div>
-            <img class="govt-logo" src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" />
+            <img class="govt-logo-setu" src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" />
           </div>
           
           <div class="body-content">
@@ -489,7 +498,7 @@ export default function WellnessCentreProfile() {
               This is to certify that the AYUSH Wellness Centre named <span class="highlight">${opReg.centre_name}</span>, 
               located at <span class="highlight">${opReg.address}</span>, District <span class="highlight">${opReg.district}</span>, 
               owned and managed by <span class="highlight">${opReg.owner_name}</span> (Entity Type: <span class="highlight">${opReg.entity_type || 'N/A'}</span>), 
-              under Category <span class="highlight">${opReg.category || 'N/A'}</span>, has been registered and verified under the operational standards of Department of AYUSH.
+              under Category <span class="highlight">${opReg.category || 'N/A'}</span>, has been registered and verified under the operational standards of Department of AYUSH & AYUSH Education.
             </p>
           </div>
           
@@ -507,7 +516,7 @@ export default function WellnessCentreProfile() {
             
             <div class="signature-block">
               <p class="sig-title">District Officer (${opReg.district})</p>
-              <p class="sig-subtitle">Department of AYUSH, Uttarakhand</p>
+              <p class="sig-subtitle">Ayurvedic & Unani Services, Uttarakhand</p>
               <p class="sig-verify">✓ DIGITALLY SIGNED & VERIFIED</p>
             </div>
           </div>
