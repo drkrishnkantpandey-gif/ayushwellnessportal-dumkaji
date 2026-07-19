@@ -486,6 +486,11 @@ async function runWellnessCentreOperationalMigration() {
       );
 
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS naturopathy_staff_bcp_doc TEXT;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS pharmacist_name VARCHAR(255);
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS pharmacist_reg_number VARCHAR(100);
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS pharmacist_bcp_doc TEXT;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS wc_attendant_count INTEGER;
+      ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS ayurveda_nurse_count INTEGER;
     `);
     console.log('Database Migration: wellness_centre_registrations tables created/verified successfully');
   } catch (err) {
