@@ -1,5 +1,5 @@
 const db = require("../db");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
