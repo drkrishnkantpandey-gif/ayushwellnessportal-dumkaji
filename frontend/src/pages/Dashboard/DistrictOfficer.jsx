@@ -2195,6 +2195,10 @@ const DistrictOfficer = ({ activeTab }) => {
                         .filter(e => e.event_type === 'REVERTED' || e.event_type === 'COMPLIANCE_SUBMITTED')
                         .map((ev, index) => {
                           const isRevert = ev.event_type === 'REVERTED';
+                          const complianceEvents = (wcSelectedReg.events || []).filter(e => e.event_type === 'COMPLIANCE_SUBMITTED');
+                          const isLastCompliance = complianceEvents.length > 0 && complianceEvents[complianceEvents.length - 1].created_at === ev.created_at;
+                          const docPath = ev.document_path || (isLastCompliance ? wcSelectedReg.compliance_document : null);
+
                           return (
                             <div 
                               key={ev.id || index} 
@@ -2220,10 +2224,10 @@ const DistrictOfficer = ({ activeTab }) => {
                               <div style={{ fontSize: 13, fontWeight: 500, color: isRevert ? '#7c2d12' : '#064e3b' }}>
                                 {isRevert ? ev.comment : ev.comment?.replace(/^Compliance Submitted:\s*/i, '')}
                               </div>
-                              {!isRevert && ev.document_path && (
+                              {!isRevert && docPath && (
                                 <div style={{ marginTop: 6 }}>
                                   <a 
-                                    href={`${API}${ev.document_path}`} 
+                                    href={`${API}${docPath}`} 
                                     target="_blank" 
                                     rel="noreferrer" 
                                     style={{ color: '#047857', fontWeight: 700, fontSize: 11, textDecoration: 'underline' }}

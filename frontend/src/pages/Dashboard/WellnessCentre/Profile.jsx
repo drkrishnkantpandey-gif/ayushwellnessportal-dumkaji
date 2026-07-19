@@ -553,6 +553,10 @@ export default function WellnessCentreProfile() {
                   .filter(e => e.event_type === 'REVERTED' || e.event_type === 'COMPLIANCE_SUBMITTED')
                   .map((ev, index) => {
                     const isRevert = ev.event_type === 'REVERTED';
+                    const complianceEvents = (opReg.events || []).filter(e => e.event_type === 'COMPLIANCE_SUBMITTED');
+                    const isLastCompliance = complianceEvents.length > 0 && complianceEvents[complianceEvents.length - 1].created_at === ev.created_at;
+                    const docPath = ev.document_path || (isLastCompliance ? opReg.compliance_document : null);
+
                     return (
                       <div 
                         key={ev.id || index} 
@@ -576,10 +580,10 @@ export default function WellnessCentreProfile() {
                         <div className={`text-sm font-medium ${isRevert ? 'text-amber-900' : 'text-green-950'}`}>
                           {isRevert ? ev.comment : ev.comment?.replace(/^Compliance Submitted:\s*/i, '')}
                         </div>
-                        {!isRevert && ev.document_path && (
+                        {!isRevert && docPath && (
                           <div className="mt-2">
                             <a 
-                              href={`${API}${ev.document_path}`} 
+                              href={`${API}${docPath}`} 
                               target="_blank" 
                               rel="noreferrer" 
                               className="text-green-700 font-bold hover:underline inline-flex items-center gap-1 text-xs"
