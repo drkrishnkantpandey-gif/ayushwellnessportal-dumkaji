@@ -1,7 +1,7 @@
 import API from '../../config/api';
 import axiosInstance from '../../config/axiosInstance';
 import React, { useState, useEffect } from "react";
-import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X, Download, Award } from "lucide-react";
+import { Users, Building, Calendar, DollarSign, AlertCircle, MapPin, FileText, TrendingUp, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, IndianRupee, Paperclip, X, Download, Award, Printer } from "lucide-react";
 import { toast } from "react-toastify";
 
 
@@ -1003,6 +1003,7 @@ const DistrictOfficer = ({ activeTab }) => {
   const [wcRegs, setWcRegs] = useState([]);
   const [wcRegsLoading, setWcRegsLoading] = useState(false);
   const [wcSelectedReg, setWcSelectedReg] = useState(null);
+  const [wcModalTab, setWcModalTab] = useState("section1");
   const [wcActionModal, setWcActionModal] = useState(null); // { reg, action }
   const [wcComment, setWcComment] = useState('');
 
@@ -1019,6 +1020,181 @@ const DistrictOfficer = ({ activeTab }) => {
     };
     fetchProfile();
   }, []);
+
+  const handlePrint = (reg) => {
+    if (!reg) return;
+    const printWindow = window.open("", "_blank");
+    
+    const htmlContent = `
+      <html>
+      <head>
+        <title>Application Details - ${reg.registration_number || 'Draft'}</title>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; padding: 40px; line-height: 1.5; }
+          .header { border-bottom: 2px solid #0f766e; padding-bottom: 20px; margin-bottom: 30px; text-align: center; }
+          .title { font-size: 24px; font-weight: 800; color: #0f766e; margin: 0; }
+          .subtitle { font-size: 14px; color: #64748b; margin-top: 5px; }
+          .section-title { font-size: 16px; font-weight: 700; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 25px 0 15px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+          .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
+          .field { margin-bottom: 8px; }
+          .label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+          .value { font-size: 14px; color: #1e293b; font-weight: 500; }
+          .status-badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+          .status-submitted { background-color: #dbeafe; color: #1e40af; }
+          .status-approved { background-color: #dcfce7; color: #166534; }
+          .status-reverted { background-color: #fef3c7; color: #92400e; }
+          .status-rejected { background-color: #fee2e2; color: #991b1b; }
+          .timeline { border-left: 2px solid #e2e8f0; padding-left: 20px; margin-left: 10px; }
+          .timeline-item { position: relative; margin-bottom: 20px; }
+          .timeline-item::before { content: ''; position: absolute; left: -26px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background-color: #0f766e; border: 2px solid #fff; }
+          .timeline-title { font-size: 13px; font-weight: 700; color: #1e293b; }
+          .timeline-meta { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+          .timeline-comment { font-size: 13px; color: #475569; background-color: #f8fafc; border-left: 3px solid #cbd5e1; padding: 8px; border-radius: 4px; }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">AYUSH Wellness Centre Registration Portal</div>
+          <div class="subtitle">Operational Registration Application - ${reg.registration_number || 'Draft'}</div>
+          <div style="margin-top: 15px;">
+            Status: <span class="status-badge status-${(reg.status || 'SUBMITTED').toLowerCase()}">${reg.status || 'SUBMITTED'}</span>
+          </div>
+        </div>
+
+        <div class="section-title">Section 1: Basic Information</div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Centre Name</div><div class="value">${reg.centre_name || '—'}</div></div>
+          <div class="field"><div class="label">District</div><div class="value">${reg.district || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Address</div><div class="value">${reg.address || '—'}</div></div>
+          <div class="field"><div class="label">Google Map Link</div><div class="value">${reg.google_map_link || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">GPS Latitude / Longitude</div><div class="value">${reg.gps_lat || '—'} / ${reg.gps_lng || '—'}</div></div>
+          <div class="field"><div class="label">Owner Name / Mobile</div><div class="value">${reg.owner_name || '—'} / ${reg.mobile || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Category</div><div class="value" style="font-weight: 700; color: #0f766e;">${reg.category || '—'}</div></div>
+          <div class="field"><div class="label">Residential Facility</div><div class="value">${reg.is_residential ? 'Yes' : 'No'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Offers Clinical Services</div><div class="value">${reg.offers_clinical ? 'Yes' : 'No'}</div></div>
+          <div class="field"><div class="label">Services Offered</div><div class="value">${(reg.services_offered || []).join(", ") || '—'}</div></div>
+        </div>
+
+        <div class="section-title">Section 2: Clinical Information</div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Doctor Appointed</div><div class="value">${reg.doctor_appointed ? 'Yes' : 'No'}</div></div>
+          <div class="field"><div class="label">Doctor Name</div><div class="value">${reg.doctor_name || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Doctor Qualification</div><div class="value">${reg.doctor_qualification || '—'}</div></div>
+          <div class="field"><div class="label">BCP Registration Number</div><div class="value">${reg.bcp_reg_number || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">CEA Registered</div><div class="value">${reg.cea_registered ? 'Yes' : 'No'}</div></div>
+          <div class="field"><div class="label">CEA Registration Number</div><div class="value">${reg.cea_reg_number || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">CEA Validity Date</div><div class="value">${reg.cea_valid_till ? new Date(reg.cea_valid_till).toLocaleDateString('en-IN') : '—'}</div></div>
+          <div class="field"><div class="label">Clinical Signboards / Details Declaration</div><div class="value">${reg.declaration_board ? 'Accepted' : '—'} / ${reg.declaration_signboard ? 'Accepted' : '—'}</div></div>
+        </div>
+
+        <div class="section-title">Section 3: Rooms and Infrastructure</div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Reception Area Size</div><div class="value">${reg.reception_area_sqft ? reg.reception_area_sqft + ' sqft' : '—'}</div></div>
+          <div class="field"><div class="label">Waiting Capacity</div><div class="value">${reg.waiting_capacity || '—'} persons</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Consultation Rooms Count</div><div class="value">${reg.consultation_rooms || '—'}</div></div>
+          <div class="field"><div class="label">Total Beds</div><div class="value">${reg.num_beds || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Incharge Name / Mobile</div><div class="value">${reg.incharge_name || '—'} / ${reg.incharge_mobile || '—'}</div></div>
+          <div class="field"><div class="label">Emergency Referral Centre / Distance</div><div class="value">${reg.emergency_centre_name || '—'} (${reg.emergency_distance_m || '—'} km)</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Offers Prakruti Assessment</div><div class="value">${reg.offers_prakruti ? 'Yes' : 'No'}</div></div>
+          <div class="field"><div class="label">Kitchen / Dosha Dietetics</div><div class="value">${reg.kitchen_available ? 'Available' : '—'} / ${reg.dosha_dietetics ? 'Available' : '—'}</div></div>
+        </div>
+
+        <div class="section-title">Section 4: Staff Details</div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Receptionist Count</div><div class="value">${reg.receptionist_count || '—'}</div></div>
+          <div class="field"><div class="label">Sanitation Worker Count</div><div class="value">${reg.sanitation_worker_count || '—'}</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Multi-Purpose Workers (MPW)</div><div class="value">${reg.mpw_count || '—'}</div></div>
+          <div class="field"><div class="label">Cook / Guard Count</div><div class="value">${reg.cook_count || '—'} / ${reg.watchman_count || '—'}</div></div>
+        </div>
+        
+        ${reg.pharmacist_name ? `
+        <div class="grid-2">
+          <div class="field"><div class="label">Pharmacist Name</div><div class="value">${reg.pharmacist_name}</div></div>
+          <div class="field"><div class="label">Pharmacist Registration Number</div><div class="value">${reg.pharmacist_reg_number}</div></div>
+        </div>
+        ` : ''}
+
+        ${reg.wc_attendant_count ? `
+        <div class="grid-2">
+          <div class="field"><div class="label">Attendants Count</div><div class="value">${reg.wc_attendant_count}</div></div>
+          <div class="field"><div class="label">Ayurveda Nurse Count</div><div class="value">${reg.ayurveda_nurse_count}</div></div>
+        </div>
+        ` : ''}
+
+        ${reg.male_panchakarma_therapist ? `
+        <div class="grid-2">
+          <div class="field"><div class="label">Male Panchakarma Therapists</div><div class="value">${reg.male_panchakarma_therapist}</div></div>
+          <div class="field"><div class="label">Female Panchakarma Therapists</div><div class="value">${reg.female_panchakarma_therapist}</div></div>
+        </div>
+        ` : ''}
+
+        ${reg.yoga_instructor_count ? `
+        <div class="grid-2">
+          <div class="field"><div class="label">Yoga Instructors Count</div><div class="value">${reg.yoga_instructor_count}</div></div>
+          <div class="field"></div>
+        </div>
+        ` : ''}
+
+        ${reg.bnys_doctor_name ? `
+        <div class="grid-2">
+          <div class="field"><div class="label">Naturopathy BNYS Doctor Name</div><div class="value">${reg.bnys_doctor_name}</div></div>
+          <div class="field"><div class="label">Male / Female Attendants</div><div class="value">${reg.male_naturopathy_attendant} / ${reg.female_naturopathy_attendant}</div></div>
+        </div>
+        ` : ''}
+
+        <div class="section-title">Section 5: Fee & Declarations</div>
+        <div class="grid-2">
+          <div class="field"><div class="label">Fee Deposited</div><div class="value">${reg.fee_deposited ? 'Yes' : 'No'}</div></div>
+          <div class="field"><div class="label">All Declarations Accepted</div><div class="value">${reg.all_declarations_accepted ? 'Yes' : 'No'}</div></div>
+        </div>
+
+        <div class="section-title">Application Compliance & Action History Log</div>
+        <div class="timeline">
+          ${(reg.events || []).map(event => `
+            <div class="timeline-item">
+              <div class="timeline-title">${event.event_type} - By ${event.actor_name} (${event.actor_role})</div>
+              <div class="timeline-meta">${new Date(event.created_at).toLocaleString('en-IN')}</div>
+              ${event.comment ? `<div class="timeline-comment">${event.comment}</div>` : ''}
+            </div>
+          `).join("") || '<p style="color: #64748b; font-style: italic;">No logs recorded yet.</p>'}
+        </div>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
 
   const fetchPendingUsers = async (statusVal = filterStatus) => {
     setLoadingUsers(true);
@@ -1588,7 +1764,7 @@ const DistrictOfficer = ({ activeTab }) => {
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button
-                            onClick={() => setWcSelectedReg(reg)}
+                            onClick={() => { setWcSelectedReg(reg); setWcModalTab("section1"); }}
                             style={{ background: '#475569', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
                           >View</button>
                           {(reg.status === 'SUBMITTED' || reg.status === 'RESUBMITTED') && (
@@ -1616,87 +1792,389 @@ const DistrictOfficer = ({ activeTab }) => {
         {/* View Details Modal */}
         {wcSelectedReg && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setWcSelectedReg(null)}>
-            <div style={{ background: '#fff', borderRadius: 16, maxWidth: 800, width: '100%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div style={{ background: '#fff', borderRadius: 16, maxWidth: 950, width: '100%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
               <div style={{ background: 'linear-gradient(135deg,#166534,#15803d)', color: '#fff', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 16 }}>{wcSelectedReg.centre_name}</div>
                   <div style={{ fontSize: 13, opacity: 0.85 }}>Reg No: {wcSelectedReg.registration_number} | {wcSelectedReg.district}</div>
                 </div>
-                <button onClick={() => setWcSelectedReg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20 }}>✕</button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <button
+                    onClick={() => handlePrint(wcSelectedReg)}
+                    style={{ background: '#fff', color: '#166534', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Printer size={14} /> Print Application (PDF)
+                  </button>
+                  <button onClick={() => setWcSelectedReg(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20 }}>✕</button>
+                </div>
               </div>
               <div style={{ overflowY: 'auto', padding: 24, flex: 1 }}>
-                {/* General Info */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>General Information</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    {[['Category', wcSelectedReg.category],['Address', wcSelectedReg.address],['GPS', `${wcSelectedReg.gps_lat || '—'}, ${wcSelectedReg.gps_lng || '—'}`],['Owner', wcSelectedReg.owner_name],['Mobile', wcSelectedReg.mobile],['Residential', wcSelectedReg.is_residential ? 'Yes' : 'No'],['Clinical', wcSelectedReg.offers_clinical ? 'Yes' : 'No'],['Services', (wcSelectedReg.services_offered || []).join(', ')],['Portal Registered Before', wcSelectedReg.already_on_portal ? `Yes — ${wcSelectedReg.portal_reg_reason || ''}` : 'No']].map(([k,v]) => (
-                      <div key={k} style={{ fontSize: 13 }}><span style={{ fontWeight: 600, color: '#374151' }}>{k}: </span><span style={{ color: '#4b5563' }}>{v || '—'}</span></div>
-                    ))}
+                <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
+                  {/* Left Sidebar Tabs */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderRight: '1px solid #e2e8f0', paddingRight: 16 }}>
+                    <button
+                      onClick={() => setWcModalTab("section1")}
+                      style={{ textAlign: 'left', padding: '10px 14px', border: 'none', background: wcModalTab === 'section1' ? '#f0fdf4' : 'none', color: wcModalTab === 'section1' ? '#166534' : '#475569', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      1. Basic Info
+                    </button>
+                    <button
+                      onClick={() => setWcModalTab("section2")}
+                      style={{ textAlign: 'left', padding: '10px 14px', border: 'none', background: wcModalTab === 'section2' ? '#f0fdf4' : 'none', color: wcModalTab === 'section2' ? '#166534' : '#475569', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      2. Clinical Info
+                    </button>
+                    <button
+                      onClick={() => setWcModalTab("section3")}
+                      style={{ textAlign: 'left', padding: '10px 14px', border: 'none', background: wcModalTab === 'section3' ? '#f0fdf4' : 'none', color: wcModalTab === 'section3' ? '#166534' : '#475569', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      3. Rooms & Infrastructure
+                    </button>
+                    <button
+                      onClick={() => setWcModalTab("section4")}
+                      style={{ textAlign: 'left', padding: '10px 14px', border: 'none', background: wcModalTab === 'section4' ? '#f0fdf4' : 'none', color: wcModalTab === 'section4' ? '#166534' : '#475569', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      4. Staff Details
+                    </button>
+                    <button
+                      onClick={() => setWcModalTab("documents")}
+                      style={{ textAlign: 'left', padding: '10px 14px', border: 'none', background: wcModalTab === 'documents' ? '#f0fdf4' : 'none', color: wcModalTab === 'documents' ? '#166534' : '#475569', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      Uploaded Documents
+                    </button>
+                    <button
+                      onClick={() => setWcModalTab("logs")}
+                      style={{ textAlign: 'left', padding: '10px 14px', border: 'none', background: wcModalTab === 'logs' ? '#f0fdf4' : 'none', color: wcModalTab === 'logs' ? '#166534' : '#475569', fontWeight: 700, fontSize: 13, borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      Compliance Logs
+                    </button>
                   </div>
-                  {wcSelectedReg.previous_reg_certificate && <div style={{ marginTop: 8 }}><DocLink path={wcSelectedReg.previous_reg_certificate} label="Previous Registration Certificate" /></div>}
-                </div>
 
-                {/* Clinical Info */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Clinical Information</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    {[['Doctor', wcSelectedReg.doctor_name],['Qualification', wcSelectedReg.doctor_qualification],['BCP Reg. No.', wcSelectedReg.bcp_reg_number],['CEA Reg. No.', wcSelectedReg.cea_reg_number],['CEA Valid Till', wcSelectedReg.cea_valid_till ? new Date(wcSelectedReg.cea_valid_till).toLocaleDateString('en-IN') : '—']].map(([k,v]) => (
-                      <div key={k} style={{ fontSize: 13 }}><span style={{ fontWeight: 600, color: '#374151' }}>{k}: </span><span style={{ color: '#4b5563' }}>{v || '—'}</span></div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <DocLink path={wcSelectedReg.bcp_reg_doc} label="BCP Registration Doc" />
-                    <DocLink path={wcSelectedReg.cea_reg_certificate} label="CEA Certificate" />
-                    <DocLink path={wcSelectedReg.clinical_affidavit} label="Clinical Affidavit" />
-                  </div>
-                </div>
+                  {/* Right Details Pane */}
+                  <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 8 }}>
+                    {wcModalTab === "section1" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: 14, color: '#166534', margin: '0 0 8px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>Section 1: Basic Information</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                          {[
+                            ['Centre Name', wcSelectedReg.centre_name],
+                            ['District', wcSelectedReg.district],
+                            ['Address', wcSelectedReg.address],
+                            ['Google Map Link', wcSelectedReg.google_map_link ? <a href={wcSelectedReg.google_map_link} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>View Google Map Link</a> : '—'],
+                            ['GPS Latitude / Longitude', `${wcSelectedReg.gps_lat || '—'} / ${wcSelectedReg.gps_lng || '—'}`],
+                            ['Owner Name', wcSelectedReg.owner_name],
+                            ['Owner Mobile', wcSelectedReg.mobile],
+                            ['Category', wcSelectedReg.category],
+                            ['Residential Facility', wcSelectedReg.is_residential ? 'Yes' : 'No'],
+                            ['Offers Clinical Services', wcSelectedReg.offers_clinical ? 'Yes' : 'No'],
+                            ['Services Offered', (wcSelectedReg.services_offered || []).join(', ') || '—'],
+                            ['Registered on Portal Before', wcSelectedReg.already_on_portal ? `Yes (${wcSelectedReg.portal_reg_reason || ''})` : 'No'],
+                            ['Previous Registration No.', wcSelectedReg.previous_reg_number || '—'],
+                          ].map(([k, v]) => (
+                            <div key={k} style={{ fontSize: 13 }}>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 2 }}>{k}</span>
+                              <span style={{ color: '#1e293b', fontWeight: 500 }}>{v || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {wcSelectedReg.previous_reg_certificate && (
+                          <div style={{ marginTop: 8 }}>
+                            <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 }}>Previous Registration Certificate</span>
+                            <DocLink path={wcSelectedReg.previous_reg_certificate} label="View Certificate Document" />
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                {/* Infrastructure */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Infrastructure</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                    {[['Reception (sqft)', wcSelectedReg.reception_area_sqft],['Waiting Capacity', wcSelectedReg.waiting_capacity],['Consultation Rooms', wcSelectedReg.consultation_rooms],['Incharge', wcSelectedReg.incharge_name],['Incharge Mobile', wcSelectedReg.incharge_mobile],['Emergency Centre', wcSelectedReg.emergency_centre_name],['Emergency Distance', wcSelectedReg.emergency_distance_m && `${wcSelectedReg.emergency_distance_m}m`],['Beds', wcSelectedReg.num_beds],['Parking (Cars)', wcSelectedReg.parking_cars],['CCTV', wcSelectedReg.cctv_supervised ? 'Yes' : 'No'],['Kitchen', wcSelectedReg.kitchen_available ? 'Yes' : 'No']].map(([k,v]) => (
-                      <div key={k} style={{ fontSize: 12 }}><span style={{ fontWeight: 600, color: '#374151' }}>{k}: </span><span style={{ color: '#4b5563' }}>{v ?? '—'}</span></div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Documents */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Uploaded Documents</div>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <DocLink path={wcSelectedReg.service_charges_doc} label="Service Charges List" />
-                    <DocLink path={wcSelectedReg.brochure_doc} label="Brochure" />
-                    <DocLink path={wcSelectedReg.fee_receipt_doc} label="Fee Receipt" />
-                    <DocLink path={wcSelectedReg.declaration_affidavit} label="Affidavit" />
-                    <DocLink path={wcSelectedReg.yoga_instructor_qual_doc} label="Yoga Instructor Qual." />
-                    <DocLink path={wcSelectedReg.bnys_reg_certificate} label="BNYS Certificate" />
-                    <DocLink path={wcSelectedReg.panchakarma_staff_bcp_doc} label="Panchakarma Staff BCP" />
-                    <DocLink path={wcSelectedReg.naturopathy_staff_bcp_doc} label="Naturopathy Attendants BCP" />
-                  </div>
-                </div>
-
-                {/* Events Log */}
-                {wcSelectedReg.events && wcSelectedReg.events.length > 0 && (
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 12, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: 4, marginBottom: 12 }}>Activity Log</div>
-                    {wcSelectedReg.events.map((ev, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#166534', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11, flexShrink: 0 }}>{ev.event_type.charAt(0)}</div>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{ev.event_type} <span style={{ fontWeight: 400, color: '#64748b' }}>by {ev.actor_name || ev.actor_role}</span></div>
-                          {ev.comment && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 2 }}>"{ev.comment}"</div>}
-                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(ev.created_at).toLocaleString('en-IN')}</div>
+                    {wcModalTab === "section2" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: 14, color: '#166534', margin: '0 0 8px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>Section 2: Clinical Details</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                          {[
+                            ['Doctor Appointed', wcSelectedReg.doctor_appointed ? 'Yes' : 'No'],
+                            ['Doctor Name', wcSelectedReg.doctor_name],
+                            ['Doctor Qualification', wcSelectedReg.doctor_qualification],
+                            ['BCP Registration Number', wcSelectedReg.bcp_reg_number],
+                            ['CEA Registered', wcSelectedReg.cea_registered ? 'Yes' : 'No'],
+                            ['CEA Registration Number', wcSelectedReg.cea_reg_number],
+                            ['CEA Valid Till', wcSelectedReg.cea_valid_till ? new Date(wcSelectedReg.cea_valid_till).toLocaleDateString('en-IN') : '—'],
+                            ['Mandatory Signboards Displayed', wcSelectedReg.declaration_board && wcSelectedReg.declaration_signboard ? 'Yes (Accepted)' : 'No'],
+                          ].map(([k, v]) => (
+                            <div key={k} style={{ fontSize: 13 }}>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 2 }}>{k}</span>
+                              <span style={{ color: '#1e293b', fontWeight: 500 }}>{v || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: 8, display: 'flex', gap: 16, flexDirection: 'column' }}>
+                          {wcSelectedReg.doctor_qual_doc && (
+                            <div>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 }}>Doctor Qualification Doc</span>
+                              <DocLink path={wcSelectedReg.doctor_qual_doc} label="View Doc" />
+                            </div>
+                          )}
+                          {wcSelectedReg.bcp_reg_doc && (
+                            <div>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 }}>Doctor BCP Registration Doc</span>
+                              <DocLink path={wcSelectedReg.bcp_reg_doc} label="View Doc" />
+                            </div>
+                          )}
+                          {wcSelectedReg.cea_reg_certificate && (
+                            <div>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 }}>CEA Certificate</span>
+                              <DocLink path={wcSelectedReg.cea_reg_certificate} label="View Doc" />
+                            </div>
+                          )}
+                          {wcSelectedReg.clinical_affidavit && (
+                            <div>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 4 }}>Clinical Affidavit</span>
+                              <DocLink path={wcSelectedReg.clinical_affidavit} label="View Doc" />
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {wcModalTab === "section3" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: 14, color: '#166534', margin: '0 0 8px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>Section 3: Rooms & Infrastructure</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                          {[
+                            ['Reception Size (sqft)', wcSelectedReg.reception_area_sqft],
+                            ['Waiting Capacity', wcSelectedReg.waiting_capacity],
+                            ['Consultation Rooms', wcSelectedReg.consultation_rooms],
+                            ['Total Beds', wcSelectedReg.num_beds],
+                            ['Incharge Name', wcSelectedReg.incharge_name],
+                            ['Incharge Mobile', wcSelectedReg.incharge_mobile],
+                            ['Emergency Referral Centre', wcSelectedReg.emergency_centre_name],
+                            ['Emergency Distance', wcSelectedReg.emergency_distance_m ? `${wcSelectedReg.emergency_distance_m} km` : '—'],
+                            ['Offers Prakruti Analysis', wcSelectedReg.offers_prakruti ? 'Yes' : 'No'],
+                            ['Kitchen / Dosha Dietetics', wcSelectedReg.kitchen_available ? `Available ${wcSelectedReg.dosha_dietetics ? '(with Dietetics)' : ''}` : 'No'],
+                            ['Parking (Cars)', wcSelectedReg.parking_cars],
+                            ['CCTV Supervised', wcSelectedReg.cctv_supervised ? 'Yes' : 'No'],
+                          ].map(([k, v]) => (
+                            <div key={k} style={{ fontSize: 13 }}>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 2 }}>{k}</span>
+                              <span style={{ color: '#1e293b', fontWeight: 500 }}>{v ?? '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+                          <span style={{ fontWeight: 700, color: '#166534', fontSize: 12, display: 'block', marginBottom: 12 }}>Service Specific Rooms Count</span>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                            {[
+                              ['Marma Rooms', wcSelectedReg.marma_rooms],
+                              ['Para Surgical Rooms', wcSelectedReg.para_surgical_rooms],
+                              ['Kshar Sutra OT', wcSelectedReg.kshar_sutra_ot],
+                              ['Yoga Halls', wcSelectedReg.yoga_halls],
+                              ['Meditation Halls', wcSelectedReg.meditation_halls],
+                              ['Shatkarma Rooms', wcSelectedReg.shatkarma_rooms],
+                              ['Massage Rooms', wcSelectedReg.massage_rooms],
+                              ['Enema Rooms', wcSelectedReg.enema_rooms],
+                              ['Hydrotherapy Rooms', wcSelectedReg.hydrotherapy_rooms],
+                              ['Abhyanga Rooms', wcSelectedReg.abhyanga_rooms],
+                              ['Vasti Rooms', wcSelectedReg.vasti_rooms],
+                              ['Post Therapy Waiting', wcSelectedReg.post_therapy_waiting_rooms],
+                              ['Medicine Dispensing', wcSelectedReg.medicine_dispensing_rooms],
+                            ].map(([k, v]) => (
+                              v !== null && v !== '' && (
+                                <div key={k} style={{ fontSize: 12 }}>
+                                  <span style={{ fontWeight: 600, color: '#64748b', display: 'block' }}>{k}</span>
+                                  <span style={{ color: '#1e293b', fontWeight: 700 }}>{v}</span>
+                                </div>
+                              )
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {wcModalTab === "section4" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: 14, color: '#166534', margin: '0 0 8px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>Section 4: Staff Details</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                          {[
+                            ['Receptionist Count', wcSelectedReg.receptionist_count],
+                            ['Sanitation Worker Count', wcSelectedReg.sanitation_worker_count],
+                            ['Multi-Purpose Workers (MPW)', wcSelectedReg.mpw_count],
+                            ['Cook Count', wcSelectedReg.cook_count],
+                            ['Watchman / Guard Count', wcSelectedReg.watchman_count],
+                          ].map(([k, v]) => (
+                            <div key={k} style={{ fontSize: 13 }}>
+                              <span style={{ fontWeight: 600, color: '#475569', display: 'block', fontSize: 11, textTransform: 'uppercase', marginBottom: 2 }}>{k}</span>
+                              <span style={{ color: '#1e293b', fontWeight: 500 }}>{v ?? '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {(wcSelectedReg.pharmacist_name || wcSelectedReg.wc_attendant_count || wcSelectedReg.male_panchakarma_therapist || wcSelectedReg.yoga_instructor_count || wcSelectedReg.bnys_doctor_name) && (
+                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+                            <span style={{ fontWeight: 700, color: '#166534', fontSize: 12, display: 'block', marginBottom: 12 }}>Service Specific Staff Details</span>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                              {wcSelectedReg.pharmacist_name && (
+                                <>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Pharmacist Name</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.pharmacist_name}</span>
+                                  </div>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Pharmacist Reg. Number</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.pharmacist_reg_number}</span>
+                                  </div>
+                                  {wcSelectedReg.pharmacist_bcp_doc && (
+                                    <div style={{ gridColumn: 'span 2' }}>
+                                      <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11, marginBottom: 4 }}>Pharmacist BCP Document</span>
+                                      <DocLink path={wcSelectedReg.pharmacist_bcp_doc} label="View Pharmacist Doc" />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {wcSelectedReg.wc_attendant_count && (
+                                <>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Wellness Centre Attendants (Min 2/10 Beds)</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.wc_attendant_count}</span>
+                                  </div>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Ayurveda Nurses (Min 2/10 Beds)</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.ayurveda_nurse_count}</span>
+                                  </div>
+                                </>
+                              )}
+                              {wcSelectedReg.male_panchakarma_therapist && (
+                                <>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Male Panchakarma Therapists</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.male_panchakarma_therapist}</span>
+                                  </div>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Female Panchakarma Therapists</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.female_panchakarma_therapist}</span>
+                                  </div>
+                                  {wcSelectedReg.panchakarma_staff_bcp_doc && (
+                                    <div style={{ gridColumn: 'span 2' }}>
+                                      <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11, marginBottom: 4 }}>Panchakarma Staff BCP License Doc</span>
+                                      <DocLink path={wcSelectedReg.panchakarma_staff_bcp_doc} label="View Panchakarma Staff Doc" />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {wcSelectedReg.yoga_instructor_count && (
+                                <>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Yoga Instructors</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.yoga_instructor_count}</span>
+                                  </div>
+                                  {wcSelectedReg.yoga_instructor_qual_doc && (
+                                    <div>
+                                      <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11, marginBottom: 4 }}>Yoga Instructors Qualification Doc</span>
+                                      <DocLink path={wcSelectedReg.yoga_instructor_qual_doc} label="View Yoga Qual Doc" />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {wcSelectedReg.bnys_doctor_name && (
+                                <>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>BNYS Doctor Name</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.bnys_doctor_name}</span>
+                                  </div>
+                                  <div style={{ fontSize: 13 }}>
+                                    <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11 }}>Male / Female Naturopathy Attendants</span>
+                                    <span style={{ color: '#1e293b', fontWeight: 600 }}>{wcSelectedReg.male_naturopathy_attendant} / {wcSelectedReg.female_naturopathy_attendant}</span>
+                                  </div>
+                                  {wcSelectedReg.bnys_reg_certificate && (
+                                    <div>
+                                      <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11, marginBottom: 4 }}>BNYS Registration Certificate</span>
+                                      <DocLink path={wcSelectedReg.bnys_reg_certificate} label="View BNYS Certificate" />
+                                    </div>
+                                  )}
+                                  {wcSelectedReg.naturopathy_staff_bcp_doc && (
+                                    <div>
+                                      <span style={{ fontWeight: 600, color: '#64748b', display: 'block', fontSize: 11, marginBottom: 4 }}>Naturopathy Attendants BCP Doc</span>
+                                      <DocLink path={wcSelectedReg.naturopathy_staff_bcp_doc} label="View Naturopathy Attendants Doc" />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {wcModalTab === "documents" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: 14, color: '#166534', margin: '0 0 8px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>Uploaded Documents & Licences</h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                          {[
+                            ['Previous Registration Certificate', wcSelectedReg.previous_reg_certificate],
+                            ['Doctor Qualification Document', wcSelectedReg.doctor_qual_doc],
+                            ['Doctor BCP Registration Document', wcSelectedReg.bcp_reg_doc],
+                            ['CEA Registration Certificate', wcSelectedReg.cea_reg_certificate],
+                            ['Clinical declaration Affidavit', wcSelectedReg.clinical_affidavit],
+                            ['Service Charges List', wcSelectedReg.service_charges_doc],
+                            ['Brochure / Pamphlet', wcSelectedReg.brochure_doc],
+                            ['Pharmacist BCP Registration Doc', wcSelectedReg.pharmacist_bcp_doc],
+                            ['Panchakarma Staff BCP Registrations', wcSelectedReg.panchakarma_staff_bcp_doc],
+                            ['Yoga Instructor Qualification Doc', wcSelectedReg.yoga_instructor_qual_doc],
+                            ['BNYS Doctor Registration Certificate', wcSelectedReg.bnys_reg_certificate],
+                            ['Naturopathy Attendants BCP Doc', wcSelectedReg.naturopathy_staff_bcp_doc],
+                            ['Fee Deposit Receipt', wcSelectedReg.fee_receipt_doc],
+                            ['Declaration Affidavit', wcSelectedReg.declaration_affidavit],
+                          ].map(([label, path]) => (
+                            path && (
+                              <div key={label} style={{ padding: '12px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 90 }}>
+                                <span style={{ fontWeight: 700, color: '#334155', fontSize: 12 }}>{label}</span>
+                                <DocLink path={path} label="View Uploaded Document" />
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {wcModalTab === "logs" && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <h4 style={{ fontWeight: 800, fontSize: 14, color: '#166534', margin: '0 0 8px 0', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>Application Activity & Compliance Logs</h4>
+                        <div style={{ position: 'relative', borderLeft: '2px solid #e2e8f0', paddingLeft: 20, marginLeft: 10, display: 'flex', flexDirection: 'column', gap: 24 }}>
+                          {(wcSelectedReg.events || []).map((event, idx) => (
+                            <div key={event.id || idx} style={{ position: 'relative' }}>
+                              <div style={{ position: 'absolute', left: -25, top: 4, width: 8, height: 8, borderRadius: '50%', background: '#166534', border: '2px solid #fff' }}></div>
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{event.event_type}</span>
+                                  <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                                    {new Date(event.created_at).toLocaleString('en-IN', {
+                                      day: '2-digit', month: 'short', year: 'numeric',
+                                      hour: '2-digit', minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
+                                  Action By: {event.actor_name} ({event.actor_role})
+                                </div>
+                                {event.comment && (
+                                  <div style={{ fontSize: 12, color: '#475569', background: '#f1f5f9', borderLeft: '3px solid #cbd5e1', padding: 8, borderRadius: '0 6px 6px 0', marginTop: 6, fontWeight: 500 }}>
+                                    "{event.comment}"
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {(wcSelectedReg.events || []).length === 0 && (
+                            <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>No movement timeline logged yet.</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* District comment if reverted */}
                 {wcSelectedReg.district_comment && (
-                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '12px 16px', marginTop: 12 }}>
-                    <strong style={{ color: '#c2410c' }}>District Comment:</strong> {wcSelectedReg.district_comment}
+                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '12px 16px', marginTop: 16 }}>
+                    <strong style={{ color: '#c2410c', fontSize: 13 }}>District Comment:</strong> <span style={{ fontSize: 13, color: '#4b5563', fontWeight: 500 }}>{wcSelectedReg.district_comment}</span>
                   </div>
                 )}
 

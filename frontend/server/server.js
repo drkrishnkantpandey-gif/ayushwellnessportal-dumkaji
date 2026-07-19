@@ -574,6 +574,18 @@ async function runWellnessCentreOperationalMigration() {
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP DEFAULT NOW();
       ALTER TABLE wellness_centre_registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
     `);
+
+    // Check if there is only 1 registration and its registration_number doesn't end with -0001
+    const countRes = await pool.query('SELECT id, registration_number FROM wellness_centre_registrations');
+    if (countRes.rows.length === 1 && !countRes.rows[0].registration_number.endsWith('-0001')) {
+      const firstId = countRes.rows[0].id;
+      const oldNum = countRes.rows[0].registration_number;
+      const newNum = oldNum.replace(/-\d+$/, '-0001');
+      await pool.query('UPDATE wellness_centre_registrations SET registration_number = $1 WHERE id = $2', [newNum, firstId]);
+      await pool.query("SELECT setval('seq_wc_operational_reg_serial', 1, true)");
+      console.log(`Reset first registration number from ${oldNum} to ${newNum} and reset sequence to 1`);
+    }
+
     console.log('Database Migration: wellness_centre_registrations tables created/verified successfully');
   } catch (err) {
     console.error('Database Migration: Failed to create wellness_centre_registrations tables:', err);
