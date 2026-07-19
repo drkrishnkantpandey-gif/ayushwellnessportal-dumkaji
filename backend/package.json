@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.1",
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
@@ -36,5 +37,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
+  },
+  "allowScripts": {
+    "bcrypt@5.1.1": true
   }
 }

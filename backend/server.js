@@ -8,7 +8,7 @@ const bodyParser   = require('body-parser');
 const { URL }      = require('url');
 const dns          = require('dns').promises;
 const { Pool }     = require('pg');
-const bcrypt       = require('bcrypt');
+const bcrypt       = require('bcryptjs');
 require('dotenv').config();
 
 const authRoutes             = require('./routes/authRoutes');
