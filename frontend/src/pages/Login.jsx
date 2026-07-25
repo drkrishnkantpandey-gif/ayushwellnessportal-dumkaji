@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Users, User, Building, Heart, GraduationCap, Shield, Map, Crown, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Hospital } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import API from '../config/api';
 
 const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => {
@@ -14,8 +12,8 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showLoginForm, setShowLoginForm] = useState(false);
-  // Accordion state for sections
   const [expandedSection, setExpandedSection] = useState(null);
+
   const handleSectionToggle = (title) => {
     setExpandedSection(prev => (prev === title ? null : title));
   };
@@ -32,10 +30,8 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
     { id: 'admin', en: 'Admin', hi: 'प्रशासक', icon: Crown, desc: 'For system administrators' }
   ];
 
-  // When role card is clicked, open login form directly
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
-    // Reset credentials when role changes
     setEmail('');
     setPassword('');
     setLoginError('');
@@ -78,13 +74,11 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
       }, { withCredentials: true });
 
       if (response.data.success) {
-        // JWT stored in httpOnly cookie AND localStorage for cross-domain Render deployment
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
         }
         localStorage.setItem('userRole', selectedRole);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        // Set default tab to sessions (Yoga Activity Tracker) for yoga_professional
         if (selectedRole === 'yoga_professional') {
           localStorage.setItem('activeTab', 'sessions');
         } else {
@@ -111,230 +105,234 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
   const selectedRoleObj = roles.find(r => r.id === selectedRole);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+    <div className="min-h-screen py-24 px-4 sm:px-6 lg:px-8 relative z-10 flex items-center justify-center">
+      <div className="bg-zinc-950/80 border border-white/10 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl max-w-5xl w-full">
 
-          {!showLoginForm ? (
-            /* ── Role Selection Screen ── */
-            <div className="p-8">
-              {/* Header */}
-              <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-teal-600 to-teal-700 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
-                  <Users className="text-white" size={40} />
+        {!showLoginForm ? (
+          /* ── Role Selection Screen ── */
+          <div className="p-8 md:p-12">
+            {/* Header */}
+            <div className="text-center mb-10">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#ef233c] to-red-950 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-red-900/30 border border-white/10">
+                <Users className="text-white" size={36} />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white font-manrope">
+                {language === "EN" ? "Select Your Role" : "अपनी भूमिका चुनें"}
+              </h2>
+              <p className="text-zinc-400 mt-2 text-sm font-light">
+                {language === "EN" ? "Select your operational division to proceed to login" : "सीधे लॉगिन के लिए अपनी भूमिका पर क्लिक करें"}
+              </p>
+            </div>
+
+            {/* Sections */}
+            {[{ title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री", roleIds: ["yoga_professional", "wellness_centre"] }, { title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान", roleIds: ["yoga_centre", "ayush_hospital", "ayush_college", "research_org"] }, { title: language === "EN" ? "Officials" : "अधिकारी", roleIds: ["district_officer", "directorate", "admin"] }].map(section => (
+              <div key={section.title} className="mb-4">
+                <button
+                  className="w-full flex justify-between items-center bg-zinc-900 border border-white/5 text-white p-4 rounded-xl hover:border-white/20 transition-all font-semibold"
+                  onClick={() => handleSectionToggle(section.title)}
+                >
+                  <span className="font-bold text-base md:text-lg">{section.title}</span>
+                  <span className="text-zinc-400">{expandedSection === section.title ? '▲' : '▼'}</span>
+                </button>
+                {expandedSection === section.title && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 animate-fade-up">
+                    {roles.filter(r => section.roleIds.includes(r.id)).map(r => (
+                      <div
+                        key={r.id}
+                        className="cursor-pointer p-5 border border-white/5 hover:border-[#ef233c]/40 bg-black/40 rounded-xl hover:shadow-xl hover:shadow-red-900/5 transition flex flex-col items-center text-center group"
+                        onClick={() => handleRoleSelect(r.id)}
+                      >
+                        <r.icon className="text-[#ef233c] mb-3 group-hover:scale-110 transition-transform" size={40} />
+                        <h3 className="font-bold text-zinc-100 group-hover:text-white transition-colors">{language === "EN" ? r.en : r.hi}</h3>
+                        <p className="text-xs text-zinc-500 mt-2 leading-snug font-light">{r.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div className="mt-8 text-center">
+              <p className="text-zinc-400 text-sm">
+                {language === "EN" ? "Don't have an account?" : "क्या आपके पास खाता नहीं है?"}{' '}
+                <button
+                  onClick={() => setCurrentPage('register')}
+                  className="text-[#ef233c] font-bold hover:underline"
+                >
+                  {language === "EN" ? "Register Now" : "अभी पंजीकरण करें"}
+                </button>
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* ── Login Form Screen ── */
+          <div className="grid md:grid-cols-5 min-h-[500px]">
+            {/* Left Panel */}
+            <div className="md:col-span-2 bg-gradient-to-br from-red-950/80 to-zinc-950 p-8 flex flex-col justify-between text-white border-r border-white/10 relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,#ef233c/10,transparent_70%)]"></div>
+              <div className="relative z-10">
+                <button
+                  onClick={handleBackToRoles}
+                  className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-semibold mb-8 transition-colors"
+                >
+                  ← {language === "EN" ? "Change Role" : "भूमिका बदलें"}
+                </button>
+
+                <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
+                  {selectedRoleObj && (() => { const RoleIcon = selectedRoleObj.icon; return <RoleIcon className="text-[#ef233c]" size={32} />; })()}
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800">
-                  {language === "EN" ? "Select Your Role" : "अपनी भूमिका चुनें"}
+
+                <h2 className="text-3xl font-extrabold mb-2 font-manrope">
+                  {language === "EN" ? "Welcome" : "स्वागत है"}
                 </h2>
-                <p className="text-gray-500 mt-2">
-                  {language === "EN" ? "Click on your role to proceed directly to login" : "सीधे लॉगिन के लिए अपनी भूमिका पर क्लिक करें"}
+                <p className="text-zinc-400 text-sm mb-4">
+                  {language === "EN" ? "Logging in as" : "लॉगिन करें"}{" "}
+                  <span className="text-[#ef233c] font-bold">
+                    {language === "EN" ? selectedRoleObj?.en : selectedRoleObj?.hi}
+                  </span>
                 </p>
               </div>
-              {/* Sections */}
-              {[{ title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री", roleIds: ["yoga_professional", "wellness_centre"] }, { title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान", roleIds: ["yoga_centre", "ayush_hospital", "ayush_college", "research_org"] }, { title: language === "EN" ? "Officials" : "अधिकारी", roleIds: ["district_officer", "directorate", "admin"] }].map(section => (
-                <div key={section.title} className="mb-4">
-                  <button
-                    className="w-full flex justify-between items-center bg-teal-600 text-white p-4 rounded-lg hover:bg-teal-700 transition"
-                    onClick={() => handleSectionToggle(section.title)}
-                  >
-                    <span className="font-semibold text-lg">{section.title}</span>
-                    <span>{expandedSection === section.title ? '▴' : '▾'}</span>
-                  </button>
-                  {expandedSection === section.title && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                      {roles.filter(r => section.roleIds.includes(r.id)).map(r => (
-                        <div
-                          key={r.id}
-                          className="cursor-pointer p-4 border rounded-xl hover:shadow-lg transition flex flex-col items-center text-center"
-                          onClick={() => handleRoleSelect(r.id)}
-                        >
-                          <r.icon className="text-teal-600 mb-2" size={48} />
-                          <h3 className="font-medium">{language === "EN" ? r.en : r.hi}</h3>
-                          <p className="text-sm text-gray-500">{r.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
 
-              <div className="mt-8 text-center">
-                <p className="text-gray-600 text-sm">
-                  {language === "EN" ? "Don't have an account?" : "क्या आपके पास खाता नहीं है?"}{' '}
+              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative z-10">
+                <p className="text-zinc-400 text-xs leading-relaxed font-light">
+                  {language === "EN"
+                    ? "Access your AYUSH dashboard, manage certifications, track yoga activities and handle incentive claims securely."
+                    : "अपने AYUSH डैशबोर्ड तक पहुँचें, प्रमाणपत्र प्रबंधित करें, योग गतिविधियों को ट्रैक करें।"}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Panel – Login Form */}
+            <div className="md:col-span-3 p-8 flex flex-col justify-center bg-zinc-950/40">
+              <h3 className="text-2xl font-bold text-white font-manrope mb-1">
+                {language === "EN" ? "Sign In" : "साइन इन करें"}
+              </h3>
+              <p className="text-zinc-400 text-sm mb-8 font-light">
+                {language === "EN" ? "Enter your registered credentials below" : "अपनी पंजीकृत क्रेडेंशियल्स दर्ज करें"}
+              </p>
+
+              {loginError && (
+                <div className="mb-6 p-4 bg-red-500/5 border border-red-500/20 text-[#ef233c] rounded-xl text-sm flex items-start gap-3 animate-fade-up">
+                  <span className="text-lg">⚠️</span>
+                  <span className="font-medium">{loginError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
+                    {language === "EN" ? "Email / Username" : "ईमेल / उपयोगकर्ता नाम"}
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                    <input
+                      type="text"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setLoginError('');
+                      }}
+                      className="w-full pl-12 pr-4 py-3.5 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 transition text-sm font-medium"
+                      placeholder={language === "EN" ? "Enter your email" : "अपना ईमेल दर्ज करें"}
+                      autoComplete="username"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
+                    {language === "EN" ? "Password" : "पासवर्ड"}
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setLoginError('');
+                      }}
+                      className="w-full pl-12 pr-12 py-3.5 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 transition text-sm font-medium"
+                      placeholder={language === "EN" ? "Enter your password" : "अपना पासवर्ड दर्ज करें"}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 text-[#ef233c] accent-[#ef233c] bg-zinc-900 border-zinc-800 focus:ring-[#ef233c] rounded" 
+                    />
+                    <span className="text-sm text-zinc-400 font-medium">
+                      {language === "EN" ? "Remember me" : "मुझे याद रखें"}
+                    </span>
+                  </label>
+                  <button type="button" className="text-sm text-[#ef233c] hover:text-red-400 font-bold transition-colors">
+                    {language === "EN" ? "Forgot Password?" : "पासवर्ड भूल गए?"}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full py-4 rounded-xl font-extrabold text-white transition-all shadow-lg uppercase tracking-wider text-sm ${loading
+                      ? 'bg-red-800/50 cursor-not-allowed'
+                      : 'bg-[#ef233c] hover:bg-red-700 shadow-[#ef233c]/20 hover:shadow-xl hover:-translate-y-0.5'
+                    }`}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      {language === "EN" ? "Signing In..." : "लॉगिन हो रहा है..."}
+                    </span>
+                  ) : (
+                    language === "EN" ? "Sign In" : "साइन इन"
+                  )}
+                </button>
+
+                <div className="mt-4 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="text-yellow-500 shrink-0 mt-0.5" size={18} />
+                  <div className="text-xs text-yellow-300/80 leading-relaxed font-medium">
+                    {language === "EN" ? (
+                      <strong>Note:</strong>
+                    ) : (
+                      <strong>नोट:</strong>
+                    )}
+                    {" "}
+                    {language === "EN" 
+                      ? "Registrations require administrative approval before you can log in. Wellness Centres, Yoga Professionals, Yoga Centres, and AYUSH Hospitals should contact their District Office or Directorate. AYUSH Colleges and Research Institutions should contact the Directorate."
+                      : "लॉगिन करने से पहले पंजीकरणों के लिए प्रशासनिक स्वीकृति आवश्यक है। वैलनेस सेंटर्स, योग प्रोफेशनल्स, योग सेंटर्स, और आयुष अस्पतालों को अपने जिला कार्यालय या निदेशालय से संपर्क करना चाहिए। आयुष कॉलेजों और शोध संस्थानों को निदेशालय से संपर्क करना चाहिए।"
+                    }
+                  </div>
+                </div>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-zinc-400 text-sm font-light">
+                  {language === "EN" ? "Don't have an account?" : "खाता नहीं है?"}{' '}
                   <button
                     onClick={() => setCurrentPage('register')}
-                    className="text-teal-600 font-semibold hover:underline"
+                    className="text-[#ef233c] font-bold hover:underline"
                   >
                     {language === "EN" ? "Register Now" : "अभी पंजीकरण करें"}
                   </button>
                 </p>
               </div>
             </div>
-          ) : (
-            /* ── Login Form Screen ── */
-            <div className="grid md:grid-cols-5 min-h-[500px]">
-              {/* Left Panel */}
-              <div className="md:col-span-2 bg-gradient-to-br from-teal-800 to-teal-600 p-8 flex flex-col justify-between text-white">
-                <div>
-                  <button
-                    onClick={handleBackToRoles}
-                    className="flex items-center gap-2 text-teal-200 hover:text-white text-sm font-medium mb-8 transition-colors"
-                  >
-                    ← {language === "EN" ? "Change Role" : "भूमिका बदलें"}
-                  </button>
-
-                  <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
-                    {selectedRoleObj && (() => { const RoleIcon = selectedRoleObj.icon; return <RoleIcon size={32} />; })()}
-                  </div>
-
-                  <h2 className="text-2xl font-bold mb-2">
-                    {language === "EN" ? "Welcome Back" : "वापसी पर स्वागत है"}
-                  </h2>
-                  <p className="text-teal-200 text-sm mb-4">
-                    {language === "EN" ? "Logging in as" : "लॉगिन करें"}{" "}
-                    <span className="text-white font-bold">
-                      {language === "EN" ? selectedRoleObj?.en : selectedRoleObj?.hi}
-                    </span>
-                  </p>
-                </div>
-
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-teal-100 text-xs leading-relaxed">
-                    {language === "EN"
-                      ? "Access your AYUSH dashboard, manage certifications, track yoga activities and handle incentive claims securely."
-                      : "अपने AYUSH डैशबोर्ड तक पहुँचें, प्रमाणपत्र प्रबंधित करें, योग गतिविधियों को ट्रैक करें।"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Panel – Login Form */}
-              <div className="md:col-span-3 p-8 flex flex-col justify-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  {language === "EN" ? "Sign In" : "साइन इन करें"}
-                </h3>
-                <p className="text-gray-500 text-sm mb-8">
-                  {language === "EN" ? "Enter your registered credentials below" : "अपनी पंजीकृत क्रेडेंशियल्स दर्ज करें"}
-                </p>
-
-                {loginError && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm flex items-start gap-3">
-                    <span className="text-lg">⚠️</span>
-                    <span>{loginError}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleLogin} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {language === "EN" ? "Email / Username" : "ईमेल / उपयोगकर्ता नाम"}
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input
-                        type="text"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setLoginError('');
-                        }}
-                        className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition"
-                        placeholder={language === "EN" ? "Enter your email" : "अपना ईमेल दर्ज करें"}
-                        autoComplete="username"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {language === "EN" ? "Password" : "पासवर्ड"}
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setLoginError('');
-                        }}
-                        className="w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition"
-                        placeholder={language === "EN" ? "Enter your password" : "अपना पासवर्ड दर्ज करें"}
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500" />
-                      <span className="text-sm text-gray-600">
-                        {language === "EN" ? "Remember me" : "मुझे याद रखें"}
-                      </span>
-                    </label>
-                    <button type="button" className="text-sm text-teal-600 hover:text-teal-700 font-semibold">
-                      {language === "EN" ? "Forgot Password?" : "पासवर्ड भूल गए?"}
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`w-full py-4 rounded-xl font-bold text-white transition-all shadow-lg ${loading
-                        ? 'bg-teal-400 cursor-not-allowed'
-                        : 'bg-teal-600 hover:bg-teal-700 shadow-teal-200 hover:shadow-xl hover:-translate-y-0.5'
-                      }`}
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        {language === "EN" ? "Signing In..." : "लॉगिन हो रहा है..."}
-                      </span>
-                    ) : (
-                      language === "EN" ? "Sign In" : "साइन इन"
-                    )}
-                  </button>
-                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                    <AlertCircle className="text-amber-600 shrink-0 mt-0.5" size={18} />
-                    <div className="text-xs text-amber-800 leading-relaxed font-medium">
-                      {language === "EN" ? (
-                        <strong>Note:</strong>
-                      ) : (
-                        <strong>नोट:</strong>
-                      )}
-                      {" "}
-                      {language === "EN" 
-                        ? "Registrations require administrative approval before you can log in. Wellness Centres, Yoga Professionals, Yoga Centres, and AYUSH Hospitals should contact their District Office or Directorate. AYUSH Colleges and Research Institutions should contact the Directorate."
-                        : "लॉगिन करने से पहले पंजीकरणों के लिए प्रशासनिक स्वीकृति आवश्यक है। वैलनेस सेंटर्स, योग प्रोफेशनल्स, योग सेंटर्स, और आयुष अस्पतालों को अपने जिला कार्यालय या निदेशालय से संपर्क करना चाहिए। आयुष कॉलेजों और शोध संस्थानों को निदेशालय से संपर्क करना चाहिए।"
-                      }
-                    </div>
-                  </div>
-                </form>
-
-                <div className="mt-6 text-center">
-                  <p className="text-gray-600 text-sm">
-                    {language === "EN" ? "Don't have an account?" : "खाता नहीं है?"}{' '}
-                    <button
-                      onClick={() => setCurrentPage('register')}
-                      className="text-teal-600 font-semibold hover:underline"
-                    >
-                      {language === "EN" ? "Register Now" : "अभी पंजीकरण करें"}
-                    </button>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

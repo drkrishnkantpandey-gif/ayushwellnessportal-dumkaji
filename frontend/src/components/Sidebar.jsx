@@ -17,7 +17,6 @@ import {
   Lock
 } from "lucide-react";
 
-// Dashboard Sidebar
 const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
   // Yoga Professional menu items
   const yogaProfessionalMenu = [
@@ -115,7 +114,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     { id: "wc_registrations", icon: Building2, label: "Wellness Centre Registrations" },
   ];
 
-  // Select menu items based on user role
   const getMenuItems = () => {
     switch (userRole) {
       case "admin":
@@ -142,7 +140,6 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
     }
   };
 
-  // Get user role display name
   const getRoleDisplayName = () => {
     switch (userRole) {
       case "wellness_centre":
@@ -173,49 +170,57 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
   const menuItems = getMenuItems();
 
   return (
-    <div className="bg-gradient-to-b from-teal-700 to-teal-800 h-full p-4">
-      <div className="flex items-center space-x-3 mb-8">
-        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center overflow-hidden border border-teal-100 p-0.5">
-          <img src="/images/ayush_setu_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
+    <div className="bg-black/80 h-full p-5 flex flex-col justify-between border-r border-white/5 backdrop-blur-xl relative overflow-hidden select-none">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,#ef233c/5,transparent_75%)] pointer-events-none"></div>
+      
+      <div className="relative z-10 flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center space-x-3 mb-8 border-b border-white/5 pb-5">
+          <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 p-0.5">
+            <img src="/images/uk_ayush_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
+          </div>
+          <span className="text-white font-extrabold text-lg font-manrope tracking-tight">AYUSH Setu</span>
         </div>
-        <span className="text-white font-bold text-lg">AYUSH Setu</span>
+
+        {/* Navigation */}
+        <nav className="space-y-1.5 flex-1 overflow-y-auto pr-1">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id
+                ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15 font-semibold"
+                : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200 font-medium"
+                }`}
+            >
+              <item.icon size={18} className={activeTab === item.id ? "text-white" : "text-zinc-500 group-hover:text-zinc-300"} />
+              <span className="flex-1 text-left text-sm">{item.label}</span>
+              {item.badge && (
+                <span className="bg-white text-[#ef233c] text-[10px] font-extrabold rounded-full w-5 h-5 flex items-center justify-center shadow">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* User Role Info */}
+        <div className="mt-6 p-4 bg-white/5 border border-white/5 rounded-2xl">
+          <p className="text-zinc-500 text-[10px] uppercase tracking-wider font-extrabold mb-1">Operational Division</p>
+          <p className="text-zinc-200 text-sm font-bold font-manrope">
+            {getRoleDisplayName()}
+          </p>
+        </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={onLogout}
+          className="w-full mt-4 flex items-center space-x-3 px-4 py-3.5 text-zinc-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-200 font-semibold"
+        >
+          <LogOut size={18} className="text-zinc-500 group-hover:text-red-400" />
+          <span className="text-sm">Logout</span>
+        </button>
       </div>
-
-      <nav className="space-y-2">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${activeTab === item.id
-              ? "bg-teal-600 text-white"
-              : "text-teal-100 hover:bg-teal-600 hover:text-white"
-              }`}
-          >
-            <item.icon size={20} />
-            <span className="flex-1 text-left text-sm">{item.label}</span>
-            {item.badge && (
-              <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {item.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-8 p-3 bg-teal-900 rounded-lg">
-        <p className="text-teal-300 text-xs mb-1">Logged in as</p>
-        <p className="text-white text-sm font-semibold">
-          {getRoleDisplayName()}
-        </p>
-      </div>
-
-      <button
-        onClick={onLogout}
-        className="w-full mt-4 flex items-center space-x-3 px-4 py-3 text-red-100 hover:bg-red-600/20 hover:text-white rounded-lg transition"
-      >
-        <LogOut size={20} />
-        <span className="text-sm font-medium">Logout</span>
-      </button>
     </div>
   );
 };

@@ -297,20 +297,19 @@ const App = () => {
 
     if (currentPage === "dashboard" || isLoggedIn) {
       return (
-        <div className="flex h-[calc(100vh-64px)]">
+        <div className="flex h-[calc(100vh-64px)] relative z-10">
           {/* Sidebar */}
-          <div className="w-64 hidden md:block overflow-y-auto bg-white border-r">
+          <div className="w-64 hidden md:block overflow-y-auto bg-black/60 border-r border-white/5">
             <Sidebar
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               userRole={userRole}
-
               onLogout={handleLogout}
             />
           </div>
 
           {/* Dashboard Content */}
-          <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="flex-1 overflow-y-auto bg-transparent">
             {userRole === "yoga_professional" && renderYogaProfessionalContent()}
             {userRole === "wellness_centre" && renderWellnessCentreContent()}
             {userRole === "ayush_college" && renderAyushCollegeContent()}
@@ -331,18 +330,27 @@ const App = () => {
 
     // Public Home Page
     return (
-      <>
+      <div className="relative z-10">
         <HeroSection setCurrentPage={setCurrentPage} language={language} />
         <LeadershipSection language={language} />
         <KeyFeatures language={language} />
         <Footer />
-      </>
+      </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ToastContainer />
+    <div className="min-h-screen bg-black text-white selection-red relative overflow-x-hidden font-inter">
+      {/* Global Background Backdrop */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#150202] via-[#050000] to-black"></div>
+        <div className="absolute top-0 left-0 w-[1px] h-[1px] bg-transparent stars-1 animate-[animStar_70s_linear_infinite]"></div>
+        <div className="absolute top-0 left-0 w-[2px] h-[2px] bg-transparent stars-2 animate-[animStar_120s_linear_infinite]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-600/5 rounded-full blur-[140px]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)]"></div>
+      </div>
+
+      <ToastContainer theme="dark" />
       <Navbar
         language={language}
         setLanguage={setLanguage}
