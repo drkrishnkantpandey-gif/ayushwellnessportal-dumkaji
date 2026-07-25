@@ -713,7 +713,7 @@ const Register = ({ setCurrentPage, language }) => {
             : "पंजीकरण सफल! आपका खाता व्यवस्थापक समीक्षा के अधीन है। कृपया लॉग इन करने से पहले स्वीकृति की प्रतीक्षा करें।"
         );
         setCurrentPage("home");
-      } catch (err) {
+        } catch (err) {
         console.error("Registration error:", err.response?.data || err.message);
         const errorMessage =
           err.response?.data?.message ||
@@ -732,11 +732,11 @@ const Register = ({ setCurrentPage, language }) => {
   // 🔹 OTP SCREEN (full-screen overlay)
   if (showOTP) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 py-12 px-4 flex items-center justify-center">
+      <div className="min-h-screen py-24 px-4 flex items-center justify-center relative z-10 bg-transparent">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <div className="bg-zinc-950/80 border border-white/10 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#ef233c] to-red-950 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-lg shadow-red-900/20">
                 <svg
                   className="w-10 h-10 text-white"
                   fill="none"
@@ -751,70 +751,55 @@ const Register = ({ setCurrentPage, language }) => {
                   />
                 </svg>
               </div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+              <h2 className="text-2xl font-bold text-white font-manrope mb-2">
                 Verify with OTP
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-zinc-400 font-light">
                 To ensure your security, please enter the One Time Password
                 (OTP) sent to your registered mobile number / email below.
               </p>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-center gap-3 mb-6">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    />
-                  ))}
-                </div>
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Didn&apos;t receive the OTP?{" "}
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      className="text-teal-600 hover:text-teal-700 font-semibold"
-                    >
-                      Resend
-                    </button>
-                  </p>
-                </div>
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="flex justify-center gap-4">
+                {otp.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    id={`otp-${idx}`}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                    className="w-12 h-12 text-center text-xl font-bold bg-black/60 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20"
+                  />
+                ))}
               </div>
 
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3 pt-4">
                 <button
-                  type="button"
-                  onClick={handleOtpSubmit}
-                  className="w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition"
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-[#ef233c] hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-[#ef233c]/15 transition"
                 >
-                  Submit
+                  Verify & Register
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowOTP(false)}
-                  className="w-full bg-white text-teal-600 py-3 rounded-lg font-semibold border-2 border-teal-600 hover:bg-teal-50 transition"
+                  className="w-full bg-zinc-900 border border-white/10 text-zinc-300 py-3 rounded-xl font-semibold hover:bg-zinc-800 transition"
                 >
                   Cancel
                 </button>
               </div>
 
-              <p className="text-xs text-center text-gray-500 mt-4">
+              <p className="text-xs text-center text-zinc-500 mt-4">
                 Having difficulties with OTP?{" "}
-                <a href="#" className="text-teal-600 hover:underline">
+                <a href="#" className="text-[#ef233c] hover:underline">
                   Get help
                 </a>
               </p>
-            </div>
+            </form>
           </div>
         </div>
       </div>
@@ -823,56 +808,54 @@ const Register = ({ setCurrentPage, language }) => {
 
   // 🔹 Normal registration 3-step flow
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+    <div className="min-h-screen py-24 px-4 relative z-10 bg-transparent flex items-center justify-center">
+      <div className="max-w-3xl w-full mx-auto">
+        <div className="bg-zinc-950/80 border border-white/10 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="text-white" size={40} />
+            <div className="w-20 h-20 bg-gradient-to-br from-[#ef233c] to-red-950 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-red-900/30 border border-white/10">
+              <Users className="text-white" size={36} />
             </div>
-            <h2 className="text-3xl font-bold text-gray-800">
+            <h2 className="text-3xl font-extrabold text-white font-manrope">
               Register on AYUSH Portal
             </h2>
-            <p className="text-gray-600 mt-2">Step {step} of 3</p>
+            <p className="text-zinc-400 mt-2 text-sm">Step {step} of 3</p>
           </div>
 
           {/* Progress bar */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-10 max-w-md mx-auto">
             <div className="flex items-center flex-1">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 1
-                  ? "bg-teal-600 text-white"
-                  : "bg-gray-300 text-gray-600"
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= 1
+                  ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15"
+                  : "bg-zinc-900 text-zinc-600 border border-white/5"
                   }`}
               >
                 1
               </div>
               <div
-                className={`flex-1 h-1 ${step >= 2 ? "bg-teal-600" : "bg-gray-300"
-                  }`}
+                className={`flex-1 h-[2px] ${step >= 2 ? "bg-[#ef233c]" : "bg-zinc-800"}`}
               ></div>
             </div>
 
             <div className="flex items-center flex-1">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 2
-                  ? "bg-teal-600 text-white"
-                  : "bg-gray-300 text-gray-600"
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= 2
+                  ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15"
+                  : "bg-zinc-900 text-zinc-600 border border-white/5"
                   }`}
               >
                 2
               </div>
               <div
-                className={`flex-1 h-1 ${step >= 3 ? "bg-teal-600" : "bg-gray-300"
-                  }`}
+                className={`flex-1 h-[2px] ${step >= 3 ? "bg-[#ef233c]" : "bg-zinc-800"}`}
               ></div>
             </div>
 
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 3
-                ? "bg-teal-600 text-white"
-                : "bg-gray-300 text-gray-600"
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= 3
+                ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15"
+                : "bg-zinc-900 text-zinc-600 border border-white/5"
                 }`}
             >
               3
@@ -907,13 +890,13 @@ const Register = ({ setCurrentPage, language }) => {
             {/* STEP 3 – account details */}
             {step === 3 && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-lg font-bold text-white font-manrope">
                   Account Details
                 </h3>
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
                     Create Password
                   </label>
                   <input
@@ -925,7 +908,7 @@ const Register = ({ setCurrentPage, language }) => {
                         password: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 text-sm font-medium"
                     placeholder="Minimum 8 characters"
                     required
                   />
@@ -933,7 +916,7 @@ const Register = ({ setCurrentPage, language }) => {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
                     Confirm Password
                   </label>
                   <input
@@ -945,77 +928,77 @@ const Register = ({ setCurrentPage, language }) => {
                         confirmPassword: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 text-sm font-medium"
                     placeholder="Re-enter password"
                     required
                   />
                 </div>
 
                 {/* Document info box */}
-                <div className="bg-teal-50 p-6 rounded-lg">
-                  <h4 className="font-bold text-gray-800 mb-4">
+                <div className="bg-white/5 border border-white/5 p-6 rounded-2xl">
+                  <h4 className="font-bold text-white mb-4 font-manrope">
                     Document Upload Required
                   </h4>
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-center">
+                  <ul className="space-y-2.5 text-sm text-zinc-400">
+                    <li className="flex items-center font-medium">
                       <FileText
-                        className="mr-2 text-teal-600 flex-shrink-0"
+                        className="mr-2 text-[#ef233c] flex-shrink-0"
                         size={16}
                       />
                       Aadhaar Card (Front & Back)
                     </li>
-                    <li className="flex items-center">
+                    <li className="flex items-center font-medium">
                       <FileText
-                        className="mr-2 text-teal-600 flex-shrink-0"
+                        className="mr-2 text-[#ef233c] flex-shrink-0"
                         size={16}
                       />
                       PAN Card
                     </li>
-                    <li className="flex items-center">
+                    <li className="flex items-center font-medium">
                       <FileText
-                        className="mr-2 text-teal-600 flex-shrink-0"
+                        className="mr-2 text-[#ef233c] flex-shrink-0"
                         size={16}
                       />
                       Qualification Certificates
                     </li>
-                    <li className="flex items-center">
+                    <li className="flex items-center font-medium">
                       <FileText
-                        className="mr-2 text-teal-600 flex-shrink-0"
+                        className="mr-2 text-[#ef233c] flex-shrink-0"
                         size={16}
                       />
                       Experience Letters (if applicable)
                     </li>
                   </ul>
-                  <p className="mt-4 text-xs text-gray-600">
+                  <p className="mt-4 text-xs text-zinc-500 font-light">
                     * Documents can be uploaded after registration from your
                     dashboard
                   </p>
                 </div>
 
                 {/* Terms */}
-                <label className="flex items-start">
+                <label className="flex items-start select-none cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 mt-1 text-teal-600 border-gray-300 rounded focus:ring-teal-500 flex-shrink-0"
+                    className="w-4 h-4 mt-1 text-[#ef233c] accent-[#ef233c] bg-zinc-900 border-zinc-800 focus:ring-[#ef233c] rounded flex-shrink-0"
                     required
                   />
-                  <span className="ml-2 text-sm text-gray-700">
+                  <span className="ml-2 text-sm text-zinc-400 font-medium">
                     I agree to the Terms & Conditions and Privacy Policy of
                     AYUSH Portal
                   </span>
                 </label>
 
-                <div className="space-y-2 text-sm text-gray-700">
-                  <h3 className="text-base font-semibold text-gray-800">
+                <div className="space-y-2 text-sm text-zinc-400 pt-4 border-t border-white/5">
+                  <h3 className="text-base font-bold text-white font-manrope">
                     Review & Next Steps
                   </h3>
-                  <p>
+                  <p className="font-light leading-relaxed">
                     Your registration details will be saved. After submitting,
                     an OTP will be sent to your registered contact for
                     verification.
                   </p>
-                  <p>
-                    Click <span className="font-semibold">Finish</span> to
+                  <p className="font-light leading-relaxed">
+                    Click <span className="font-semibold text-white">Finish</span> to
                     submit this registration request and proceed to OTP
                     verification.
                   </p>
@@ -1024,13 +1007,13 @@ const Register = ({ setCurrentPage, language }) => {
             )}
 
             {/* Buttons – only show from step 2 onwards (step 1 uses role card click) */}
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-4">
               {step > 1 && (
                 <button
                   type="button"
                   disabled={submitting}
                   onClick={() => setStep((s) => s - 1)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 transition"
+                  className="flex-1 bg-zinc-900 border border-white/10 text-zinc-300 py-3.5 rounded-xl font-bold hover:bg-zinc-800 disabled:opacity-50 transition"
                 >
                   Previous
                 </button>
@@ -1039,7 +1022,7 @@ const Register = ({ setCurrentPage, language }) => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 disabled:opacity-50 transition"
+                  className="flex-1 bg-[#ef233c] hover:bg-red-700 text-white py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-[#ef233c]/10 disabled:opacity-50 transition"
                 >
                   {submitting ? "Submitting..." : step === 3 ? "Finish" : "Next"}
                 </button>
@@ -1048,13 +1031,13 @@ const Register = ({ setCurrentPage, language }) => {
           </form>
 
           {/* footer */}
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
+          <div className="mt-8 text-center border-t border-white/5 pt-6">
+            <p className="text-zinc-400 font-light text-sm">
               Already have an account?{" "}
               <button
                 disabled={submitting}
                 onClick={() => setCurrentPage("login")}
-                className="text-teal-600 hover:text-teal-700 font-semibold disabled:opacity-50"
+                className="text-[#ef233c] hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
               >
                 Login Here
               </button>
