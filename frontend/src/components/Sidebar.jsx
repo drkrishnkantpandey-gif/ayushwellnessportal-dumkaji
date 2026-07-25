@@ -179,7 +179,11 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
           <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 p-0.5">
             <img src="/images/uk_ayush_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="text-white font-extrabold text-lg font-manrope tracking-tight">AYUSH Setu</span>
+          <img 
+            src="/images/ayush_setu_logo_transparent.png" 
+            alt="AYUSH Setu" 
+            className="h-7 w-auto object-contain filter brightness-105"
+          />
         </div>
 
         {/* Navigation */}

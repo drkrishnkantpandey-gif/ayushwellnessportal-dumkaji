@@ -83,12 +83,11 @@ const HeroSection = ({ setCurrentPage, language }) => {
           <div className="relative group animate-fade-up">
             <div className="absolute -inset-1.5 bg-gradient-to-r from-[#ef233c] to-red-900 rounded-[32px] blur-xl opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
             <div className="relative bg-zinc-950/80 border border-white/10 rounded-[30px] p-6 backdrop-blur-xl">
-              <div className="relative flex items-center justify-center bg-black/40 border border-white/5 rounded-2xl p-6 shadow-2xl overflow-hidden">
+              <div className="relative flex items-center justify-center bg-black/40 border border-white/5 rounded-2xl shadow-2xl overflow-hidden aspect-[4/3]">
                 <img
-                  src="/images/uk_ayush_logo.png"
-                  alt="AYUSH Setu Logo"
-                  className="w-full rounded-xl object-contain relative z-10 filter drop-shadow-[0_0_15px_rgba(239,35,60,0.25)]"
-                  style={{ maxHeight: "280px" }}
+                  src="/images/uttarakhand_yoga_hero.jpg"
+                  alt="Yoga in Uttarakhand"
+                  className="w-full h-full rounded-xl object-cover relative z-10 filter brightness-[0.8] group-hover:brightness-[0.95] group-hover:scale-[1.03] transition-all duration-500"
                 />
                 
                 {/* Location badge */}

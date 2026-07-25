@@ -16,6 +16,7 @@ import DistrictOfficerForm from "./forms/DistrictOfficerForm";
 import DirectorateForm from "./forms/DirectorateForm";
 
 import ResearchInstitutionForm from "./forms/ResearchInstitutionForm";
+import AdminForm from "./forms/AdminForm";
 
 const Register = ({ setCurrentPage, language }) => {
   const [step, setStep] = useState(1);

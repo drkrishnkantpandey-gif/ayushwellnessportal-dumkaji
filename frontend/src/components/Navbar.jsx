@@ -31,12 +31,14 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-white font-extrabold text-lg tracking-tight font-manrope">
-                {text.portalName[language]}
-              </span>
-              <div className="w-2 h-2 bg-[#ef233c] rounded-full animate-ping"></div>
+              <img 
+                src="/images/ayush_setu_logo_transparent.png" 
+                alt="AYUSH Setu" 
+                className="h-7 md:h-8 w-auto object-contain filter brightness-105"
+              />
+              <div className="w-1.5 h-1.5 bg-[#ef233c] rounded-full animate-ping"></div>
             </div>
-            <p className="text-zinc-400 text-[10px] uppercase tracking-wider">{text.ministry[language]}</p>
+            <p className="text-zinc-400 text-[9px] uppercase tracking-wider">{text.ministry[language]}</p>
           </div>
         </div>
 
