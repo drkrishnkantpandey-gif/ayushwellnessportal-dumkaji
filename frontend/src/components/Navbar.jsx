@@ -22,23 +22,17 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
         
         {/* Logo + Title */}
         <div
-          className="flex items-center space-x-3 cursor-pointer group"
+          className="flex items-center cursor-pointer group"
           onClick={() => setCurrentPage("home")}
           aria-label="Go to Home"
         >
-          <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center overflow-hidden border border-white/10 p-0.5 group-hover:border-[#ef233c]/60 transition-colors">
-            <img src="/images/uk_ayush_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <img 
-                src="/images/ayush_setu_logo_transparent.png" 
-                alt="AYUSH Setu" 
-                className="h-7 md:h-8 w-auto object-contain filter brightness-105"
-              />
-              <div className="w-1.5 h-1.5 bg-[#ef233c] rounded-full animate-ping"></div>
-            </div>
-            <p className="text-zinc-400 text-[9px] uppercase tracking-wider">{text.ministry[language]}</p>
+          <div className="flex items-center gap-2">
+            <img 
+              src="/images/ayush_setu_logo_transparent.png" 
+              alt="AYUSH Setu" 
+              className="h-14 md:h-16 w-auto object-contain filter brightness-105 transition-transform duration-300"
+            />
+            <div className="w-2 h-2 bg-[#ef233c] rounded-full animate-ping"></div>
           </div>
         </div>
 

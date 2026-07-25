@@ -175,14 +175,11 @@ const Sidebar = ({ activeTab, setActiveTab, userRole, onLogout }) => {
       
       <div className="relative z-10 flex-1 flex flex-col">
         {/* Header */}
-        <div className="flex items-center space-x-3 mb-8 border-b border-white/5 pb-5">
-          <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center overflow-hidden border border-white/10 p-0.5">
-            <img src="/images/uk_ayush_logo.png" alt="AYUSH Setu Logo" className="w-full h-full object-contain" />
-          </div>
+        <div className="flex items-center justify-center mb-8 border-b border-white/5 pb-5">
           <img 
             src="/images/ayush_setu_logo_transparent.png" 
             alt="AYUSH Setu" 
-            className="h-7 w-auto object-contain filter brightness-105"
+            className="h-10 w-auto object-contain filter brightness-105"
           />
         </div>
 
