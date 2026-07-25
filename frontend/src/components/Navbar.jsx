@@ -13,34 +13,37 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
     login: { EN: "Login / Register", HI: "लॉगिन / रजिस्टर" },
     logout: { EN: "Logout", HI: "लॉगआउट" },
     ministry: { EN: "Dept of Ayush, Uttarakhand Gov", HI: "आयुष विभाग, उत्तराखण्ड सरकार" },
-    portalName: { EN: "AYUSH Setu", HI: "आयुष सेतु" },
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 pt-6 px-4">
-      <nav className="max-w-7xl mx-auto flex items-center justify-between bg-black/60 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 shadow-2xl transition-all duration-300">
+    <header className="fixed top-0 left-0 w-full z-50 h-20 flex items-center px-4 md:px-8 bg-[#fdf8f3]/80 backdrop-blur-xl border-b border-[#262626]/5">
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
         
-        {/* Logo + Title */}
+        {/* Left Side: Brand Logo / Text */}
         <div
-          className="flex items-center cursor-pointer group"
+          className="flex items-center gap-3 cursor-pointer group"
           onClick={() => setCurrentPage("home")}
           aria-label="Go to Home"
         >
-          <div className="flex items-center gap-2">
-            <img 
-              src="/images/ayush_setu_logo_transparent.png" 
-              alt="AYUSH Setu" 
-              className="h-14 md:h-16 w-auto object-contain filter brightness-105 transition-transform duration-300"
-            />
-            <div className="w-2 h-2 bg-[#ef233c] rounded-full animate-ping"></div>
+          <img 
+            src="/images/ayush_setu_logo_transparent.png" 
+            alt="AYUSH Setu Logo" 
+            className="h-10 md:h-12 w-auto object-contain transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="hidden sm:block">
+            <span className="text-[#262626] font-black text-sm tracking-[0.2em] font-spartan">
+              AYUSH SETU
+            </span>
           </div>
         </div>
 
-        {/* Desktop Menu */}
+        {/* Center: Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           <button
             onClick={() => setCurrentPage("home")}
-            className={`text-sm font-semibold transition ${currentPage === "home" ? "text-white" : "text-zinc-400 hover:text-white"}`}
+            className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${
+              currentPage === "home" ? "text-[#e4a4bd]" : "text-[#262626]/70 hover:text-[#262626]"
+            }`}
             aria-label="Go to Home"
           >
             {text.home[language]}
@@ -48,7 +51,9 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
 
           <button
             onClick={() => setCurrentPage("verify")}
-            className={`text-sm font-semibold transition ${currentPage === "verify" ? "text-white" : "text-zinc-400 hover:text-white"}`}
+            className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${
+              currentPage === "verify" ? "text-[#e4a4bd]" : "text-[#262626]/70 hover:text-[#262626]"
+            }`}
             aria-label="Verify Certificate"
           >
             {text.verify[language]}
@@ -56,7 +61,9 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
 
           <button
             onClick={() => setCurrentPage("registry")}
-            className={`text-sm font-semibold transition ${currentPage === "registry" ? "text-white" : "text-zinc-400 hover:text-white"}`}
+            className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 ${
+              currentPage === "registry" ? "text-[#e4a4bd]" : "text-[#262626]/70 hover:text-[#262626]"
+            }`}
             aria-label="Public Registry"
           >
             {text.registry[language]}
@@ -66,40 +73,41 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="bg-zinc-900/80 text-white px-3 py-1 rounded-full border border-white/10 text-xs cursor-pointer hover:border-[#ef233c] focus:outline-none transition"
+              className="bg-transparent text-[#262626] font-bold text-[10px] uppercase tracking-[0.25em] px-2 py-1 rounded cursor-pointer border border-[#262626]/10 focus:outline-none hover:border-[#e4a4bd] transition-colors"
               aria-label="Language Selection"
-              title="Language Selection"
             >
               <option value="EN">EN</option>
               <option value="HI">हिं</option>
             </select>
           </div>
+        </div>
 
+        {/* Far Right: Pill CTA Button */}
+        <div className="hidden md:flex items-center gap-4">
           {isLoggedIn ? (
-            <button
-              onClick={() => setCurrentPage("dashboard")}
-              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-white/5 px-6 py-2 transition-transform active:scale-95"
-              aria-label="Open Dashboard"
-            >
-              <span className="absolute inset-0 border border-white/10 rounded-full"></span>
-              <span className="absolute inset-[-100%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_75%,#ef233c_100%)] opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              <span className="absolute inset-[1px] rounded-full bg-black"></span>
-              <span className="relative z-10 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white">
+            <>
+              <button
+                onClick={() => setCurrentPage("dashboard")}
+                className="bg-[#e4a4bd] text-[#262626] px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#d88fa9] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
+                aria-label="Open Dashboard"
+              >
                 {text.dashboard[language]}
-              </span>
-            </button>
+              </button>
+              <button
+                onClick={onLogout}
+                className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#262626]/50 hover:text-red-600 transition-colors"
+                aria-label="Logout"
+              >
+                {text.logout[language]}
+              </button>
+            </>
           ) : (
             <button
               onClick={() => setCurrentPage("login")}
-              className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-white/5 px-6 py-2 transition-transform active:scale-95"
+              className="bg-[#e4a4bd] text-[#262626] px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-[#d88fa9] transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
               aria-label="Go to Login/Register"
             >
-              <span className="absolute inset-0 border border-white/10 rounded-full"></span>
-              <span className="absolute inset-[-100%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_75%,#ef233c_100%)] opacity-0 group-hover:opacity-100 transition-opacity"></span>
-              <span className="absolute inset-[1px] rounded-full bg-black"></span>
-              <span className="relative z-10 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white">
-                {text.login[language]}
-              </span>
+              {text.login[language]}
             </button>
           )}
         </div>
@@ -107,100 +115,97 @@ const Navbar = ({ language, setLanguage, currentPage, setCurrentPage, isLoggedIn
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-white hover:text-[#ef233c] transition-colors p-1"
+          className="md:hidden text-[#262626] hover:text-[#e4a4bd] transition-colors p-1"
           aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-      </nav>
+      </div>
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden max-w-7xl mx-auto mt-2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl">
-          <div className="flex flex-col space-y-4">
-            <button
-              onClick={() => {
-                setCurrentPage("home");
-                setMobileMenuOpen(false);
-              }}
-              className={`text-left text-sm font-semibold transition py-1 ${currentPage === "home" ? "text-white" : "text-zinc-400"}`}
-              aria-label="Go to Home"
+        <div className="md:hidden absolute top-20 left-0 w-full bg-[#fdf8f3] border-b border-[#262626]/10 px-6 py-6 shadow-xl flex flex-col space-y-5 animate-fade-in z-50">
+          <button
+            onClick={() => {
+              setCurrentPage("home");
+              setMobileMenuOpen(false);
+            }}
+            className={`text-[10px] font-bold uppercase tracking-[0.2em] text-left transition-colors ${
+              currentPage === "home" ? "text-[#e4a4bd]" : "text-[#262626]/75"
+            }`}
+          >
+            {text.home[language]}
+          </button>
+
+          <button
+            onClick={() => {
+              setCurrentPage("verify");
+              setMobileMenuOpen(false);
+            }}
+            className={`text-[10px] font-bold uppercase tracking-[0.2em] text-left transition-colors ${
+              currentPage === "verify" ? "text-[#e4a4bd]" : "text-[#262626]/75"
+            }`}
+          >
+            {text.verify[language]}
+          </button>
+
+          <button
+            onClick={() => {
+              setCurrentPage("registry");
+              setMobileMenuOpen(false);
+            }}
+            className={`text-[10px] font-bold uppercase tracking-[0.2em] text-left transition-colors ${
+              currentPage === "registry" ? "text-[#e4a4bd]" : "text-[#262626]/75"
+            }`}
+          >
+            {text.registry[language]}
+          </button>
+
+          <div className="flex items-center justify-between border-t border-[#262626]/5 pt-4">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#262626]/60">Language</span>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="bg-transparent text-[#262626] font-bold text-[10px] uppercase tracking-[0.2em] border border-[#262626]/10 px-2.5 py-1 rounded cursor-pointer"
             >
-              {text.home[language]}
-            </button>
+              <option value="EN">EN</option>
+              <option value="HI">हिं</option>
+            </select>
+          </div>
 
-            <button
-              onClick={() => {
-                setCurrentPage("verify");
-                setMobileMenuOpen(false);
-              }}
-              className={`text-left text-sm font-semibold transition py-1 ${currentPage === "verify" ? "text-white" : "text-zinc-400"}`}
-              aria-label="Verify Certificate"
-            >
-              {text.verify[language]}
-            </button>
-
-            <button
-              onClick={() => {
-                setCurrentPage("registry");
-                setMobileMenuOpen(false);
-              }}
-              className={`text-left text-sm font-semibold transition py-1 ${currentPage === "registry" ? "text-white" : "text-zinc-400"}`}
-              aria-label="Public Registry"
-            >
-              {text.registry[language]}
-            </button>
-
-            <div className="flex items-center justify-between border-t border-white/5 pt-3">
-              <span className="text-xs text-zinc-500 font-semibold">Change Language</span>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="bg-zinc-900 text-white px-3 py-1 rounded-full border border-white/10 text-xs cursor-pointer focus:outline-none"
-                aria-label="Language Selection"
-              >
-                <option value="EN">EN</option>
-                <option value="HI">हिं</option>
-              </select>
-            </div>
-
-            <div className="border-t border-white/5 pt-3 flex flex-col gap-2">
-              {isLoggedIn ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setCurrentPage("dashboard");
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full bg-[#ef233c] hover:bg-red-700 text-white text-center py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition"
-                    aria-label="Open Dashboard"
-                  >
-                    {text.dashboard[language]}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full border border-red-500/30 text-red-400 text-center py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition hover:bg-red-500/10"
-                    aria-label="Logout"
-                  >
-                    {text.logout[language]}
-                  </button>
-                </>
-              ) : (
+          <div className="border-t border-[#262626]/5 pt-4 flex flex-col gap-3">
+            {isLoggedIn ? (
+              <>
                 <button
                   onClick={() => {
-                    setCurrentPage("login");
+                    setCurrentPage("dashboard");
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full bg-[#ef233c] hover:bg-red-700 text-white text-center py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition"
-                  aria-label="Go to Login/Register"
+                  className="w-full bg-[#e4a4bd] text-[#262626] text-center py-3.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em]"
                 >
-                  {text.login[language]}
+                  {text.dashboard[language]}
                 </button>
-              )}
-            </div>
+                <button
+                  onClick={() => {
+                    onLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full border border-[#262626]/15 text-[#262626]/60 text-center py-3.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em]"
+                >
+                  {text.logout[language]}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setCurrentPage("login");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full bg-[#e4a4bd] text-[#262626] text-center py-3.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em]"
+              >
+                {text.login[language]}
+              </button>
+            )}
           </div>
         </div>
       )}

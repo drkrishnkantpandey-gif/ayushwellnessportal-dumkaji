@@ -3,96 +3,108 @@
 @tailwind utilities;
 
 :root {
-  --accent-red: #ef233c;
-  --accent-red-glow: rgba(239, 35, 60, 0.5);
+  --primary-bg: #fdf8f3;
+  --secondary-bg: #f5f0eb;
+  --accent: #e4a4bd;
+  --primary-text: #262626;
+  --transition-premium: all 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
-  background-color: #000000;
-  color: #ffffff;
-  font-family: 'Inter', sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: 'League Spartan', sans-serif;
+  overflow-x: hidden;
 }
 
-.font-manrope { font-family: 'Manrope', sans-serif; }
-.font-inter { font-family: 'Inter', sans-serif; }
-
-/* Custom Animations */
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Custom classes for fonts and hierarchies */
+.font-spartan {
+  font-family: 'League Spartan', sans-serif;
 }
 
-@keyframes border-spin {
-  from { --gradient-angle: 0deg; }
-  to { --gradient-angle: 360deg; }
+/* Premium Selection Colors */
+::selection, .selection-rose::selection {
+  background-color: var(--accent);
+  color: var(--primary-text);
 }
 
-@keyframes shimmer {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--secondary-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d493ab;
 }
 
-@keyframes animStar {
-  from { transform: translateY(0px); }
-  to { transform: translateY(-2000px); }
-}
-
-@property --gradient-angle { 
-  syntax: "<angle>"; 
-  initial-value: 0deg; 
-  inherits: false; 
-}
-
-.animate-fade-up {
-  animation: fade-in-up 0.8s ease-out forwards;
-}
-
-/* Shiny CTA Button */
-.shiny-cta {
-  --gradient-angle: 0deg;
-  position: relative;
+/* Custom premium hover states */
+.premium-img-container {
   overflow: hidden;
-  border-radius: 9999px;
-  padding: 1rem 2.5rem;
-  background: linear-gradient(#000000, #000000) padding-box,
-  conic-gradient(from var(--gradient-angle), transparent 0%, #ef233c 5%, #ef233c 15%, #ef233c 30%, transparent 40%, transparent 100%) border-box;
-  border: 2px solid transparent;
-  cursor: pointer;
-  isolation: isolate;
-  animation: border-spin 2.5s linear infinite;
+  border-radius: 24px;
 }
 
-.shiny-cta::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 50%, white 0.5px, transparent 0);
-  background-size: 4px 4px;
-  opacity: 0.1;
-  z-index: 0;
+.premium-img {
+  filter: grayscale(100%);
+  transition: filter 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Parallax Stars */
-.stars-1 { box-shadow: 234px 124px #fff, 654px 345px #fff, 876px 12px #fff, 1200px 800px #fff, 400px 1500px #fff, 1800px 200px #fff, 100px 1000px #fff, 900px 1900px #fff, 500px 600px #fff, 1400px 100px #fff, 300px 400px #fff, 1600px 1200px #fff; }
-.stars-2 { box-shadow: 123px 456px #fff, 789px 234px #fff, 456px 890px #fff, 1100px 300px #fff, 200px 1200px #fff, 1500px 500px #fff, 600px 1700px #fff, 1300px 900px #fff; }
-
-.gradient-blur {
-  position: fixed;
-  z-index: 40;
-  inset: 0 0 auto 0;
-  height: 120px;
-  pointer-events: none;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-  backdrop-filter: blur(8px);
-  mask-image: linear-gradient(to bottom, black, transparent);
+.group:hover .premium-img, .premium-img:hover {
+  filter: grayscale(0%);
+  transform: scale(1.08);
 }
 
-.selection-red::selection {
-  background: #ef233c;
-  color: white;
+/* Bounce animations */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%);
+  }
+  50% {
+    transform: translateY(5%);
+  }
 }
 
-.text-stroke {
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+.animate-bounce-slow {
+  animation: bounce-slow 4s ease-in-out infinite;
+}
+
+/* Reveal up wrapper classes */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-up.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Utility classes matching the spec */
+.heading-spartan {
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.label-spartan {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
+.transition-premium {
+  transition: var(--transition-premium);
+}
+
+.text-stroke-rose {
+  -webkit-text-stroke: 1px rgba(228, 164, 189, 0.2);
   color: transparent;
 }

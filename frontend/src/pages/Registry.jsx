@@ -98,33 +98,32 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2.5 bg-zinc-950 hover:bg-zinc-900 border border-white/10 rounded-xl text-zinc-300 transition"
+                className="p-2.5 bg-[#f5f0eb] hover:bg-[#e4a4bd] border border-[#262626]/10 rounded-xl text-[#262626] transition-colors"
               >
                 <ArrowLeft size={18} />
               </button>
             )}
             <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight font-manrope">AYUSH Setu Registry</h1>
-              <p className="text-sm text-zinc-400 font-medium">Official registry of approved Wellness Centres and Yoga Professionals in Uttarakhand</p>
+              <h1 className="text-3xl font-black text-[#262626] tracking-tight font-spartan uppercase leading-none">AYUSH Registry</h1>
+              <p className="text-xs text-[#262626]/60 mt-2 font-bold uppercase tracking-wider">Official registry of approved Wellness Centres and Yoga Professionals in Uttarakhand</p>
             </div>
           </div>
           
           <button
             onClick={() => setShowVerifySection(!showVerifySection)}
-            className="self-start bg-[#ef233c] hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#ef233c]/15 transition flex items-center gap-2"
+            className="self-start bg-[#e4a4bd] hover:bg-[#d88fa9] text-[#262626] font-black px-6 py-3 rounded-full text-xs uppercase tracking-widest transition duration-300 flex items-center gap-2 shadow-sm"
           >
-            <Award size={18} />
+            <Award size={16} />
             {showVerifySection ? "Hide Verification Tool" : "Verify Registration / Certificate"}
           </button>
         </div>
 
         {/* Verification Section */}
         {showVerifySection && (
-          <div className="bg-gradient-to-br from-red-950/80 to-zinc-950 border border-white/10 p-8 rounded-3xl text-white shadow-2xl space-y-6 relative overflow-hidden animate-fade-up">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,#ef233c/5,transparent_75%)]"></div>
+          <div className="bg-[#f5f0eb] border border-[#262626]/10 p-8 rounded-3xl shadow-xl space-y-6 relative overflow-hidden animate-fade-up">
             <div className="max-w-2xl relative z-10">
-              <h2 className="text-xl font-bold font-manrope">Register/Certificate Verification Tool</h2>
-              <p className="text-zinc-400 text-xs mt-1 font-light">Enter a registration number (e.g. UK-WC-P-0001, UK-YP-0002) to verify its authenticity.</p>
+              <h2 className="text-lg font-black text-[#262626] font-spartan uppercase leading-none">Register/Certificate Verification Tool</h2>
+              <p className="text-[#262626]/60 text-xs mt-1 font-light">Enter a registration number (e.g. UK-WC-P-0001, UK-YP-0002) to verify its authenticity.</p>
             </div>
             
             <form onSubmit={handleVerifySearch} className="flex flex-col sm:flex-row gap-3 max-w-3xl relative z-10">
@@ -133,39 +132,39 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
                 value={verifySearch}
                 onChange={(e) => setVerifySearch(e.target.value)}
                 placeholder="Enter Registration Number (e.g., UK-WC-P-0001)"
-                className="flex-1 px-5 py-3.5 bg-black/60 backdrop-blur border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 text-sm font-semibold tracking-wider uppercase"
+                className="flex-1 px-5 py-3.5 bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-[#262626] placeholder-[#262626]/30 focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 text-xs font-bold tracking-widest uppercase"
               />
               <button
                 type="submit"
                 disabled={verifying}
-                className="bg-[#ef233c] hover:bg-red-700 text-white font-bold px-6 py-3.5 rounded-xl transition text-sm flex items-center justify-center gap-2"
+                className="bg-[#e4a4bd] hover:bg-[#d88fa9] text-[#262626] font-black px-6 py-3.5 rounded-xl transition text-xs uppercase tracking-widest flex items-center justify-center gap-2"
               >
                 {verifying ? "Searching..." : "Search & Verify"}
               </button>
             </form>
 
             {verificationResult && (
-              <div className="bg-zinc-950/90 text-white p-6 rounded-2xl shadow-2xl border border-white/10 flex items-start gap-4 max-w-3xl backdrop-blur-md relative z-10 animate-fade-up">
+              <div className="bg-[#fdf8f3] text-[#262626] p-6 rounded-2xl shadow border border-[#262626]/10 flex items-start gap-4 max-w-3xl relative z-10 animate-fade-up">
                 {verificationResult.valid ? (
-                  <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+                  <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-full border border-emerald-500/20">
                     <CheckCircle size={28} />
                   </div>
                 ) : (
-                  <div className="p-3 bg-rose-500/10 text-rose-400 rounded-full border border-rose-500/20">
+                  <div className="p-3 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/20">
                     <ShieldAlert size={28} />
                   </div>
                 )}
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-zinc-500">
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#262626]/40">
                       {verificationResult.type === "wellness_centre" ? "Wellness Centre" : "Yoga Professional"}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${verificationResult.valid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${verificationResult.valid ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'}`}>
                       {verificationResult.valid ? "Verified & Valid" : "Valid status pending"}
                     </span>
                   </div>
-                  <h4 className="text-lg font-bold text-zinc-100">{verificationResult.name}</h4>
-                  <p className="text-xs font-mono font-bold text-[#ef233c] tracking-wider">
+                  <h4 className="text-lg font-black text-[#262626] font-spartan uppercase">{verificationResult.name}</h4>
+                  <p className="text-xs font-mono font-bold text-[#e4a4bd] tracking-wider uppercase">
                     Registration No: {verificationResult.registrationNumber}
                   </p>
                 </div>
@@ -173,7 +172,7 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
             )}
 
             {verifyError && (
-              <div className="bg-red-500/5 border border-red-500/20 text-[#ef233c] p-5 rounded-2xl flex items-center gap-3 max-w-3xl relative z-10 animate-fade-up">
+              <div className="bg-red-500/5 border border-red-500/10 text-red-600 p-5 rounded-2xl flex items-center gap-3 max-w-3xl relative z-10 animate-fade-up">
                 <XCircle className="text-red-500 flex-shrink-0" size={24} />
                 <p className="text-sm font-medium">{verifyError}</p>
               </div>
@@ -182,26 +181,26 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
         )}
 
         {/* Filters & Tabs */}
-        <div className="bg-zinc-950/40 p-5 border border-white/5 rounded-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-md animate-fade-up">
+        <div className="bg-[#f5f0eb] p-5 border border-[#262626]/5 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-up">
           {/* Tabs */}
-          <div className="flex bg-black/60 border border-white/10 p-1 rounded-xl self-start">
+          <div className="flex bg-[#fdf8f3] border border-[#262626]/10 p-1 rounded-xl self-start">
             <button
               onClick={() => setActiveTab("wellness")}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "wellness" ? "bg-[#ef233c] text-white shadow-md shadow-[#ef233c]/15" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${activeTab === "wellness" ? "bg-[#e4a4bd] text-[#262626] shadow-sm" : "text-[#262626]/50 hover:text-[#262626]"}`}
             >
               Wellness Centres
             </button>
             <button
               onClick={() => setActiveTab("yoga")}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "yoga" ? "bg-[#ef233c] text-white shadow-md shadow-[#ef233c]/15" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${activeTab === "yoga" ? "bg-[#e4a4bd] text-[#262626] shadow-sm" : "text-[#262626]/50 hover:text-[#262626]"}`}
             >
               Yoga Professionals
             </button>
             <button
               onClick={() => setActiveTab("research")}
-              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "research" ? "bg-[#ef233c] text-white shadow-md shadow-[#ef233c]/15" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${activeTab === "research" ? "bg-[#e4a4bd] text-[#262626] shadow-sm" : "text-[#262626]/50 hover:text-[#262626]"}`}
             >
-              Research Institutions
+              Institutions
             </button>
           </div>
 
@@ -209,7 +208,7 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full md:w-auto">
             {/* Search */}
             <div className="relative flex-1 sm:w-64">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#262626]/40">
                 <Search size={16} />
               </span>
               <input
@@ -217,7 +216,7 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by name or reg no..."
-                className="w-full pl-10 pr-4 py-2.5 bg-black/60 border border-white/10 rounded-xl text-sm focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 text-white placeholder-zinc-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-xs focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 text-[#262626] placeholder-[#262626]/30 transition uppercase font-bold tracking-wider"
               />
             </div>
 
@@ -227,7 +226,7 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
                 value={selectedDistrict}
                 disabled={isDistrictOfficer}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="w-full px-4 py-2.5 bg-black/60 border border-white/10 text-zinc-300 disabled:opacity-50 rounded-xl text-sm focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 font-semibold"
+                className="w-full px-4 py-2.5 bg-[#fdf8f3] border border-[#262626]/10 text-[#262626] disabled:opacity-50 rounded-xl text-xs focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 font-bold uppercase tracking-wider"
               >
                 {!isDistrictOfficer && <option value="All">All Districts</option>}
                 {districts.map((d) => (
@@ -241,38 +240,38 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
         {/* List Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#ef233c]"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#e4a4bd]"></div>
           </div>
         ) : filteredData.length === 0 ? (
-          <div className="bg-zinc-950/40 rounded-3xl p-12 text-center border border-white/5 shadow-2xl animate-fade-up">
-            <FileText className="mx-auto text-zinc-700 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-zinc-200">No records found</h3>
-            <p className="text-zinc-500 text-sm mt-1">There are no approved registrations matching the filters.</p>
+          <div className="bg-[#f5f0eb] rounded-3xl p-12 text-center border border-[#262626]/5 shadow-sm animate-fade-up">
+            <FileText className="mx-auto text-[#262626]/20 mb-4" size={48} />
+            <h3 className="text-lg font-black text-[#262626] font-spartan uppercase">No records found</h3>
+            <p className="text-[#262626]/60 text-xs mt-1">There are no approved registrations matching the filters.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-up">
             {filteredData.map((item) => (
               <div
                 key={item.id}
-                className="bg-zinc-950/40 border border-white/5 hover:border-zinc-800 rounded-3xl shadow-xl hover:shadow-red-950/5 transition duration-300 p-6 flex flex-col justify-between space-y-4 relative overflow-hidden group"
+                className="bg-[#f5f0eb] border border-[#262626]/5 hover:border-[#e4a4bd] rounded-3xl shadow-md hover:shadow-2xl transition duration-1000 cubic-bezier(0.16, 1, 0.3, 1) p-6 flex flex-col justify-between space-y-4 relative overflow-hidden group"
               >
                 <div className="space-y-3 relative z-10">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-md">
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-[#262626]/60 bg-[#fdf8f3] border border-[#262626]/10 px-2.5 py-1 rounded">
                       {item.type === "wellness_centre" 
                         ? (item.entityType || "Wellness Centre").replace(/_/g, ' ') 
                         : item.type === "yoga_professional" 
                           ? "Yoga Professional" 
-                          : `Research Institution (${item.entityType || 'RI'})`}
+                          : `Institution (${item.entityType || 'RI'})`}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#ef233c]/10 text-[#ef233c] border border-[#ef233c]/20">
-                      <CheckCircle size={10} /> Valid Registry
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold bg-[#e4a4bd] text-[#262626] uppercase tracking-wider">
+                      <CheckCircle size={10} /> Valid
                     </span>
                   </div>
                   
                   <div>
-                    <h3 className="text-lg font-bold text-zinc-200 group-hover:text-white transition-colors">{item.name || item.fullName}</h3>
-                    <p className="text-[11px] font-mono font-bold text-[#ef233c] mt-1 uppercase tracking-wider">
+                    <h3 className="text-base font-black text-[#262626] font-spartan uppercase leading-tight">{item.name || item.fullName}</h3>
+                    <p className="text-[10px] font-mono font-bold text-[#e4a4bd] mt-1 uppercase tracking-wider">
                       Reg: {item.registrationNumber}
                     </p>
                   </div>
@@ -281,43 +280,37 @@ const Registry = ({ onBack, forceVerifyOpen = false }) => {
                   {item.type === "wellness_centre" && item.services && item.services.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {item.services.map((s, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-white/5 border border-white/10 text-zinc-400 rounded text-[9px] font-bold uppercase tracking-wider">
+                        <span key={i} className="px-2 py-0.5 bg-[#fdf8f3] border border-[#262626]/5 text-[#262626]/60 rounded text-[9px] font-bold uppercase tracking-wider">
                           {s}
                         </span>
                       ))}
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-white/5 space-y-2 text-xs font-semibold text-zinc-300">
+                  <div className="pt-2 border-t border-[#262626]/5 space-y-2 text-xs font-semibold text-[#262626]/80">
                     <div className="flex items-start gap-2">
-                      <MapPin className="text-zinc-500 flex-shrink-0 mt-0.5" size={14} />
+                      <MapPin className="text-[#262626]/40 flex-shrink-0 mt-0.5" size={14} />
                       <div>
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block leading-none mb-1">District</span>
+                        <span className="text-[9px] font-black text-[#262626]/40 uppercase tracking-widest block leading-none mb-1">District</span>
                         <span>{item.district || "Uttarakhand"}</span>
                         {item.address && (
-                          <span className="block text-[11px] text-zinc-500 font-medium leading-tight mt-0.5">{item.address}</span>
+                          <span className="block text-[10px] text-[#262626]/60 font-medium leading-tight mt-0.5">{item.address}</span>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/5 text-[11px] text-zinc-400 flex items-center justify-between font-bold relative z-10">
+                <div className="pt-4 border-t border-[#262626]/5 text-[10px] text-[#262626]/70 flex items-center justify-between font-bold relative z-10">
                   <div>
-                    <span className="block text-[9px] uppercase tracking-wider text-zinc-500 leading-none">Email</span>
-                    <span className="text-zinc-300">{item.contactEmail || "N/A"}</span>
+                    <span className="block text-[8px] uppercase tracking-wider text-[#262626]/40 leading-none">Email</span>
+                    <span className="text-[#262626]/80">{item.contactEmail || "N/A"}</span>
                   </div>
                   <div className="text-right">
-                    <span className="block text-[9px] uppercase tracking-wider text-zinc-500 leading-none">Phone</span>
-                    <span className="text-zinc-300">{item.contactPhone || "N/A"}</span>
+                    <span className="block text-[8px] uppercase tracking-wider text-[#262626]/40 leading-none">Phone</span>
+                    <span className="text-[#262626]/80">{item.contactPhone || "N/A"}</span>
                   </div>
                 </div>
-                
-                {/* Glow overlay */}
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none duration-500" 
-                  style={{ background: "radial-gradient(circle at bottom right, #ef233c, transparent 65%)" }}
-                ></div>
               </div>
             ))}
           </div>

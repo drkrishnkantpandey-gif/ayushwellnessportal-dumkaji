@@ -105,21 +105,21 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
   const selectedRoleObj = roles.find(r => r.id === selectedRole);
 
   return (
-    <div className="min-h-screen py-24 px-4 sm:px-6 lg:px-8 relative z-10 flex items-center justify-center">
-      <div className="bg-zinc-950/80 border border-white/10 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl max-w-5xl w-full">
+    <div className="min-h-screen py-24 px-4 sm:px-6 lg:px-8 relative z-10 flex items-center justify-center bg-transparent">
+      <div className="bg-[#f5f0eb] border border-[#262626]/10 rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full">
 
         {!showLoginForm ? (
           /* ── Role Selection Screen ── */
           <div className="p-8 md:p-12">
             {/* Header */}
             <div className="text-center mb-10">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#ef233c] to-red-950 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-red-900/30 border border-white/10">
-                <Users className="text-white" size={36} />
+              <div className="w-20 h-20 bg-gradient-to-br from-[#e4a4bd] to-[#d493ab] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#262626]/5 shadow-md">
+                <Users className="text-[#262626]" size={36} />
               </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white font-manrope">
+              <h2 className="text-3xl md:text-4xl font-black text-[#262626] font-spartan uppercase">
                 {language === "EN" ? "Select Your Role" : "अपनी भूमिका चुनें"}
               </h2>
-              <p className="text-zinc-400 mt-2 text-sm font-light">
+              <p className="text-[#262626]/60 mt-2 text-sm font-light">
                 {language === "EN" ? "Select your operational division to proceed to login" : "सीधे लॉगिन के लिए अपनी भूमिका पर क्लिक करें"}
               </p>
             </div>
@@ -128,23 +128,25 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
             {[{ title: language === "EN" ? "Wellness Registry" : "वेलनेस रजिस्ट्री", roleIds: ["yoga_professional", "wellness_centre"] }, { title: language === "EN" ? "Incentives / Grants" : "प्रोत्साहन / अनुदान", roleIds: ["yoga_centre", "ayush_hospital", "ayush_college", "research_org"] }, { title: language === "EN" ? "Officials" : "अधिकारी", roleIds: ["district_officer", "directorate", "admin"] }].map(section => (
               <div key={section.title} className="mb-4">
                 <button
-                  className="w-full flex justify-between items-center bg-zinc-900 border border-white/5 text-white p-4 rounded-xl hover:border-white/20 transition-all font-semibold"
+                  className="w-full flex justify-between items-center bg-[#fdf8f3] border border-[#262626]/5 text-[#262626] p-4 rounded-xl hover:bg-[#e4a4bd] hover:text-[#262626] transition-all duration-300 font-bold"
                   onClick={() => handleSectionToggle(section.title)}
                 >
-                  <span className="font-bold text-base md:text-lg">{section.title}</span>
-                  <span className="text-zinc-400">{expandedSection === section.title ? '▲' : '▼'}</span>
+                  <span className="text-base font-spartan uppercase tracking-wider">{section.title}</span>
+                  <span className="text-[#262626]/60">{expandedSection === section.title ? '▲' : '▼'}</span>
                 </button>
                 {expandedSection === section.title && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 animate-fade-up">
                     {roles.filter(r => section.roleIds.includes(r.id)).map(r => (
                       <div
                         key={r.id}
-                        className="cursor-pointer p-5 border border-white/5 hover:border-[#ef233c]/40 bg-black/40 rounded-xl hover:shadow-xl hover:shadow-red-900/5 transition flex flex-col items-center text-center group"
+                        className="cursor-pointer p-5 border border-[#262626]/5 hover:border-[#e4a4bd] bg-[#fdf8f3] rounded-xl hover:shadow-xl transition flex flex-col items-center text-center group"
                         onClick={() => handleRoleSelect(r.id)}
                       >
-                        <r.icon className="text-[#ef233c] mb-3 group-hover:scale-110 transition-transform" size={40} />
-                        <h3 className="font-bold text-zinc-100 group-hover:text-white transition-colors">{language === "EN" ? r.en : r.hi}</h3>
-                        <p className="text-xs text-zinc-500 mt-2 leading-snug font-light">{r.desc}</p>
+                        <div className="w-16 h-16 rounded-full bg-[#f5f0eb] flex items-center justify-center mb-4 transition-colors group-hover:bg-[#e4a4bd] duration-500">
+                          <r.icon className="text-[#262626] group-hover:scale-110 transition-transform duration-500" size={32} />
+                        </div>
+                        <h3 className="font-extrabold text-[#262626] font-spartan uppercase text-sm leading-snug">{language === "EN" ? r.en : r.hi}</h3>
+                        <p className="text-[11px] text-[#262626]/60 mt-2 leading-relaxed font-light">{r.desc}</p>
                       </div>
                     ))}
                   </div>
@@ -153,11 +155,11 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
             ))}
 
             <div className="mt-8 text-center">
-              <p className="text-zinc-400 text-sm">
+              <p className="text-[#262626]/60 text-sm">
                 {language === "EN" ? "Don't have an account?" : "क्या आपके पास खाता नहीं है?"}{' '}
                 <button
                   onClick={() => setCurrentPage('register')}
-                  className="text-[#ef233c] font-bold hover:underline"
+                  className="text-[#e4a4bd] font-bold hover:underline"
                 >
                   {language === "EN" ? "Register Now" : "अभी पंजीकरण करें"}
                 </button>
@@ -168,33 +170,32 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
           /* ── Login Form Screen ── */
           <div className="grid md:grid-cols-5 min-h-[500px]">
             {/* Left Panel */}
-            <div className="md:col-span-2 bg-gradient-to-br from-red-950/80 to-zinc-950 p-8 flex flex-col justify-between text-white border-r border-white/10 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,#ef233c/10,transparent_70%)]"></div>
+            <div className="md:col-span-2 bg-[#fdf8f3] p-8 flex flex-col justify-between text-[#262626] border-r border-[#262626]/10 relative overflow-hidden">
               <div className="relative z-10">
                 <button
                   onClick={handleBackToRoles}
-                  className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-semibold mb-8 transition-colors"
+                  className="flex items-center gap-2 text-[#262626]/60 hover:text-[#262626] text-xs font-bold uppercase tracking-widest mb-8 transition-colors"
                 >
                   ← {language === "EN" ? "Change Role" : "भूमिका बदलें"}
                 </button>
 
-                <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
-                  {selectedRoleObj && (() => { const RoleIcon = selectedRoleObj.icon; return <RoleIcon className="text-[#ef233c]" size={32} />; })()}
+                <div className="w-16 h-16 bg-[#e4a4bd]/20 border border-[#e4a4bd]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                  {selectedRoleObj && (() => { const RoleIcon = selectedRoleObj.icon; return <RoleIcon className="text-[#262626]" size={32} />; })()}
                 </div>
 
-                <h2 className="text-3xl font-extrabold mb-2 font-manrope">
+                <h2 className="text-3xl font-black mb-2 font-spartan uppercase leading-none">
                   {language === "EN" ? "Welcome" : "स्वागत है"}
                 </h2>
-                <p className="text-zinc-400 text-sm mb-4">
+                <p className="text-[#262626]/60 text-xs uppercase tracking-wider mb-4">
                   {language === "EN" ? "Logging in as" : "लॉगिन करें"}{" "}
-                  <span className="text-[#ef233c] font-bold">
+                  <span className="text-[#e4a4bd] font-extrabold font-spartan">
                     {language === "EN" ? selectedRoleObj?.en : selectedRoleObj?.hi}
                   </span>
                 </p>
               </div>
 
-              <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative z-10">
-                <p className="text-zinc-400 text-xs leading-relaxed font-light">
+              <div className="bg-[#f5f0eb] border border-[#262626]/5 rounded-2xl p-4 relative z-10">
+                <p className="text-[#262626]/60 text-xs leading-relaxed font-light">
                   {language === "EN"
                     ? "Access your AYUSH dashboard, manage certifications, track yoga activities and handle incentive claims securely."
                     : "अपने AYUSH डैशबोर्ड तक पहुँचें, प्रमाणपत्र प्रबंधित करें, योग गतिविधियों को ट्रैक करें।"}
@@ -203,16 +204,16 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
             </div>
 
             {/* Right Panel – Login Form */}
-            <div className="md:col-span-3 p-8 flex flex-col justify-center bg-zinc-950/40">
-              <h3 className="text-2xl font-bold text-white font-manrope mb-1">
+            <div className="md:col-span-3 p-8 flex flex-col justify-center bg-transparent">
+              <h3 className="text-2xl font-black text-[#262626] font-spartan uppercase mb-1 leading-none">
                 {language === "EN" ? "Sign In" : "साइन इन करें"}
               </h3>
-              <p className="text-zinc-400 text-sm mb-8 font-light">
+              <p className="text-[#262626]/60 text-sm mb-8 font-light">
                 {language === "EN" ? "Enter your registered credentials below" : "अपनी पंजीकृत क्रेडेंशियल्स दर्ज करें"}
               </p>
 
               {loginError && (
-                <div className="mb-6 p-4 bg-red-500/5 border border-red-500/20 text-[#ef233c] rounded-xl text-sm flex items-start gap-3 animate-fade-up">
+                <div className="mb-6 p-4 bg-red-500/5 border border-red-500/10 text-red-600 rounded-xl text-sm flex items-start gap-3 animate-fade-up">
                   <span className="text-lg">⚠️</span>
                   <span className="font-medium">{loginError}</span>
                 </div>
@@ -220,11 +221,11 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
 
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#262626] mb-2">
                     {language === "EN" ? "Email / Username" : "ईमेल / उपयोगकर्ता नाम"}
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#262626]/40" size={18} />
                     <input
                       type="text"
                       value={email}
@@ -232,7 +233,7 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                         setEmail(e.target.value);
                         setLoginError('');
                       }}
-                      className="w-full pl-12 pr-4 py-3.5 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 transition text-sm font-medium"
+                      className="w-full pl-12 pr-4 py-3.5 bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-[#262626] placeholder-[#262626]/30 focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 transition text-sm font-medium"
                       placeholder={language === "EN" ? "Enter your email" : "अपना ईमेल दर्ज करें"}
                       autoComplete="username"
                     />
@@ -240,11 +241,11 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#262626] mb-2">
                     {language === "EN" ? "Password" : "पासवर्ड"}
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#262626]/40" size={18} />
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
@@ -252,14 +253,14 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                         setPassword(e.target.value);
                         setLoginError('');
                       }}
-                      className="w-full pl-12 pr-12 py-3.5 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 transition text-sm font-medium"
+                      className="w-full pl-12 pr-12 py-3.5 bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-[#262626] placeholder-[#262626]/30 focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 transition text-sm font-medium"
                       placeholder={language === "EN" ? "Enter your password" : "अपना पासवर्ड दर्ज करें"}
                       autoComplete="current-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#262626]/40 hover:text-[#262626] transition"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -270,13 +271,13 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input 
                       type="checkbox" 
-                      className="w-4 h-4 text-[#ef233c] accent-[#ef233c] bg-zinc-900 border-zinc-800 focus:ring-[#ef233c] rounded" 
+                      className="w-4 h-4 text-[#262626] accent-[#e4a4bd] bg-[#fdf8f3] border-[#262626]/10 focus:ring-0 rounded" 
                     />
-                    <span className="text-sm text-zinc-400 font-medium">
+                    <span className="text-xs text-[#262626]/60 font-bold uppercase tracking-wider">
                       {language === "EN" ? "Remember me" : "मुझे याद रखें"}
                     </span>
                   </label>
-                  <button type="button" className="text-sm text-[#ef233c] hover:text-red-400 font-bold transition-colors">
+                  <button type="button" className="text-xs text-[#e4a4bd] hover:text-[#d493ab] font-bold uppercase tracking-wider transition-colors">
                     {language === "EN" ? "Forgot Password?" : "पासवर्ड भूल गए?"}
                   </button>
                 </div>
@@ -284,14 +285,14 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-4 rounded-xl font-extrabold text-white transition-all shadow-lg uppercase tracking-wider text-sm ${loading
-                      ? 'bg-red-800/50 cursor-not-allowed'
-                      : 'bg-[#ef233c] hover:bg-red-700 shadow-[#ef233c]/20 hover:shadow-xl hover:-translate-y-0.5'
+                  className={`w-full py-4 rounded-xl font-black text-[#262626] transition-all uppercase tracking-[0.2em] text-xs ${loading
+                      ? 'bg-[#e4a4bd]/50 cursor-not-allowed'
+                      : 'bg-[#e4a4bd] hover:bg-[#d88fa9] shadow-md hover:-translate-y-0.5'
                     }`}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
@@ -302,9 +303,9 @@ const LoginPage = ({ setCurrentPage, setIsLoggedIn, setUserRole, language }) => 
                   )}
                 </button>
 
-                <div className="mt-4 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-xl flex items-start gap-3">
-                  <AlertCircle className="text-yellow-500 shrink-0 mt-0.5" size={18} />
-                  <div className="text-xs text-yellow-300/80 leading-relaxed font-medium">
+                <div className="mt-4 p-4 bg-[#e4a4bd]/10 border border-[#e4a4bd]/20 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="text-[#262626] shrink-0 mt-0.5" size={18} />
+                  <div className="text-[11px] text-[#262626]/80 leading-relaxed font-medium">
                     {language === "EN" ? (
                       <strong>Note:</strong>
                     ) : (

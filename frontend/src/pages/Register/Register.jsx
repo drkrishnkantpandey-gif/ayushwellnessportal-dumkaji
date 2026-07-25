@@ -732,13 +732,13 @@ const Register = ({ setCurrentPage, language }) => {
   // 🔹 OTP SCREEN (full-screen overlay)
   if (showOTP) {
     return (
-      <div className="min-h-screen py-24 px-4 flex items-center justify-center relative z-10 bg-transparent">
+      <div className="min-h-screen py-24 px-4 flex items-center justify-center relative z-10 bg-transparent animate-fade-in">
         <div className="max-w-md w-full">
-          <div className="bg-zinc-950/80 border border-white/10 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
+          <div className="bg-[#f5f0eb] border border-[#262626]/10 rounded-3xl shadow-2xl p-8 animate-fade-up">
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#ef233c] to-red-950 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-lg shadow-red-900/20">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#e4a4bd] to-[#d493ab] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#262626]/5 shadow-md">
                 <svg
-                  className="w-10 h-10 text-white"
+                  className="w-10 h-10 text-[#262626]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -751,10 +751,10 @@ const Register = ({ setCurrentPage, language }) => {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white font-manrope mb-2">
+              <h2 className="text-2xl font-black text-[#262626] font-spartan uppercase mb-2">
                 Verify with OTP
               </h2>
-              <p className="text-sm text-zinc-400 font-light">
+              <p className="text-xs text-[#262626]/60 font-light leading-relaxed">
                 To ensure your security, please enter the One Time Password
                 (OTP) sent to your registered mobile number / email below.
               </p>
@@ -771,7 +771,7 @@ const Register = ({ setCurrentPage, language }) => {
                     value={digit}
                     onChange={(e) => handleOtpChange(idx, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="w-12 h-12 text-center text-xl font-bold bg-black/60 border border-white/10 rounded-xl text-white focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20"
+                    className="w-12 h-12 text-center text-xl font-bold bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-[#262626] focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10"
                   />
                 ))}
               </div>
@@ -780,22 +780,22 @@ const Register = ({ setCurrentPage, language }) => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[#ef233c] hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-lg shadow-[#ef233c]/15 transition"
+                  className="w-full bg-[#e4a4bd] hover:bg-[#d88fa9] text-[#262626] py-3.5 rounded-xl font-black uppercase tracking-widest text-xs transition"
                 >
                   Verify & Register
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowOTP(false)}
-                  className="w-full bg-zinc-900 border border-white/10 text-zinc-300 py-3 rounded-xl font-semibold hover:bg-zinc-800 transition"
+                  className="w-full bg-transparent border border-[#262626]/15 text-[#262626]/70 py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-[#262626]/5 transition"
                 >
                   Cancel
                 </button>
               </div>
 
-              <p className="text-xs text-center text-zinc-500 mt-4">
+              <p className="text-xs text-center text-[#262626]/60 mt-4">
                 Having difficulties with OTP?{" "}
-                <a href="#" className="text-[#ef233c] hover:underline">
+                <a href="#" className="text-[#e4a4bd] hover:underline font-bold">
                   Get help
                 </a>
               </p>
@@ -808,54 +808,54 @@ const Register = ({ setCurrentPage, language }) => {
 
   // 🔹 Normal registration 3-step flow
   return (
-    <div className="min-h-screen py-24 px-4 relative z-10 bg-transparent flex items-center justify-center">
+    <div className="min-h-screen py-24 px-4 relative z-10 bg-transparent flex items-center justify-center animate-fade-in">
       <div className="max-w-3xl w-full mx-auto">
-        <div className="bg-zinc-950/80 border border-white/10 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
+        <div className="bg-[#f5f0eb] border border-[#262626]/10 rounded-3xl shadow-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#ef233c] to-red-950 rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-red-900/30 border border-white/10">
-              <Users className="text-white" size={36} />
+            <div className="w-20 h-20 bg-gradient-to-br from-[#e4a4bd] to-[#d493ab] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#262626]/5 shadow-md">
+              <Users className="text-[#262626]" size={36} />
             </div>
-            <h2 className="text-3xl font-extrabold text-white font-manrope">
+            <h2 className="text-3xl font-black text-[#262626] font-spartan uppercase leading-none">
               Register on AYUSH Portal
             </h2>
-            <p className="text-zinc-400 mt-2 text-sm">Step {step} of 3</p>
+            <p className="text-[#262626]/60 mt-2 text-xs font-bold uppercase tracking-widest">Step {step} of 3</p>
           </div>
 
           {/* Progress bar */}
           <div className="flex items-center justify-between mb-10 max-w-md mx-auto">
             <div className="flex items-center flex-1">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= 1
-                  ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15"
-                  : "bg-zinc-900 text-zinc-600 border border-white/5"
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm transition-colors duration-300 ${step >= 1
+                  ? "bg-[#e4a4bd] text-[#262626] shadow-sm"
+                  : "bg-[#fdf8f3] text-[#262626]/30 border border-[#262626]/10"
                   }`}
               >
                 1
               </div>
               <div
-                className={`flex-1 h-[2px] ${step >= 2 ? "bg-[#ef233c]" : "bg-zinc-800"}`}
+                className={`flex-1 h-[2px] transition-colors duration-300 ${step >= 2 ? "bg-[#e4a4bd]" : "bg-[#262626]/10"}`}
               ></div>
             </div>
 
             <div className="flex items-center flex-1">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= 2
-                  ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15"
-                  : "bg-zinc-900 text-zinc-600 border border-white/5"
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm transition-colors duration-300 ${step >= 2
+                  ? "bg-[#e4a4bd] text-[#262626] shadow-sm"
+                  : "bg-[#fdf8f3] text-[#262626]/30 border border-[#262626]/10"
                   }`}
               >
                 2
               </div>
               <div
-                className={`flex-1 h-[2px] ${step >= 3 ? "bg-[#ef233c]" : "bg-zinc-800"}`}
+                className={`flex-1 h-[2px] transition-colors duration-300 ${step >= 3 ? "bg-[#e4a4bd]" : "bg-[#262626]/10"}`}
               ></div>
             </div>
 
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= 3
-                ? "bg-[#ef233c] text-white shadow-lg shadow-[#ef233c]/15"
-                : "bg-zinc-900 text-zinc-600 border border-white/5"
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm transition-colors duration-300 ${step >= 3
+                ? "bg-[#e4a4bd] text-[#262626] shadow-sm"
+                : "bg-[#fdf8f3] text-[#262626]/30 border border-[#262626]/10"
                 }`}
             >
               3
@@ -890,13 +890,13 @@ const Register = ({ setCurrentPage, language }) => {
             {/* STEP 3 – account details */}
             {step === 3 && (
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-white font-manrope">
+                <h3 className="text-lg font-black text-[#262626] font-spartan uppercase leading-none">
                   Account Details
                 </h3>
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#262626] mb-2">
                     Create Password
                   </label>
                   <input
@@ -908,7 +908,7 @@ const Register = ({ setCurrentPage, language }) => {
                         password: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 text-sm font-medium"
+                    className="w-full px-4 py-3.5 bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-[#262626] placeholder-[#262626]/30 focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 text-sm font-medium"
                     placeholder="Minimum 8 characters"
                     required
                   />
@@ -916,7 +916,7 @@ const Register = ({ setCurrentPage, language }) => {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-sm font-semibold text-zinc-300 mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#262626] mb-2">
                     Confirm Password
                   </label>
                   <input
@@ -928,48 +928,48 @@ const Register = ({ setCurrentPage, language }) => {
                         confirmPassword: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-3 bg-black/60 border border-white/10 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#ef233c] focus:ring-2 focus:ring-[#ef233c]/20 text-sm font-medium"
+                    className="w-full px-4 py-3.5 bg-[#fdf8f3] border border-[#262626]/10 rounded-xl text-[#262626] placeholder-[#262626]/30 focus:outline-none focus:border-[#e4a4bd] focus:ring-2 focus:ring-[#e4a4bd]/10 text-sm font-medium"
                     placeholder="Re-enter password"
                     required
                   />
                 </div>
 
                 {/* Document info box */}
-                <div className="bg-white/5 border border-white/5 p-6 rounded-2xl">
-                  <h4 className="font-bold text-white mb-4 font-manrope">
+                <div className="bg-[#fdf8f3] border border-[#262626]/5 p-6 rounded-2xl">
+                  <h4 className="font-extrabold text-[#262626] mb-4 font-spartan uppercase text-xs tracking-wider">
                     Document Upload Required
                   </h4>
-                  <ul className="space-y-2.5 text-sm text-zinc-400">
-                    <li className="flex items-center font-medium">
+                  <ul className="space-y-2.5 text-xs text-[#262626]/70 uppercase tracking-wide">
+                    <li className="flex items-center font-bold">
                       <FileText
-                        className="mr-2 text-[#ef233c] flex-shrink-0"
+                        className="mr-2 text-[#e4a4bd] flex-shrink-0"
                         size={16}
                       />
                       Aadhaar Card (Front & Back)
                     </li>
-                    <li className="flex items-center font-medium">
+                    <li className="flex items-center font-bold">
                       <FileText
-                        className="mr-2 text-[#ef233c] flex-shrink-0"
+                        className="mr-2 text-[#e4a4bd] flex-shrink-0"
                         size={16}
                       />
                       PAN Card
                     </li>
-                    <li className="flex items-center font-medium">
+                    <li className="flex items-center font-bold">
                       <FileText
-                        className="mr-2 text-[#ef233c] flex-shrink-0"
+                        className="mr-2 text-[#e4a4bd] flex-shrink-0"
                         size={16}
                       />
                       Qualification Certificates
                     </li>
-                    <li className="flex items-center font-medium">
+                    <li className="flex items-center font-bold">
                       <FileText
-                        className="mr-2 text-[#ef233c] flex-shrink-0"
+                        className="mr-2 text-[#e4a4bd] flex-shrink-0"
                         size={16}
                       />
                       Experience Letters (if applicable)
                     </li>
                   </ul>
-                  <p className="mt-4 text-xs text-zinc-500 font-light">
+                  <p className="mt-4 text-[10px] text-[#262626]/40 font-light">
                     * Documents can be uploaded after registration from your
                     dashboard
                   </p>
@@ -979,17 +979,17 @@ const Register = ({ setCurrentPage, language }) => {
                 <label className="flex items-start select-none cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 mt-1 text-[#ef233c] accent-[#ef233c] bg-zinc-900 border-zinc-800 focus:ring-[#ef233c] rounded flex-shrink-0"
+                    className="w-4 h-4 mt-1 text-[#262626] accent-[#e4a4bd] bg-[#fdf8f3] border-[#262626]/10 focus:ring-0 rounded flex-shrink-0"
                     required
                   />
-                  <span className="ml-2 text-sm text-zinc-400 font-medium">
+                  <span className="ml-2 text-xs text-[#262626]/60 font-bold uppercase tracking-wider">
                     I agree to the Terms & Conditions and Privacy Policy of
                     AYUSH Portal
                   </span>
                 </label>
 
-                <div className="space-y-2 text-sm text-zinc-400 pt-4 border-t border-white/5">
-                  <h3 className="text-base font-bold text-white font-manrope">
+                <div className="space-y-2 text-xs text-[#262626]/60 pt-4 border-t border-[#262626]/10">
+                  <h3 className="text-sm font-extrabold text-[#262626] font-spartan uppercase">
                     Review & Next Steps
                   </h3>
                   <p className="font-light leading-relaxed">
@@ -998,7 +998,7 @@ const Register = ({ setCurrentPage, language }) => {
                     verification.
                   </p>
                   <p className="font-light leading-relaxed">
-                    Click <span className="font-semibold text-white">Finish</span> to
+                    Click <span className="font-semibold text-[#262626]">Finish</span> to
                     submit this registration request and proceed to OTP
                     verification.
                   </p>
@@ -1013,7 +1013,7 @@ const Register = ({ setCurrentPage, language }) => {
                   type="button"
                   disabled={submitting}
                   onClick={() => setStep((s) => s - 1)}
-                  className="flex-1 bg-zinc-900 border border-white/10 text-zinc-300 py-3.5 rounded-xl font-bold hover:bg-zinc-800 disabled:opacity-50 transition"
+                  className="flex-1 bg-transparent border border-[#262626]/15 text-[#262626]/70 py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-[#262626]/5 disabled:opacity-50 transition duration-300"
                 >
                   Previous
                 </button>
@@ -1022,7 +1022,7 @@ const Register = ({ setCurrentPage, language }) => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 bg-[#ef233c] hover:bg-red-700 text-white py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-[#ef233c]/10 disabled:opacity-50 transition"
+                  className="flex-1 bg-[#e4a4bd] hover:bg-[#d88fa9] text-[#262626] py-3.5 rounded-xl font-black uppercase tracking-widest text-xs hover:shadow-md disabled:opacity-50 transition duration-300"
                 >
                   {submitting ? "Submitting..." : step === 3 ? "Finish" : "Next"}
                 </button>
@@ -1031,13 +1031,13 @@ const Register = ({ setCurrentPage, language }) => {
           </form>
 
           {/* footer */}
-          <div className="mt-8 text-center border-t border-white/5 pt-6">
-            <p className="text-zinc-400 font-light text-sm">
+          <div className="mt-8 text-center border-t border-[#262626]/10 pt-6">
+            <p className="text-[#262626]/60 font-light text-sm">
               Already have an account?{" "}
               <button
                 disabled={submitting}
                 onClick={() => setCurrentPage("login")}
-                className="text-[#ef233c] hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
+                className="text-[#e4a4bd] hover:text-[#d493ab] font-bold disabled:opacity-50 transition-colors duration-300"
               >
                 Login Here
               </button>

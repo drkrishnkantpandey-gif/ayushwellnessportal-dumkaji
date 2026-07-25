@@ -107,6 +107,32 @@ const App = () => {
     }
   }, [isLoggedIn]);
 
+  // 🔹 Intersection Observer for Reveal-Up Animations
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("active");
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    // Give a short delay to allow components to mount and render fully
+    const timer = setTimeout(() => {
+      const elements = document.querySelectorAll(".reveal-up");
+      elements.forEach((el) => observer.observe(el));
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const elements = document.querySelectorAll(".reveal-up");
+      elements.forEach((el) => observer.unobserve(el));
+    };
+  }, [currentPage, activeTab]);
+
   // Yoga Professional Dashboard Tabs
   const renderYogaProfessionalContent = () => {
     switch (activeTab) {
@@ -340,17 +366,14 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection-red relative overflow-x-hidden font-inter">
+    <div className="min-h-screen bg-[#fdf8f3] text-[#262626] selection-rose relative overflow-x-hidden font-spartan">
       {/* Global Background Backdrop */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#150202] via-[#050000] to-black"></div>
-        <div className="absolute top-0 left-0 w-[1px] h-[1px] bg-transparent stars-1 animate-[animStar_70s_linear_infinite]"></div>
-        <div className="absolute top-0 left-0 w-[2px] h-[2px] bg-transparent stars-2 animate-[animStar_120s_linear_infinite]"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-600/5 rounded-full blur-[140px]"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)]"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#fdf8f3] via-[#fdf8f3] to-[#f5f0eb]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(38,38,38,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(38,38,38,0.015)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(circle_at_center,black_40%,transparent_80%)]"></div>
       </div>
 
-      <ToastContainer theme="dark" />
+      <ToastContainer theme="light" />
       <Navbar
         language={language}
         setLanguage={setLanguage}
