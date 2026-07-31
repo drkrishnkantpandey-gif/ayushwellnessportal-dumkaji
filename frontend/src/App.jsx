@@ -323,7 +323,7 @@ const App = () => {
 
     if (currentPage === "dashboard" || isLoggedIn) {
       return (
-        <div className="flex h-[calc(100vh-64px)] relative z-10">
+        <div className="flex h-[calc(100vh-80px)] mt-20 relative z-10">
           {/* Sidebar */}
           <div className="w-64 hidden md:block overflow-y-auto bg-black/60 border-r border-white/5">
             <Sidebar
