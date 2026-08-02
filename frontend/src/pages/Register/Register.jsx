@@ -230,6 +230,7 @@ const Register = ({ setCurrentPage, language }) => {
             formData={formData}
             setFormData={setFormData}
             step={step}
+            handleFileChange={handleFileChange}
           />
         );
       case "yoga_centre":

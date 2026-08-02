@@ -19,7 +19,6 @@ const validate = (rules) => [
 const loginRules = validate([
   body('email')
     .isEmail().withMessage('Invalid email address.')
-    .normalizeEmail()
     .trim(),
   body('password')
     .isLength({ min: 1, max: 200 }).withMessage('Password is required.')
@@ -30,7 +29,7 @@ const loginRules = validate([
 ]);
 
 const registerRules = validate([
-  body('email').isEmail().normalizeEmail().trim(),
+  body('email').isEmail().trim(),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.'),
   body('fullName').notEmpty().trim().escape().withMessage('Full name is required.'),
 ]);

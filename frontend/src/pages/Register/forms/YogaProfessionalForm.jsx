@@ -17,7 +17,7 @@ const DISTRICT_OPTIONS = [
   "Uttarkashi"
 ];
 
-const YogaProfessionalForm = ({ formData, setFormData, step }) => {
+const YogaProfessionalForm = ({ formData, setFormData, step, handleFileChange }) => {
   // Photo removal handler
   const removeProfilePhoto = () => {
     setFormData({ ...formData, profilePhoto: null });
@@ -408,28 +408,27 @@ const YogaProfessionalForm = ({ formData, setFormData, step }) => {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Upload Profile Photo
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                setFormData({ ...formData, profilePhoto: file });
-              }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg cursor-pointer"
-            />
-
-            {formData.profilePhoto && (
-              <div className="mt-3">
-                <img
-                  src={URL.createObjectURL(formData.profilePhoto)}
-                  alt="Profile Preview"
-                  className="w-32 h-32 object-cover border rounded-full shadow-sm"
-                />
+            {!formData.profilePhoto ? (
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange("profilePhoto", e.target.files)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg cursor-pointer"
+              />
+            ) : (
+              <div className="flex items-center justify-between p-4 bg-teal-50 border border-teal-100 rounded-xl">
+                <div className="flex items-center space-x-3 min-w-0">
+                  {formData.profilePhoto.uploading ? (
+                    <div className="w-5 h-5 border-t-2 border-b-2 border-teal-600 rounded-full animate-spin"></div>
+                  ) : (
+                    <span className="text-teal-600 font-bold">✓</span>
+                  )}
+                  <span className="text-sm text-gray-700 truncate">{formData.profilePhoto.name}</span>
+                </div>
                 <button
                   type="button"
                   onClick={removeProfilePhoto}
-                  className="mt-2 bg-red-500 text-white text-xs px-3 py-1 rounded-md"
+                  className="text-red-500 hover:text-red-700 text-xs font-bold"
                 >
                   Remove
                 </button>
@@ -445,38 +444,35 @@ const YogaProfessionalForm = ({ formData, setFormData, step }) => {
 
             <div
               className="w-full border border-dashed border-teal-400 p-5 rounded-lg text-center text-gray-600 bg-teal-50 cursor-pointer"
-              onClick={() => document.getElementById("certificateInput").click()}
+              onClick={() => {
+                if ((formData.certificateFiles?.length || 0) < 5) {
+                  document.getElementById("certificateInput").click();
+                }
+              }}
             >
               <p className="font-medium">Click to Upload Certificates</p>
               <p className="text-xs text-gray-500 mt-1">
-                Yoga Certification Board, QCI, or other certifications
+                Yoga Certification Board, QCI, or other certifications (Max 5)
               </p>
 
               {formData.certificateFiles && formData.certificateFiles.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="mt-4 space-y-2" onClick={(e) => e.stopPropagation()}>
                   {formData.certificateFiles.map((file, index) => (
-                    <div key={index} className="relative group">
-                      {file.type === "application/pdf" ? (
-                        <div className="w-full h-24 flex items-center justify-center bg-gray-100 rounded-lg border">
-                          <span className="text-sm text-gray-600">📄 {file.name}</span>
-                        </div>
-                      ) : (
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt="certificate"
-                          className="w-full h-24 object-cover rounded-lg border"
-                        />
-                      )}
-
+                    <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        {file.uploading ? (
+                          <div className="w-4 h-4 border-t-2 border-b-2 border-teal-600 rounded-full animate-spin"></div>
+                        ) : (
+                          <span className="text-teal-600 font-bold">✓</span>
+                        )}
+                        <span className="text-xs text-gray-700 truncate">{file.name}</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeCertificateFile(index);
-                        }}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full px-2 py-1 text-xs opacity-90 hover:opacity-100"
+                        onClick={() => removeCertificateFile(index)}
+                        className="text-red-500 hover:text-red-700 text-xs font-bold"
                       >
-                        ✕
+                        Remove
                       </button>
                     </div>
                   ))}
@@ -494,19 +490,7 @@ const YogaProfessionalForm = ({ formData, setFormData, step }) => {
               accept="image/*,.pdf"
               multiple
               className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files);
-
-                if ((formData.certificateFiles?.length || 0) + files.length > 5) {
-                  alert("Maximum 5 certificate files allowed.");
-                  return;
-                }
-
-                setFormData({
-                  ...formData,
-                  certificateFiles: [...(formData.certificateFiles || []), ...files].slice(0, 5),
-                });
-              }}
+              onChange={(e) => handleFileChange("certificateFiles", e.target.files)}
             />
           </div>
 
